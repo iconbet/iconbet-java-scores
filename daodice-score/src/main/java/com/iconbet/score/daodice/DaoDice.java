@@ -37,7 +37,7 @@ public class DaoDice {
 	public static final Double _681_34 = 681.34;
 
 	public static List<String> SIDE_BET_TYPES = List.of("digits_match", "icon_logo1", "icon_logo2");
-	public static Map<String, Double> SIDE_BET_MULTIPLIERS = Map.of("digits_match",MAIN_BET_MULTIPLIER, "icon_logo1", FIVE, "icon_logo2", SIDE_BET_MULTIPLIER );
+	public static Map<String, Double> SIDE_BET_MULTIPLIERS = Map.of("digits_match",9.5, "icon_logo1", FIVE, "icon_logo2", SIDE_BET_MULTIPLIER );
 	public static Map<String, BigInteger> BET_LIMIT_RATIOS_SIDE_BET = Map.of("digits_match", _1140, "icon_logo1", _540, "icon_logo2", _12548 );
 
 	private static final String _GAME_ON = "game_on";
@@ -94,7 +94,7 @@ public class DaoDice {
 	 ***/
 	@External(readonly = true)
 	public Address get_score_owner() {
-		return Context.getOrigin() ;
+		return Context.getOwner();
 	}
 
 	/***
@@ -105,7 +105,7 @@ public class DaoDice {
 	@External
 	public void set_roulette_score( Address _score) {
 		Address sender = Context.getCaller();
-		Address owner = Context.getOrigin();
+		Address owner = Context.getOwner();
 		if (sender.equals(owner)) {
 			this._roulette_score.set(_score);
 		}
@@ -129,7 +129,7 @@ public class DaoDice {
 	@External
 	public void game_on() {
 		Address sender = Context.getCaller();
-		Address owner = Context.getOrigin();
+		Address owner = Context.getOwner();
 		if(!sender.equals(owner)) {
 			Context.revert("Only the owner can call the game_on method");
 		}
@@ -145,7 +145,7 @@ public class DaoDice {
 	@External
 	public void game_off() {
 		Address sender = Context.getCaller();
-		Address owner = Context.getOrigin();
+		Address owner = Context.getOwner();
 		if (!sender.equals(owner)) {
 			Context.revert("Only the owner can call the game_on method");
 		}
@@ -188,7 +188,7 @@ public class DaoDice {
 		//Context.getOrigin() - > txn.origin  - always wallet
 		//Context.getCaller() - > sender
 		//Context.getOrigin() - > owner
-		if (!Context.getOrigin().equals(Context.getOwner()))
+		if (!Context.getCaller().equals(Context.getOwner()))
 			Context.revert("Only the owner can call the untether method.");
 	}
 
@@ -263,7 +263,7 @@ public class DaoDice {
 		BigInteger main_bet_amount = BigInteger.ZERO;
 		Boolean main_bet_win = Boolean.FALSE;
 
-		BetSource(get_roulette_score(), side_bet_amount);
+		BetSource(Context.getOrigin(), BigInteger.valueOf(Context.getBlockTimestamp()));
 
 		BigInteger _treasury_min = Context.call(BigInteger.class,this._roulette_score.get(), "get_treasury_min");
 		Context.println("actual treasury min "+ _treasury_min +  "  "+ TAG);
