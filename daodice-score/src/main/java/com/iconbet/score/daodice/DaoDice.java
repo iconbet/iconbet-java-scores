@@ -330,8 +330,8 @@ public class DaoDice {
 		//   = t * 3/2 * g *  100 / (6813400 - 68134 * g)
 		//   = t * 3/2 * g *  100 / (100(68134 - 681.34 * g))
 		BigInteger main_bet_limit =
-				_treasury_min.multiply(BigInteger.valueOf(3)).divide(TWO).multiply(gap).multiply(_100)
-				.divide( BigInteger.valueOf((long) (100 * (_68134 - _681_34 * gap.intValue()) )));
+				_treasury_min.multiply(BigInteger.valueOf(3)).multiply(gap).multiply(_100)
+				.divide( BigInteger.valueOf((long) ( 2 * 100 * (_68134 - _681_34 * gap.intValue()) )));
 
 		if ( BET_MIN.compareTo(main_bet_amount)== 1 || main_bet_amount.compareTo(main_bet_limit) == 1) {
 			Context.println("Betting amount "+main_bet_amount.toString() +" out of range. "+TAG);
