@@ -58,7 +58,7 @@ public class DaoDice {
 			Address owner = Context.getOrigin();
 			Context.println("owner is "+ owner.toString() +" "+TAG);		
 		}
-		this._game_on.set(Boolean.FALSE);
+//		this._game_on.set(Boolean.FALSE);
 
 	}
 
