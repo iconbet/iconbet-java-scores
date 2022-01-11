@@ -196,9 +196,6 @@ public class DaoDice {
         byte[] seedHash = Context.hash("sha3-256", seed.getBytes());
         BigInteger seedint = new BigInteger(1, seedHash).mod(BigInteger.valueOf(100000));
         double spin = seedint.longValue() / 100000.0;
-
-        BetResult(seed + " " + spin, seedint, BigInteger.ZERO);
-
         Context.println("Result of the spin was " + spin + " " + TAG);
         return spin;
     }
