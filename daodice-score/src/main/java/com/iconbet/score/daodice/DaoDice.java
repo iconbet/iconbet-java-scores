@@ -259,8 +259,8 @@ public class DaoDice {
 		}
 
 		BigInteger gapResult = upper.subtract(lower);
-		if(!(BigInteger.ZERO.compareTo(gapResult)== -1 &&
-				gapResult.compareTo(_95)== -1 ) ) {
+		if(!(BigInteger.ZERO.compareTo(gapResult) < 0 &&
+                gapResult.compareTo(_95) < 0) ) {
 			Context.println("Bet placed with illegal gap "+TAG);
 			Context.revert("Invalid gap. Choose upper and lower values such that gap is between 0 to 95");
 		}
@@ -282,11 +282,11 @@ public class DaoDice {
 				Context.revert("Invalid side bet type.");		
 			}
 			side_bet_limit = _treasury_min.divide( BET_LIMIT_RATIOS_SIDE_BET.get(side_bet_type) );
-			if ( BET_MIN.compareTo(side_bet_amount) == 1 || side_bet_amount.compareTo(side_bet_limit)== 1) {
+			if ( BET_MIN.compareTo(side_bet_amount) > 0 || side_bet_amount.compareTo(side_bet_limit) > 0) {
 				Context.println("Betting amount " + side_bet_amount.toString() +" out of range. "+TAG);
 				Context.revert("Betting amount "+side_bet_amount.toString() +" out of range ("+BET_MIN.toString() +" ,"+side_bet_limit.toString()+").");		
 			}
-			side_bet_payout =  BigInteger.valueOf( (int) (SIDE_BET_MULTIPLIERS.get(side_bet_type) * _100D) )
+			side_bet_payout =  BigInteger.valueOf( (int) (Double.parseDouble(SIDE_BET_MULTIPLIERS.get(side_bet_type)) * _100D) )
 					.multiply(side_bet_amount).divide(_100);
 		}
 
@@ -303,7 +303,7 @@ public class DaoDice {
 				_treasury_min.multiply(BigInteger.valueOf(3)).multiply(gap).multiply(_100)
 				.divide( BigInteger.valueOf((long) ( 2 * 100 * (_68134 - _681_34 * gap.intValue()) )));
 
-		if ( BET_MIN.compareTo(main_bet_amount)== 1 || main_bet_amount.compareTo(main_bet_limit) == 1) {
+		if ( BET_MIN.compareTo(main_bet_amount) > 0 || main_bet_amount.compareTo(main_bet_limit) > 0) {
 			Context.println("Betting amount "+main_bet_amount.toString() +" out of range. "+TAG);
 			Context.revert("Main Bet amount {"+main_bet_amount.toString() +"} out of range {"+BET_MIN.toString()+"},{"+main_bet_limit.toString()+"}");
 		}
@@ -313,7 +313,7 @@ public class DaoDice {
 
 		BigInteger payout = side_bet_payout.add(main_bet_payout);
 		BigInteger balance = Context.getBalance(this._roulette_score.get());
-		if (balance.compareTo(payout) == -1) {
+		if (balance.compareTo(payout) < 0) {
 			Context.println("Not enough in treasury to make the play "+balance+". "+TAG);
 			Context.revert("Not enough in treasury to make the play.");
 		}
