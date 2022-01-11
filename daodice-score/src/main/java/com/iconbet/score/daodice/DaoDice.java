@@ -34,7 +34,7 @@ public class DaoDice {
 	public static final Double _681_34 = 681.34;
 
 	public static List<String> SIDE_BET_TYPES = List.of("digits_match", "icon_logo1", "icon_logo2");
-	public static Map<String, Double> SIDE_BET_MULTIPLIERS = Map.of("digits_match",9.5, "icon_logo1", FIVE, "icon_logo2", SIDE_BET_MULTIPLIER );
+	public static Map<String, String> SIDE_BET_MULTIPLIERS = Map.of("digits_match","9.5", "icon_logo1", FIVE.toString(), "icon_logo2", SIDE_BET_MULTIPLIER.toString() );
 	public static Map<String, BigInteger> BET_LIMIT_RATIOS_SIDE_BET = Map.of("digits_match", _1140, "icon_logo1", _540, "icon_logo2", _12548 );
 
 	private static final String _GAME_ON = "game_on";
@@ -165,7 +165,7 @@ public class DaoDice {
         :rtype: dict
 	 ***/
 	@External(readonly = true)
-	public Map<String, Double> get_side_bet_multipliers() {
+	public Map<String, String> get_side_bet_multipliers() {
 		return SIDE_BET_MULTIPLIERS;
 	}
 
