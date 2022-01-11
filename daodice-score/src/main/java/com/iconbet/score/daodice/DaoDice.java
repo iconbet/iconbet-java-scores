@@ -43,8 +43,8 @@ public class DaoDice {
 	private static final String _GAME_ON = "game_on";
 	private static final String _ROULETTE_SCORE = "roulette_score";
 
-	private VarDB<Boolean> _game_on = Context.newVarDB(_GAME_ON, Boolean.class); 
-	private VarDB<Address> _roulette_score = Context.newVarDB(_ROULETTE_SCORE, Address.class); 
+	private final VarDB<Boolean> _game_on = Context.newVarDB(_GAME_ON, Boolean.class);
+	private final VarDB<Address> _roulette_score = Context.newVarDB(_ROULETTE_SCORE, Address.class);
 
 	public DaoDice(@Optional boolean _on_update_var) {
 		if(_on_update_var) {
