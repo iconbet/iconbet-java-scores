@@ -17,8 +17,6 @@ public class DaoDice {
 
 	public static final String TAG = "DICE";
 	public static boolean DEBUG = Boolean.TRUE;
-	public static BigInteger UPPER_LIMIT = BigInteger.valueOf(99);
-	public static BigInteger LOWER_LIMIT = BigInteger.ZERO;
 	public static Double MAIN_BET_MULTIPLIER = 98.5;
 	public static Double SIDE_BET_MULTIPLIER = 95d;
 	public static final BigInteger BET_MIN = new BigInteger("100000000000000000"); // 0.1 ICX = 10^18 * 0.1
@@ -32,7 +30,6 @@ public class DaoDice {
 	public static final BigInteger _95 = BigInteger.valueOf(95);
 	public static final BigInteger _100 = BigInteger.valueOf(100);
 	public static final Double _100D = 100d;
-	public static final Double _1_5D = 1.5;
 	public static final Integer _68134 = 68134;
 	public static final Double _681_34 = 681.34;
 
