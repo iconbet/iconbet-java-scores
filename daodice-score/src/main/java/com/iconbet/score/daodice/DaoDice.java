@@ -81,11 +81,6 @@ public class DaoDice {
 	@EventLog(indexed=2)
 	public void FundTransfer(Address recipient, BigInteger amount, String  note) {}
 
-	/***
-    def on_update(self) -> None:
-        super().on_update()
-	 ***/
-
 
 	/***
     A function to return the owner of this score.
@@ -176,6 +171,7 @@ public class DaoDice {
 	public Map<String, Double> get_side_bet_multipliers() {
 		return SIDE_BET_MULTIPLIERS;
 	}
+
 
 	/***
 	 Generates a random # from tx hash, block timestamp and user provided
@@ -306,13 +302,6 @@ public class DaoDice {
 			Context.revert("No main bet amount provided");				
 		}
 
-		// l = ( t * 1.5 * g) / [68134 - (681.34 * g)]
-		//   = t * {(1.5 * g) / [68134 - (681.34 * g)]}
-		//   = t * 3/2 * g / [ 100/100 (68134 - 681.34 * g) ]
-		//   = t * 3/2 * g / [ (6813400 - 68134 * g)/100 ]
-		//   = t * 3/2 * g *  1 / [ (6813400 - 68134 * g)/100 ]
-		//   = t * 3/2 * g *  100 / (6813400 - 68134 * g)
-		//   = t * 3/2 * g *  100 / (100(68134 - 681.34 * g))
 		BigInteger main_bet_limit =
 				_treasury_min.multiply(BigInteger.valueOf(3)).multiply(gap).multiply(_100)
 				.divide( BigInteger.valueOf((long) ( 2 * 100 * (_68134 - _681_34 * gap.intValue()) )));
