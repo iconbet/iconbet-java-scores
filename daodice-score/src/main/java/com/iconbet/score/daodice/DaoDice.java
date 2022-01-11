@@ -178,22 +178,6 @@ public class DaoDice {
 	}
 
 	/***
-    A function to redefine the value of  self.owner once it is possible .
-    To  be included through an update if it is added to ICONSERVICE
-    Sets the value of self.owner to the score holding the game treasury
-	 ***/
-	@External
-	public void untether() {
-
-		//Context.getOrigin() - > txn.origin  - always wallet
-		//Context.getCaller() - > sender
-		//Context.getOrigin() - > owner
-		if (!Context.getCaller().equals(Context.getOwner()))
-			Context.revert("Only the owner can call the untether method.");
-	}
-
-
-	/***	
 	 Generates a random # from tx hash, block timestamp and user provided
 	 seed. The block timestamp provides the source of unpredictability.
 	 :param user_seed: 'Lucky phrase' provided by user, defaults to ""
