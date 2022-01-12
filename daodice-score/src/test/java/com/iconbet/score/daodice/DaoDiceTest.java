@@ -29,8 +29,8 @@ class DaoDiceTest {
 		BigInteger _treasury_min = new BigInteger("250000000000000000000000");
 		BigInteger gap = BigInteger.valueOf(96);
 		BigInteger main_bet_limit = 
-				_treasury_min.multiply(BigInteger.valueOf(3)).divide( BigInteger.TWO).multiply(gap)
-				.multiply(BigInteger.valueOf(100)).divide( BigInteger.valueOf((long) (100* (_68134 - _681_34* gap.intValue()) )));
+				_treasury_min.multiply(BigInteger.valueOf(3)).multiply(gap)
+				.multiply(BigInteger.valueOf(100)).divide( BigInteger.valueOf((long) (2 * 100* (_68134 - _681_34* gap.intValue()) )));
 
 		System.out.println(main_bet_limit);
 		assertEquals(new BigInteger("13209264097220183755540"), main_bet_limit);
