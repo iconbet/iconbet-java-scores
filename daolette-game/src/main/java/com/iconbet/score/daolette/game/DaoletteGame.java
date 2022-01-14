@@ -3,6 +3,7 @@ package com.iconbet.score.daolette.game;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import score.Address;
 import score.Context;
@@ -30,19 +31,63 @@ public class DaoletteGame {
 
 	private static final List<Integer> WHEEL_BLACK = List.of(2,3,6,7,10,11,14,15,18,19);
 
-	private static final List<Integer> SET_BLACK = List.of(2, 3, 6, 7, 10, 11, 14, 15, 18, 19);
+	private static final Set<Integer> SET_BLACK = Map.of(
+			2, 2,
+			3, 3,
+			6, 6,
+			7, 7,
+			10, 10,
+			11, 11,
+			14, 14,
+			15, 15,
+			18, 18,
+			19, 19)
+			.keySet();
 
 	private static final List<Integer> WHEEL_RED  = List.of(1,4,5,8,9,12,13,16,17,20);
 
-	private static final List<Integer> SET_RED = List.of( 1, 4, 5, 8, 9, 12, 13, 16, 17, 20);
+	private static final Set<Integer> SET_RED = Map.of(
+			1, 1,
+			4, 4,
+			5, 5,
+			8, 8,
+			9, 9,
+			12, 12,
+			13, 13,
+			16, 16,
+			17, 17,
+			20, 20)
+			.keySet();
 
 	private static final List<Integer> WHEEL_ODD = List.of(1,3,5,7,9,11,13,15,17,19);
 
-	private static final List<Integer> SET_ODD = List.of( 1, 3, 5, 7, 9, 11, 13, 15, 17, 19);
+	private static final Set<Integer> SET_ODD = Map.of(
+			1, 1,
+			3, 3,
+			5, 5,
+			7, 7,
+			9, 9,
+			11, 11,
+			13, 13,
+			15, 15,
+			17, 17,
+			19, 19)
+			.keySet();
 
 	private static final List<Integer> WHEEL_EVEN = List.of(2,4,6,8,10,12,14,16,18,20);
 
-	private static final List<Integer> SET_EVEN = List.of( 2, 4, 6, 8, 10, 12, 14, 16, 18, 20);
+	private static final Set<Integer> SET_EVEN = Map.of(
+			2, 2,
+			4, 4,
+			6, 6,
+			8, 8,
+			10, 10,
+			12, 12,
+			14, 14,
+			16, 16,
+			18, 18,
+			20, 20)
+			.keySet();
 
 	private static final Map<String, Number> MULTIPLIERS = Map.of(
 			"bet_on_color", 2,
@@ -193,11 +238,13 @@ public class DaoletteGame {
 		}
 
 		String[] array = StringUtils.split(numbers, ',');
-		List<Integer> numList = List.of(mapToInt(array));
+		Integer[] numArray = mapToInt(array);
+		List<Integer> numList = List.of(numArray);
+		Set<Integer> numSet = fromArray(numArray);
 
-		if (numList.equals(SET_RED) || numList.equals(SET_BLACK)) {
+		if (numSet.equals(SET_RED) || numSet.equals(SET_BLACK)) {
 			this.__bet(numList, user_seed, BET_TYPES[2]);
-		}else if (numList.equals(SET_ODD) || numList.equals(SET_EVEN)) {
+		}else if (numSet.equals(SET_ODD) || numSet.equals(SET_EVEN)) {
 			this.__bet(numList, user_seed, BET_TYPES[3]);
 		}else {
 			this.__bet(numList, user_seed, BET_TYPES[1]);
@@ -456,5 +503,14 @@ public class DaoletteGame {
 	    	 return order * -1;
 	     }
 	     return order;
+	}
+
+	@SuppressWarnings("unchecked")
+	<T> Set<T> fromArray(T[] array){
+		Map.Entry<T, T>[] entries = new Map.Entry[array.length];
+		for(int i=0; i< array.length; i++) {
+			entries[i] = Map.entry(array[i], array[i]);
+		}
+		return Map.ofEntries(entries).keySet();
 	}
 }

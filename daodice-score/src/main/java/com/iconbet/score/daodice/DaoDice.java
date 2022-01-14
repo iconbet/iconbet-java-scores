@@ -129,7 +129,7 @@ public class DaoDice {
         if (!sender.equals(owner)) {
             Context.revert("Only the owner can call the game_on method");
         }
-        if (!this._game_on.get() &&
+        if (this._game_on.get() == null || !this._game_on.get() &&
                 this._roulette_score.get() != null) {
             this._game_on.set(Boolean.TRUE);
         }
