@@ -316,11 +316,10 @@ public class DaoletteGame {
 		}
 
 		String seed = encodeHexString(Context.getTransactionHash()) + String.valueOf(Context.getBlockTimestamp()) + userSeed;
-		//TODO: we can not do this in java, there is no way to access to the memory address from the icon-jvm-jdk.
-		//validate if the result is same as python
-		//( ByteBuffer.wrap(Context.hash("sha3-256", seed.getBytes())).order(ByteOrder.BIG_ENDIAN).getInt() % 100000) / 100000.0;
-		spin = fromByteArray( Context.hash("sha3-256", seed.getBytes())) % 100000 / 100000.0;
-		Context.println("Result of the spin was "+ spin + " "+ TAG);
+		byte[] seedHash = Context.hash("sha3-256", seed.getBytes());
+		BigInteger seedint = new BigInteger(1, seedHash).mod(BigInteger.valueOf(100000));
+		double spin = seedint.longValue() / 100000.0;
+		Context.println("Result of the spin was " + spin + " " + TAG);
 		return spin;
 	}
 
@@ -478,18 +477,6 @@ public class DaoletteGame {
 		}
 		return sb.toString();
 
-	}
-
-	int fromByteArray(byte[] bytes) {
-	     int order = ((bytes[0] & 0xFF) << 24) | 
-	            ((bytes[1] & 0xFF) << 16) | 
-	            ((bytes[2] & 0xFF) << 8 ) | 
-	            ((bytes[3] & 0xFF) << 0 );
-	     //TODO: this cand be negative, why???
-	     if(order < 0) {
-	    	 return order * -1;
-	     }
-	     return order;
 	}
 
 	@SuppressWarnings("unchecked")
