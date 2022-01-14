@@ -95,11 +95,11 @@ public class DaoletteGame {
 			"bet_on_number", 20,
 			"number_factor", 20.685f);
 
-	private String _GAME_ON = "game_on";
-	private String _TREASURY_SCORE="treasury_score";
+	private static final String _GAME_ON = "game_on";
+	private static final String _TREASURY_SCORE="treasury_score";
 
-	private VarDB<Boolean> _game_on = Context.newVarDB(this._GAME_ON, Boolean.class);
-	private VarDB<Address> _treasury_score = Context.newVarDB(this._TREASURY_SCORE, Address.class);
+	private final VarDB<Boolean> _game_on = Context.newVarDB(_GAME_ON, Boolean.class);
+	private final VarDB<Address> _treasury_score = Context.newVarDB(_TREASURY_SCORE, Address.class);
 
 	public DaoletteGame(@Optional boolean _on_update_var) {
 		if(_on_update_var) {
