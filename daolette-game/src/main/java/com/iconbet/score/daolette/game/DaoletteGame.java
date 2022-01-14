@@ -109,7 +109,7 @@ public class DaoletteGame {
 		}
 		Context.println("In __init__."+ TAG);
 		Context.println("owner is "+ Context.getOwner() + ". "+ TAG);
-		this._game_on.set(false);
+//		this._game_on.set(false);
 
 	}
 
