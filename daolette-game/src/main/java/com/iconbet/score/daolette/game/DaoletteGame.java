@@ -17,7 +17,7 @@ public class DaoletteGame {
 
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
 
-	public static final String TAG = "DAOLETTE";
+	public static final String TAG = "Mini Roulette";
 
 	private static final int[] BET_LIMIT_RATIOS = new int[] {147, 2675, 4315, 2725, 1930, 1454, 1136, 908, 738, 606,
 			500, 413, 341, 280, 227, 182, 142, 107, 76, 48, 23};
