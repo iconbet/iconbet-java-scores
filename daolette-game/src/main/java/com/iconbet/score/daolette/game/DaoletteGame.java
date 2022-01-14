@@ -392,7 +392,7 @@ public class DaoletteGame {
 
 		BigInteger payout;
 		if (bet_type.equals(BET_TYPES[1])){
-			payout = BigInteger.valueOf( (int)(MULTIPLIERS.get(BET_TYPES[5]).floatValue() * 1000) ).multiply(amount).divide(BigInteger.valueOf(1000l * numbers.size()));
+			payout = BigInteger.valueOf( (int)(MULTIPLIERS.get(BET_TYPES[5]).floatValue() * 1000) ).multiply(amount).divide(BigInteger.valueOf(1000L * numbers.size()));
 		}else {
 			payout = BigInteger.valueOf( MULTIPLIERS.get(bet_type).longValue()).multiply(amount);
 		}
