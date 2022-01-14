@@ -441,9 +441,9 @@ public class DaoletteGame {
 		StringBuilder sb = new StringBuilder("{");
 		for (Map.Entry<K, V> entry : map.entrySet()) {
 			if(entry.getValue() instanceof Number) {
-				sb.append("\""+entry.getKey()+"\":"+entry.getValue()+",");
+				sb.append("\"").append(entry.getKey()).append("\":").append(entry.getValue()).append(",");
 			}else {
-				sb.append("\""+entry.getKey()+"\":\""+entry.getValue()+"\",");
+				sb.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue()).append("\",");
 			}
 		}
 		char c = sb.charAt(sb.length()-1);
