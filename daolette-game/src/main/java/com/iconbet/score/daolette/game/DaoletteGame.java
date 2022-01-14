@@ -327,11 +327,6 @@ public class DaoletteGame {
 			userSeed = "";
 		}
 
-		Context.println("Entered get_random. "+ TAG);
-		if ( Context.getCaller().isContract() ) {
-			Context.revert("ICONbet: SCORE cant play games");
-		}
-		double spin;
 		String seed = encodeHexString(Context.getTransactionHash()) + String.valueOf(Context.getBlockTimestamp()) + userSeed;
 		//TODO: we can not do this in java, there is no way to access to the memory address from the icon-jvm-jdk.
 		//validate if the result is same as python
@@ -351,6 +346,10 @@ public class DaoletteGame {
 	 */
 	@SuppressWarnings("rawtypes")
 	public void __bet(List<Integer> numbers, String user_seed, String bet_type) {
+
+		if ( Context.getCaller().isContract() ) {
+			Context.revert("ICONbet: SCORE cant play games");
+		}
 
 		this.BetSource(Context.getOrigin(), BigInteger.valueOf(Context.getTransactionTimestamp()));
 
