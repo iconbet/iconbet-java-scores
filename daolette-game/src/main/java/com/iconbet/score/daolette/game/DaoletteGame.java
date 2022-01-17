@@ -3,6 +3,7 @@ package com.iconbet.score.daolette.game;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import score.Address;
 import score.Context;
@@ -16,7 +17,7 @@ public class DaoletteGame {
 
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
 
-	public static final String TAG = "DAOLETTE";
+	public static final String TAG = "Mini Roulette";
 
 	private static final int[] BET_LIMIT_RATIOS = new int[] {147, 2675, 4315, 2725, 1930, 1454, 1136, 908, 738, 606,
 			500, 413, 341, 280, 227, 182, 142, 107, 76, 48, 23};
@@ -30,19 +31,63 @@ public class DaoletteGame {
 
 	private static final List<Integer> WHEEL_BLACK = List.of(2,3,6,7,10,11,14,15,18,19);
 
-	private static final List<Integer> SET_BLACK = List.of(2, 3, 6, 7, 10, 11, 14, 15, 18, 19);
+	private static final Set<Integer> SET_BLACK = Map.of(
+			2, 2,
+			3, 3,
+			6, 6,
+			7, 7,
+			10, 10,
+			11, 11,
+			14, 14,
+			15, 15,
+			18, 18,
+			19, 19)
+			.keySet();
 
 	private static final List<Integer> WHEEL_RED  = List.of(1,4,5,8,9,12,13,16,17,20);
 
-	private static final List<Integer> SET_RED = List.of( 1, 4, 5, 8, 9, 12, 13, 16, 17, 20);
+	private static final Set<Integer> SET_RED = Map.of(
+			1, 1,
+			4, 4,
+			5, 5,
+			8, 8,
+			9, 9,
+			12, 12,
+			13, 13,
+			16, 16,
+			17, 17,
+			20, 20)
+			.keySet();
 
 	private static final List<Integer> WHEEL_ODD = List.of(1,3,5,7,9,11,13,15,17,19);
 
-	private static final List<Integer> SET_ODD = List.of( 1, 3, 5, 7, 9, 11, 13, 15, 17, 19);
+	private static final Set<Integer> SET_ODD = Map.of(
+			1, 1,
+			3, 3,
+			5, 5,
+			7, 7,
+			9, 9,
+			11, 11,
+			13, 13,
+			15, 15,
+			17, 17,
+			19, 19)
+			.keySet();
 
 	private static final List<Integer> WHEEL_EVEN = List.of(2,4,6,8,10,12,14,16,18,20);
 
-	private static final List<Integer> SET_EVEN = List.of( 2, 4, 6, 8, 10, 12, 14, 16, 18, 20);
+	private static final Set<Integer> SET_EVEN = Map.of(
+			2, 2,
+			4, 4,
+			6, 6,
+			8, 8,
+			10, 10,
+			12, 12,
+			14, 14,
+			16, 16,
+			18, 18,
+			20, 20)
+			.keySet();
 
 	private static final Map<String, Number> MULTIPLIERS = Map.of(
 			"bet_on_color", 2,
@@ -50,11 +95,11 @@ public class DaoletteGame {
 			"bet_on_number", 20,
 			"number_factor", 20.685f);
 
-	private String _GAME_ON = "game_on";
-	private String _TREASURY_SCORE="treasury_score";
+	private static final String _GAME_ON = "game_on";
+	private static final String _TREASURY_SCORE="treasury_score";
 
-	private VarDB<Boolean> _game_on = Context.newVarDB(this._GAME_ON, Boolean.class);
-	private VarDB<Address> _treasury_score = Context.newVarDB(this._TREASURY_SCORE, Address.class);
+	private final VarDB<Boolean> _game_on = Context.newVarDB(_GAME_ON, Boolean.class);
+	private final VarDB<Address> _treasury_score = Context.newVarDB(_TREASURY_SCORE, Address.class);
 
 	public DaoletteGame(@Optional boolean _on_update_var) {
 		if(_on_update_var) {
@@ -64,7 +109,7 @@ public class DaoletteGame {
 		}
 		Context.println("In __init__."+ TAG);
 		Context.println("owner is "+ Context.getOwner() + ". "+ TAG);
-		this._game_on.set(false);
+//		this._game_on.set(false);
 
 	}
 
@@ -193,11 +238,13 @@ public class DaoletteGame {
 		}
 
 		String[] array = StringUtils.split(numbers, ',');
-		List<Integer> numList = List.of(mapToInt(array));
+		Integer[] numArray = mapToInt(array);
+		List<Integer> numList = List.of(numArray);
+		Set<Integer> numSet = fromArray(numArray);
 
-		if (numList.equals(SET_RED) || numList.equals(SET_BLACK)) {
+		if (numSet.equals(SET_RED) || numSet.equals(SET_BLACK)) {
 			this.__bet(numList, user_seed, BET_TYPES[2]);
-		}else if (numList.equals(SET_ODD) || numList.equals(SET_EVEN)) {
+		}else if (numSet.equals(SET_ODD) || numSet.equals(SET_EVEN)) {
 			this.__bet(numList, user_seed, BET_TYPES[3]);
 		}else {
 			this.__bet(numList, user_seed, BET_TYPES[1]);
@@ -255,18 +302,6 @@ public class DaoletteGame {
 	}
 
 	/*
-    A function to redefine the value of self.owner once it is possible.
-    To be included through an update if it is added to IconService.
-    Sets the value of self.owner to the score holding the game treasury.
-	 */
-	@External
-	public void untether() {
-		if ( !Context.getCaller().equals(Context.getOwner())){
-			Context.revert("Only the owner can call the untether method.");
-		}
-	}
-
-	/*
     Generates a random # from tx hash, block timestamp and user provided
     seed. The block timestamp provides the source of unpredictability.
     :param user_seed: 'Lucky phrase' provided by user.
@@ -280,17 +315,11 @@ public class DaoletteGame {
 			userSeed = "";
 		}
 
-		Context.println("Entered get_random. "+ TAG);
-		if ( Context.getCaller().isContract() ) {
-			Context.revert("ICONbet: SCORE cant play games");
-		}
-		double spin;
 		String seed = encodeHexString(Context.getTransactionHash()) + String.valueOf(Context.getBlockTimestamp()) + userSeed;
-		//TODO: we can not do this in java, there is no way to access to the memory address from the icon-jvm-jdk.
-		//validate if the result is same as python
-		//( ByteBuffer.wrap(Context.hash("sha3-256", seed.getBytes())).order(ByteOrder.BIG_ENDIAN).getInt() % 100000) / 100000.0;
-		spin = fromByteArray( Context.hash("sha3-256", seed.getBytes())) % 100000 / 100000.0;
-		Context.println("Result of the spin was "+ spin + " "+ TAG);
+		byte[] seedHash = Context.hash("sha3-256", seed.getBytes());
+		BigInteger seedint = new BigInteger(1, seedHash).mod(BigInteger.valueOf(100000));
+		double spin = seedint.longValue() / 100000.0;
+		Context.println("Result of the spin was " + spin + " " + TAG);
 		return spin;
 	}
 
@@ -304,6 +333,10 @@ public class DaoletteGame {
 	 */
 	@SuppressWarnings("rawtypes")
 	public void __bet(List<Integer> numbers, String user_seed, String bet_type) {
+
+		if ( Context.getCaller().isContract() ) {
+			Context.revert("ICONbet: SCORE cant play games");
+		}
 
 		this.BetSource(Context.getOrigin(), BigInteger.valueOf(Context.getTransactionTimestamp()));
 
@@ -358,7 +391,7 @@ public class DaoletteGame {
 
 		BigInteger payout;
 		if (bet_type.equals(BET_TYPES[1])){
-			payout = BigInteger.valueOf( (int)(MULTIPLIERS.get(BET_TYPES[5]).floatValue() * 1000) ).multiply(amount).divide(BigInteger.valueOf(1000l * numbers.size()));
+			payout = BigInteger.valueOf( (int)(MULTIPLIERS.get(BET_TYPES[5]).floatValue() * 1000) ).multiply(amount).divide(BigInteger.valueOf(1000L * numbers.size()));
 		}else {
 			payout = BigInteger.valueOf( MULTIPLIERS.get(bet_type).longValue()).multiply(amount);
 		}
@@ -408,9 +441,9 @@ public class DaoletteGame {
 		StringBuilder sb = new StringBuilder("{");
 		for (Map.Entry<K, V> entry : map.entrySet()) {
 			if(entry.getValue() instanceof Number) {
-				sb.append("\""+entry.getKey()+"\":"+entry.getValue()+",");
+				sb.append("\"").append(entry.getKey()).append("\":").append(entry.getValue()).append(",");
 			}else {
-				sb.append("\""+entry.getKey()+"\":\""+entry.getValue()+"\",");
+				sb.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue()).append("\",");
 			}
 		}
 		char c = sb.charAt(sb.length()-1);
@@ -446,15 +479,12 @@ public class DaoletteGame {
 
 	}
 
-	int fromByteArray(byte[] bytes) {
-	     int order = ((bytes[0] & 0xFF) << 24) | 
-	            ((bytes[1] & 0xFF) << 16) | 
-	            ((bytes[2] & 0xFF) << 8 ) | 
-	            ((bytes[3] & 0xFF) << 0 );
-	     //TODO: this cand be negative, why???
-	     if(order < 0) {
-	    	 return order * -1;
-	     }
-	     return order;
+	@SuppressWarnings("unchecked")
+	<T> Set<T> fromArray(T[] array){
+		Map.Entry<T, T>[] entries = new Map.Entry[array.length];
+		for(int i=0; i< array.length; i++) {
+			entries[i] = Map.entry(array[i], array[i]);
+		}
+		return Map.ofEntries(entries).keySet();
 	}
 }
