@@ -264,8 +264,8 @@ public class DaoDice {
         }
 
         BigInteger gapResult = upper.subtract(lower);
-        if (!(BigInteger.ZERO.compareTo(gapResult) < 0 &&
-                gapResult.compareTo(_95) < 0)) {
+        if (!(BigInteger.ZERO.compareTo(gapResult) <= 0 &&
+                gapResult.compareTo(_95) <= 0)) {
             Context.println("Bet placed with illegal gap " + TAG);
             Context.revert("Invalid gap. Choose upper and lower values such that gap is between 0 to 95");
         }

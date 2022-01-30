@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.math.BigInteger;
 
 import org.junit.jupiter.api.Test;
+import score.Context;
 
 class DaoDiceTest {
 
@@ -34,5 +35,19 @@ class DaoDiceTest {
 
 		System.out.println(main_bet_limit);
 		assertEquals(new BigInteger("13209264097220183755540"), main_bet_limit);
+	}
+
+	@Test
+	void testGapLimitTest() {
+
+		BigInteger upper = BigInteger.valueOf(0);
+		BigInteger lower = BigInteger.valueOf(0);
+		BigInteger _95 = BigInteger.valueOf(95);
+
+		BigInteger gapResult = upper.subtract(lower);
+		boolean condition = BigInteger.ZERO.compareTo(gapResult) <= 0 && gapResult.compareTo(_95) <= 0;
+		System.out.println(condition);
+		assertEquals(Boolean.TRUE, condition,"Invalid gap. Choose upper and lower values such that gap is between 0 to 95");
+
 	}
 }
