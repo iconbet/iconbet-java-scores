@@ -9,4 +9,7 @@ include (
     'daofund-score',
     'dividend-distribution-score',
     'daodice-score',
-	'testinteg')
+	'testinteg',
+	'proposals-fund-score',
+	'proposals-submission-score',
+	'player-nft-profile')
