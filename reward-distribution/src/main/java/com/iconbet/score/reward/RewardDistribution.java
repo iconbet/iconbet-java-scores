@@ -45,6 +45,8 @@ public class RewardDistribution {
 
 	private static String _REWARDS_GONE = "rewards_gone";
 	private static String _YESTERDAYS_TAP_DISTRIBUTION = "yesterdays_tap_distribution";
+	private static final String LINEARITY_COMPLEXITY_MIGRATION = "linearity_complexity_migration";
+	private static final String TAP_DIVIDENDS = "tap_dividends";
 
 	@EventLog(indexed=2)
 	public void FundTransfer(String sweep_to, BigInteger amount, String note) {}
@@ -76,6 +78,14 @@ public class RewardDistribution {
 	// rewards gone variable checks if the 500M tap token held for distribution is completed
 	private VarDB<Boolean> _rewards_gone = Context.newVarDB(_REWARDS_GONE, Boolean.class);
 	private VarDB<BigInteger> _yesterdays_tap_distribution = Context.newVarDB(_YESTERDAYS_TAP_DISTRIBUTION, BigInteger.class);
+
+	private final DictDB<Address, Integer> evenDayAddressesIndex = Context.newDictDB(_EVEN_DAY + "_index", Integer.class);
+	private final DictDB<Address, Integer> oddDayAddressesIndex = Context.newDictDB(_ODD_DAY + "_index", Integer.class);
+	private DictDB<Address, Integer>[] addressesIndex = new DictDB[] {this.evenDayAddressesIndex, this.oddDayAddressesIndex};
+
+	private final VarDB<Boolean> linearityComplexityMigrationStart = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_start", Boolean.class);
+	private final VarDB<Boolean> linearityComplexityMigrationComplete = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_complete", Boolean.class);
+	private final VarDB<Integer> linearityComplexityMigrationIndex = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_index", Integer.class);
 
 	public RewardDistribution(@Optional boolean _on_update_var) {
 		if(_on_update_var) {
@@ -326,8 +336,13 @@ public class RewardDistribution {
 			this._day_index.set(day_index);
 
 			for( int i = 0; i < this._addresses[day_index.intValue()].size(); i++) {
+				String _address = this._addresses[day_index.intValue()].pop();
 				//TODO: review removal logic
 				this._wagers.at(day_index).set(this._addresses[day_index.intValue()].pop(), null);
+
+				if (linearityComplexityMigrationComplete.get()){
+					addressesIndex[day_index.intValue()].set(Address.fromString(_address), 0);
+				}
 			}
 
 			if ( !this._rewards_gone.get()) {
@@ -349,20 +364,36 @@ public class RewardDistribution {
 		Context.println("Adding wager from "+ player +". "+ TAG);
 		this._daily_totals[day_index.intValue()].set(this._daily_totals[day_index.intValue()].get().add(wager));
 		Context.println("Total wagers = " + this._daily_totals[day_index.intValue()].get() + ". "+ TAG);
-		if (containsInArrayDb(player, this._addresses[day_index.intValue()]) ) {
-			Context.println("Adding wager to " + player + " in _addresses[" + day_index.intValue() +" ]. " + TAG);
-			this._wagers.at(day_index).set(player,  this._wagers.at(day_index).get(player).add(wager) );
-		}else {
-			Context.println("Putting "+ player +" in _addresses["+ day_index.intValue() + "]. " + TAG);
-			this._addresses[day_index.intValue()].add(player);
-			this._wagers.at(day_index).set(player, wager);
-		}
 
+		if (linearityComplexityMigrationComplete.get()) {
+			if (this.addressesIndex[day_index.intValue()].getOrDefault(Address.fromString(player), 0) > 0){
+				Context.println("Adding wager to " + player + " in _addresses[" + day_index.intValue() + " ]. " + TAG);
+				this._wagers.at(day_index).set(player, this._wagers.at(day_index).get(player).add(wager));
+			} else {
+				Context.println("Putting " + player + " in _addresses[" + day_index.intValue() + "]. " + TAG);
+				this._addresses[day_index.intValue()].add(player);
+				this.addressesIndex[day_index.intValue()].set(Address.fromString(player), this._addresses[day_index.intValue()].size());
+				this._wagers.at(day_index).set(player, wager);
+			}
+		}
+		else{
+			if(containsInArrayDb(player, this._addresses[day_index.intValue()])){
+				this._wagers.at(day_index).set(player, this._wagers.at(day_index).get(player).add(wager));
+			}
+			else{
+				this._addresses[day_index.intValue()].add(player);
+				this._wagers.at(day_index).set(player, wager);
+			}
+		}
 		Boolean distribute = Context.call(Boolean.class, this._dividends_score.get(), "distribute");
 		if (distribute != null && distribute) {
 			this._distribute();
 		}
 		Context.println("Done in accumulate_wagers.  self._day_index = " +this._day_index.get() + ". "+ TAG);
+
+		if (this.linearityComplexityMigrationStart.get() && !this.linearityComplexityMigrationComplete.get()){
+			this.migrateFromLinearComplexity();
+		}
 	}
 
 	/*
@@ -526,6 +557,48 @@ public class RewardDistribution {
 		String json = sb.toString();
 		Context.println(json);
 		return json;
+	}
+
+	@External(readonly = true)
+	public Boolean getLinearityComplexityMigrationStart(){
+		return this.linearityComplexityMigrationStart.get();
+	}
+
+	@External
+	public void setLinearityComplexityMigrationStart(Boolean start){
+		Context.require(Context.getCaller().equals(Context.getOwner()), TAG + ": Only owner of the score call this method.");
+		this.linearityComplexityMigrationStart.set(start);
+	}
+
+	@External(readonly = true)
+	public Boolean getLinearityComplexityMigrationComplete(){
+		return linearityComplexityMigrationComplete.get();
+	}
+
+	private void migrateFromLinearComplexity(){
+		int index = this._day_index.get().add(ONE).intValue() % 2;
+		int count = this._batch_size.get().intValue();
+		int addressLength = this._addresses[index].size();
+		int start = this.linearityComplexityMigrationIndex.get();
+		int remainingAddresses = addressLength - start;
+
+		if (count > remainingAddresses){
+			count = remainingAddresses;
+		}
+		int end = start + count;
+		Context.println("Migrating addresses in rewards :: start " + start + " end: "+ end);
+		for (int i = start; i < end; i++){
+			String address = this._addresses[index].get(i);
+			if (this.addressesIndex[index].getOrDefault(Address.fromString(address), 0) == 0){
+				this.addressesIndex[index].set(Address.fromString(address), i + 1);
+			}
+		}
+		if (end == addressLength){
+			this.linearityComplexityMigrationComplete.set(Boolean.TRUE);
+		}
+		else{
+			this.linearityComplexityMigrationIndex.set(start + count);
+		}
 	}
 
 }
