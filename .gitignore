@@ -8,3 +8,4 @@ out
 .classpath
 */bin/
 /bin/
+gradle.properties
