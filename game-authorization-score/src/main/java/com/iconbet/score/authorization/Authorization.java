@@ -63,6 +63,17 @@ public class Authorization{
 	private static final String MAXIMUM_PAYOUTS = "maximum_payouts";
 	private static final String MAXIMUM_LOSS = "maximum_loss";
 
+	private static final String GOVERNANCE_ENABLED = "governance_enabled";
+	private static final String VOTE_DEFINITION_CRITERION = "vote_definition_criterion";
+	private static final String QUORUM = "quorum";
+	private static final String TIME_OFFSET = "time_offset";
+	private static final String VOTE_DURATION = "vote_duration";
+	private static final String MAX_ACTIONS = "max_actions";
+
+	private static final String GAME_ADDRESSES = "game_addresses";
+	private static final String GAME_NAMES = "game_names";
+
+	private static final String OFFICIAL_REVIEW = "official_review";
 
 	private final VarDB<Address> roulette_score = Context.newVarDB(ROULETTE_SCORE, Address.class);
 	private final ArrayDB<Address> admin_list = Context.newArrayDB(ADMIN_LIST, Address.class);
@@ -85,6 +96,22 @@ public class Authorization{
 	private final VarDB<Boolean> apply_watch_dog_method = Context.newVarDB(APPLY_WATCH_DOG_METHOD, Boolean.class);
 	private final DictDB<Address,BigInteger> maximum_payouts = Context.newDictDB(MAXIMUM_PAYOUTS, BigInteger.class);
 	private final VarDB<BigInteger> maximum_loss = Context.newVarDB(MAXIMUM_LOSS, BigInteger.class);
+
+	private final VarDB<Boolean> _governance_enabled = Context.newVarDB(GOVERNANCE_ENABLED, Boolean.class);
+	private final VarDB<Integer> _tap_vote_definition_criterion = Context.newVarDB(VOTE_DEFINITION_CRITERION, Integer.class);
+	private final VarDB<Integer> _quorum = Context.newVarDB(QUORUM, Integer.class);
+	private final VarDB<Integer> _time_offset = Context.newVarDB(TIME_OFFSET, Integer.class);
+	private final VarDB<Integer> _vote_duration = Context.newVarDB(VOTE_DURATION, Integer.class);
+	private final VarDB<Integer> _max_actions = Context.newVarDB(MAX_ACTIONS, Integer.class);
+
+//	self._vote_execute = VoteActions(db, self)
+
+	private final ArrayDB<String>_game_names = Context.newArrayDB(GAME_NAMES, String.class);
+	private final DictDB<String, Address> _game_addresses = Context.newDictDB(GAME_ADDRESSES, Address.class);
+
+	private final VarDB<BigInteger>_official_review_cost = Context.newVarDB(OFFICIAL_REVIEW + "_cost", BigInteger.class);
+	private final DictDB<String, Address> _official_review_sponsors = Context.newDictDB(OFFICIAL_REVIEW + "_sponsors", Address.class);
+	private final DictDB<String, BigInteger> _official_review_costs = Context.newDictDB(OFFICIAL_REVIEW + "_costs", BigInteger.class);
 
 	public Authorization(@Optional boolean _on_update_var) {
 
