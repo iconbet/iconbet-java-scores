@@ -1,0 +1,88 @@
+version = '0.1.0'
+
+dependencies {
+    compileOnly 'foundation.icon:javaee-api:0.9.0'
+    //needed to check why this lib is needed
+    implementation 'com.github.sink772:javaee-tokens:0.6.0'
+    implementation 'com.github.sink772:minimal-json:0.9.6'
+    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+
+
+    testImplementation 'foundation.icon:javaee-unittest:0.9.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    //testImplementation project(':tap-token')
+    testImplementation project(':testinteg')
+    testImplementation 'foundation.icon:icon-sdk:2.0.0'
+    testImplementation 	'com.fasterxml.jackson.core:jackson-databind:2.9.6'
+}
+
+optimizedJar {
+    mainClassName = 'com.iconbet.score.ibpnp.IBPNP'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 0x3
+        }
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 0x53
+        }
+        berlin {
+            uri = 'https://berlin.net.solidwallet.io/api/v3'
+            nid = 0x7
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('_name', 'ICONbet Player NFT Profile')
+        arg('_symbol', 'IBPNP')
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+sourceSets {
+    integrationTest {
+        java.srcDirs = [file('src/intTest/java')]
+
+        compileClasspath += sourceSets.main.output + configurations.testRuntime
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    integrationTestCompile.extendsFrom testImplementation
+    integrationTestRuntime.extendsFrom testRuntime
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+//def sampleTokenJar = project(':tap-token').getTasks().getByName('optimizedJar')
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    testLogging.showStandardStreams = true
+
+    // use the common config files
+    systemProperty('env.props', new File(project(':testinteg').projectDir, 'conf/env.props'))
+
+    def prefix = 'score.path.'
+    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+    //systemProperty(prefix + 'tap-token', sampleTokenJar.outputJarName)
+}
+
+//integrationTest.dependsOn(sampleTokenJar)
