@@ -29,12 +29,12 @@ public class TapToken implements IRC2{
 	public static class StakedTAPTokenSnapshots{
 		public Address address;
 		public BigInteger amount;
-		public int day;
+		public BigInteger day;
 	}
 
 	public static class TotalStakedTAPTokenSnapshots{
 		public BigInteger amount;
-		public int day;
+		public BigInteger day;
 	}
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
 
@@ -102,7 +102,7 @@ public class TapToken implements IRC2{
 
 	private List<ArrayDB<Address>> changes = List.of(evenDayChanges, oddDayChanges);
 
-	private final VarDB<BigInteger> maxLoop = Context.newVarDB(MAX_LOOPS, BigInteger.class);
+	private final VarDB<Integer> maxLoop = Context.newVarDB(MAX_LOOPS, Integer.class);
 	private final VarDB<BigInteger> indexUpdateBalance = Context.newVarDB(INDEX_UPDATE_BALANCE, BigInteger.class);
 	private final VarDB<BigInteger> indexAddressChanges = Context.newVarDB(INDEX_ADDRESS_CHANGES, BigInteger.class);
 
@@ -611,9 +611,9 @@ public class TapToken implements IRC2{
     :return:
 	 */
 	@External
-	public void set_max_loop(@Optional BigInteger _loops) {
-		if(_loops == null) {
-			_loops = BigInteger.valueOf(100L);
+	public void set_max_loop(@Optional int _loops) {
+		if(_loops == 0) {
+			_loops = 100;
 		}
 		this.ownerOnly();
 		this.maxLoop.set(_loops);
@@ -641,7 +641,7 @@ public class TapToken implements IRC2{
     :return:
 	 */
 	@External(readonly=true)
-	public BigInteger get_max_loop() {
+	public int get_max_loop() {
 		return this.maxLoop.get();
 	}
 
@@ -688,7 +688,7 @@ public class TapToken implements IRC2{
 			return Map.of();
 		}
 
-		int end = Math.min(start + this.maxLoop.getOrDefault(ZERO).intValue(), lengthList);
+		int end = Math.min(start + this.maxLoop.getOrDefault(0), lengthList);
 
 		@SuppressWarnings("unchecked")
 		Map.Entry<String, BigInteger>[] entries = new Map.Entry[end-start];
@@ -716,7 +716,7 @@ public class TapToken implements IRC2{
 			return true;
 		}
 
-		int loopCount = Math.min(lengthList, this.maxLoop.getOrDefault(ZERO).intValue());
+		int loopCount = Math.min(lengthList, this.maxLoop.getOrDefault(0));
 		for (int i= 0; i<loopCount; i++) {
 			yesterdaysChanges.pop();
 		}
@@ -837,7 +837,7 @@ public class TapToken implements IRC2{
 			}
 			return Map.of();
 		}
-		int end = Math.min(start + this.maxLoop.getOrDefault(ZERO).intValue(), lengthList);
+		int end = Math.min(start + this.maxLoop.getOrDefault(0), lengthList);
 
 		@SuppressWarnings("unchecked")
 		Map.Entry<String, BigInteger>[] entries = new Map.Entry[end-start];
@@ -862,7 +862,7 @@ public class TapToken implements IRC2{
 		if (lengthList == 0) {
 			return true;
 		}
-		int loopCount = Math.min(lengthList, this.maxLoop.getOrDefault(ZERO).intValue());
+		int loopCount = Math.min(lengthList, this.maxLoop.getOrDefault(0));
 		for (int i=0 ;i < loopCount; i++) {
 			yesterdaysChanges.pop();
 		}
@@ -1053,7 +1053,7 @@ public class TapToken implements IRC2{
 	}
 
 	private void migrateFromLinearComplexity(ArrayDB<Address> fromArray, DictDB<Address, Integer> toDict, String arrayName){
-		int count = this.maxLoop.get().intValue();
+		int count = this.maxLoop.get();
 		int length = fromArray.size();
 		int start = this.linear_complexity_migration_index.get(arrayName);
 		int remainingAddresses = length - start;
@@ -1114,15 +1114,15 @@ public class TapToken implements IRC2{
 	}
 
 	@External(readonly = true)
-	public int getDay(){
-		return (BigInteger.valueOf(Context.getBlockTimestamp()).subtract(this._time_offset.get()).divide(DAY_TO_MICROSECOND)).intValue();
+	public BigInteger getDay(){
+		return BigInteger.valueOf(Context.getBlockTimestamp()).subtract(this._time_offset.get()).divide(DAY_TO_MICROSECOND);
 	}
 
 	private void updateSnapshotForAddress(Address _account, BigInteger _amount){
 		if (this._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
-		int current_id = getDay();
+		BigInteger current_id = getDay();
 		int totalSnapshotsTaken = this._total_snapshots.getOrDefault(_account, 0);
 		if (totalSnapshotsTaken > 0 && (int) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, 0) == 0){
 			this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
@@ -1138,9 +1138,9 @@ public class TapToken implements IRC2{
 		if (this._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
-		int current_id = getDay();
+		BigInteger current_id = getDay();
 		int totalSnapshotsTaken = this._total_staked_snapshot_count.getOrDefault(0);
-		if (totalSnapshotsTaken > 0 && (int) this._total_staked_snapshot.at(totalSnapshotsTaken -1).get(IDS) == current_id){
+		if (totalSnapshotsTaken > 0 && ((BigInteger) this._total_staked_snapshot.at(totalSnapshotsTaken -1).get(IDS)).equals(current_id)){
 			this._total_staked_snapshot.at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
 		}
 		else{
@@ -1151,21 +1151,21 @@ public class TapToken implements IRC2{
 	}
 
 	@External(readonly = true)
-	public BigInteger stakedBalanceOfAt(Address _account, int _day){
-		int current_day = this.getDay();
-		if (_day > current_day){
-			Context.revert(TAG + ": Adked _day is greater than the current day.");
+	public BigInteger stakedBalanceOfAt(Address _account, BigInteger _day){
+		BigInteger current_day = this.getDay();
+		if (_day.compareTo(current_day) > 0){
+			Context.revert(TAG + ": Asked _day is greater than the current day.");
 		}
 		int totalSnapshotsTaken = this._total_snapshots.getOrDefault(_account, 0);
 		if (totalSnapshotsTaken == 0){
 			return ZERO;
 		}
 
-		if ((int) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, 0) <= _day){
+		if (((BigInteger) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
 			return (BigInteger) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
 		}
 
-		if ((int) this._stake_snapshots.at(_account).at(0).getOrDefault(IDS, 0) > _day){
+		if (((BigInteger) this._stake_snapshots.at(_account).at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
 			return ZERO;
 		}
 
@@ -1174,10 +1174,10 @@ public class TapToken implements IRC2{
 		while (high > low){
 			int mid = high - (high - low) / 2;
 			DictDB<String, Object> mid_value = this._stake_snapshots.at(_account).at(mid);
-			if ((int) mid_value.get(IDS) == _day){
+			if (((BigInteger) mid_value.get(IDS)).compareTo(_day) == 0){
 				return (BigInteger) mid_value.get(AMOUNT);
 			}
-			else if ((int) mid_value.get(IDS) < _day){
+			else if (((BigInteger) mid_value.get(IDS)).compareTo(_day) < 0){
 				low = mid;
 			}
 			else{
@@ -1188,9 +1188,9 @@ public class TapToken implements IRC2{
 	}
 
 	@External(readonly = true)
-	public BigInteger totalStakedBalanceOFAt(int _day){
-		int current_day = getDay();
-		if (_day > current_day){
+	public BigInteger totalStakedBalanceOFAt(BigInteger _day){
+		BigInteger current_day = getDay();
+		if (_day.compareTo(current_day) > 0){
 			Context.revert(TAG + ": Adked _day is greater than the current day.");
 		}
 		int totalSnapshotsTaken = this._total_staked_snapshot_count.getOrDefault(0);
@@ -1198,11 +1198,11 @@ public class TapToken implements IRC2{
 			return ZERO;
 		}
 
-		if ((int) this._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, 0) <= _day){
+		if (((BigInteger) this._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
 			return (BigInteger) this._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
 		}
 
-		if ((int) this._total_staked_snapshot.at(0).getOrDefault(IDS, 0) > _day){
+		if (((BigInteger) this._total_staked_snapshot.at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
 			return ZERO;
 		}
 
@@ -1211,10 +1211,10 @@ public class TapToken implements IRC2{
 		while (high > low){
 			int mid = high - (high - low) / 2;
 			DictDB<String, Object> mid_value = this._total_staked_snapshot.at(mid);
-			if ((int) mid_value.get(IDS) == _day){
+			if (((BigInteger) mid_value.get(IDS)).compareTo(_day) == 0){
 				return (BigInteger) mid_value.get(AMOUNT);
 			}
-			else if ((int) mid_value.get(IDS) < _day){
+			else if (((BigInteger) mid_value.get(IDS)).compareTo(_day) < 0){
 				low = mid;
 			}
 			else{
@@ -1232,8 +1232,8 @@ public class TapToken implements IRC2{
 		}
 		for (int i = 0; i < _data.length; i++){
 			StakedTAPTokenSnapshots stake = _data[i];
-			int current_id = stake.day;
-			if (current_id <= this.getDay()){
+			BigInteger current_id = stake.day;
+			if (current_id.compareTo(this.getDay()) < 0){
 				Address _account = stake.address;
 				int length = this._total_snapshots.getOrDefault(_account, 0);
 				this._stake_snapshots.at(_account).at(length).set(IDS, current_id);
@@ -1251,8 +1251,8 @@ public class TapToken implements IRC2{
 		}
 		for (int i = 0; i < _data.length; i++){
 			TotalStakedTAPTokenSnapshots _id = _data[i];
-			int current_id = _id.day;
-			if (current_id <= this.getDay()){
+			BigInteger current_id = _id.day;
+			if (current_id.compareTo(this.getDay()) < 0){
 				BigInteger amount = _id.amount;
 				int length = this._total_staked_snapshot_count.getOrDefault(0);
 				this._total_staked_snapshot.at(length).set(IDS, current_id);
