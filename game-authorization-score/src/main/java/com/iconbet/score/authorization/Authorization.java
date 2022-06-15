@@ -1,8 +1,10 @@
 package com.iconbet.score.authorization;
 
+import static java.math.BigInteger.ONE;
 import static java.math.BigInteger.ZERO;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +22,19 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import score.annotation.Payable;
+import scorex.util.ArrayList;
+
+import static com.iconbet.score.authorization.utils.Consts.*;
+
+import com.iconbet.score.authorization.db.ProposalData;
+
+import static com.iconbet.score.authorization.db.ProposalData.ProposalAttributes;
+import static com.iconbet.score.authorization.db.ProposalData.*;
+
+import scorex.util.HashMap;
+
+import static com.iconbet.score.authorization.utils.ArrayDBUtils.*;
+import static com.iconbet.score.authorization.db.VoteActions.*;
 
 public class Authorization{
 
