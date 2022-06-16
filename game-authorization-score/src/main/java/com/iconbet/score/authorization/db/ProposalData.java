@@ -151,6 +151,23 @@ public class ProposalData {
         this.status.at(proposalPrefix).set(status);
     }
 
+
+    public void setGovernanceProposalKeys(String proposalKeys) {
+        this.governanceProposalKeys.add(proposalKeys);
+    }
+
+    public void setNewGameProposalKeys(String proposalKeys) {
+        this.newGameProposalKeys.add(proposalKeys);
+    }
+
+    public void setGameApprovalProposalKeys(String proposalKeys) {
+        this.gameApprovalProposalKeys.add(proposalKeys);
+    }
+
+    public void setProposalCount(String dbName, int count) {
+        this.proposalCount.set(dbName, count);
+    }
+
     public Address getProposer(String proposalPrefix) {
         return proposer.at(proposalPrefix).get();
     }
@@ -221,6 +238,22 @@ public class ProposalData {
 
     public String getStatus(String proposalPrefix) {
         return status.at(proposalPrefix).getOrDefault("");
+    }
+
+    public List<String> getGovernanceProposalKeys() {
+        return arrayDBToList(governanceProposalKeys);
+    }
+
+    public List<String> getNewGameProposalKeys() {
+        return arrayDBToList(newGameProposalKeys);
+    }
+
+    public List<String> getGameApprovalProposalKeys() {
+        return arrayDBToList(gameApprovalProposalKeys);
+    }
+
+    public int getProposalCount(String dbName) {
+        return proposalCount.getOrDefault(dbName, 0);
     }
 }
 
