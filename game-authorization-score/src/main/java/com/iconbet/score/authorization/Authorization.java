@@ -1415,8 +1415,7 @@ public class Authorization {
         }
 
 //        db = self.get_proposal_db(db_name)
-        DBName dbName = new DBName();
-        Context.require(containsInArray(db_name, dbName.dbName), TAG + "Invalid DB name");
+        Context.require(containsInList(db_name, dbName), TAG + "Invalid DB name");
         Context.require(description.length() < 500, TAG + ": Description must be less than or equal to 500 characters.");
         Context.require(vote_start.compareTo(this.getDay()) > 0, TAG + "Vote cannot start at or before the current day.");
         Context.require(snapshot.compareTo(getDay()) >= 0 && snapshot.compareTo(vote_start) < 0, TAG + ":The reference snapshot must be in the range: [current_day (" + getDay() + " startDay - 1 (" + vote_start.subtract(ONE) + ")].");
@@ -1476,8 +1475,7 @@ public class Authorization {
         BigInteger _for;
         BigInteger _against;
         Context.require(proposalKeysIndex.getOrDefault(name, 0) > 0, TAG + "Proposal not found");
-        DBName dbName = new DBName();
-        Context.require(containsInArray(db_name, dbName.dbName), TAG + "Invalid DB name. Should be one of: " + Arrays.toString(dbName.dbName));
+        Context.require(containsInList(db_name, dbName), TAG + "Invalid DB name.");
         String proposalPrefix = proposalPrefix(db_name, name);
         ProposalData proposalData = new ProposalData();
         BigInteger total_tap = proposalData.getVote_snapshot(proposalPrefix);
