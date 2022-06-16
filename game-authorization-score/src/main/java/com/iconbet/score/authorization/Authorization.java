@@ -73,9 +73,7 @@ public class Authorization {
     private final ArrayDB<String> _game_names = Context.newArrayDB(GAME_NAMES, String.class);
     private final DictDB<String, String> _game_addresses = Context.newDictDB(GAME_ADDRESSES, String.class);
 
-    public static class DBName {
-        private static final String[] dbName = new String[]{GOVERNANCE, NEW_GAME, GAME_APPROVAL};
-    }
+    public Authorization() {
 
     public Authorization(@Optional boolean _on_update_var) {
 
