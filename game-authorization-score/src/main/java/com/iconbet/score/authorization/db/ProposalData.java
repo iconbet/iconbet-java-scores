@@ -34,7 +34,6 @@ public class ProposalData {
     public static final String FAILED_EXECUTION = "failed_execution";
     private static final String Prefix = "proposal_data";
     private final BranchDB<String, DictDB<String, Integer>> id = Context.newBranchDB(Prefix + "_id", Integer.class);
-    private final BranchDB<String, VarDB<Integer>> proposals_count = Context.newBranchDB(Prefix + "_proposals_count", Integer.class);
     private final BranchDB<String, VarDB<Address>> proposer = Context.newBranchDB(Prefix + "_proposer",Address.class);
     private final BranchDB<String, VarDB<BigInteger>> quorum = Context.newBranchDB(Prefix + "_quorum", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> majority = Context.newBranchDB(Prefix + "_majority", BigInteger.class);
