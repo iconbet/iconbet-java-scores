@@ -23,7 +23,16 @@ public class ProposalData {
         public BigInteger end;
         public String actions;
     }
-    private static final String Prefix = "GameApproval";
+
+    public static final String PENDING = "pending";
+    public static final String ACTIVE = "active";
+    public static final String CANCELLED = "cancelled";
+    public static final String DEFEATED = "defeated";
+    public static final String SUCCEEDED = "succeeded";
+    public static final String NO_QUORUM = "no_quorum";
+    public static final String EXECUTED = "executed";
+    public static final String FAILED_EXECUTION = "failed_execution";
+    private static final String Prefix = "proposal_data";
     private final BranchDB<String, DictDB<String, Integer>> id = Context.newBranchDB(Prefix + "_id", Integer.class);
     private final BranchDB<String, VarDB<Integer>> proposals_count = Context.newBranchDB(Prefix + "_proposals_count", Integer.class);
     private final BranchDB<String, VarDB<Address>> proposer = Context.newBranchDB(Prefix + "_proposer",Address.class);
@@ -45,15 +54,17 @@ public class ProposalData {
     private final BranchDB<String, VarDB<BigInteger>> total_against_votes = Context.newBranchDB(Prefix + "_total_against_votes", BigInteger.class);
     private final BranchDB<String, VarDB<String> >status = Context.newBranchDB(Prefix + "_status", String.class);
 
-    public static final String PENDING = "pending";
-    public static final String ACTIVE = "active";
-    public static final String CANCELLED = "cancelled";
-    public static final String DEFEATED = "defeated";
-    public static final String SUCCEEDED = "succeeded";
-    public static final String NO_QUORUM = "no_quorum";
-    public static final String EXECUTED = "executed";
-    public static final String FAILED_EXECUTION = "failed_execution";
+    private final ArrayDB<String> governanceProposalKeys = Context.newArrayDB(GOVERNANCE + "_proposal_keys", String.class);
+    private final ArrayDB<String> newGameProposalKeys = Context.newArrayDB(NEW_GAME + "_proposal_keys", String.class);
+    private final ArrayDB<String> gameApprovalProposalKeys = Context.newArrayDB(GAME_APPROVAL + "_proposal_keys", String.class);
+    private final DictDB<String, Integer> proposalCount = Context.newDictDB(PROPOSAL_COUNT, Integer.class);
 
+
+    public final Map<String, ArrayDB<String>> dbProposalKeys = Map.of(
+            GOVERNANCE, this.governanceProposalKeys,
+            NEW_GAME, this.newGameProposalKeys,
+            GAME_APPROVAL, this.gameApprovalProposalKeys
+    );
 
     public void createProposal(ProposalAttributes proposalAttributes, String proposalPrefix){
         this.proposer.at(proposalPrefix).set(proposalAttributes.proposerAddress);

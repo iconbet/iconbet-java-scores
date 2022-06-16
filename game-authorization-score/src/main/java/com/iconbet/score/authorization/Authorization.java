@@ -38,72 +38,6 @@ import com.iconbet.score.authorization.SettersGetters;
 
 public class Authorization {
     protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
-
-    public static final String TAG = "AUTHORIZATION";
-    public static final boolean DEBUG = false;
-    private static final BigInteger MULTIPLIER = new BigInteger("1000000000000000000");
-    private static final BigInteger U_SECONDS_DAY = new BigInteger("86400000000"); // Microseconds in a day.
-
-    private static final BigInteger _1_ICX = new BigInteger("100000000000000000"); // 0.1 ICX = 10^18 * 0.1
-
-    private static List<String> METADATA_FIELDS = List.of("name", "scoreAddress", "minBet", "maxBet", "houseEdge",
-            "gameType", "revShareMetadata", "revShareWalletAddress",
-            "linkProofPage", "gameUrlMainnet", "gameUrlTestnet");
-
-    private static List<String> GAME_TYPE = List.of("Per wager settlement", "Game defined interval settlement");
-
-    private static List<String> STATUS_TYPE = List.of("waiting", "proposalApproved", "proposalRejected", "gameReady",
-            "gameApproved", "gameRejected", "gameSuspended", "gameDeleted");
-
-    private static final String ADMIN_LIST = "admin_list";
-    private static final String SUPER_ADMIN = "super_admin";
-    private static final String PROPOSAL_DATA = "proposal_data";
-    private static final String PROPOSAL_LIST = "proposal_list";
-    private static final String STATUS_DATA = "status_data";
-    private static final String OWNER_DATA = "owner_data";
-    private static final String ROULETTE_SCORE = "roulette_score";
-    private static final String TAP_TOKEN_SCORE = "tap_token_score";
-    private static final String DIVIDEND_DISTRIBUTION_SCORE = "dividend_distribution_score";
-    private static final String REWARDS_SCORE = "rewards_score";
-    private static final String UTAP_TOKEN_SCORE = "utap_token_score";
-    private static final String DAY = "day";
-    private static final String PAYOUTS = "payouts";
-    private static final String WAGERS = "wagers";
-    private static final String NEW_DIV_CHANGING_TIME = "new_div_changing_time";
-    private static final String GAME_DEVELOPERS_SHARE = "game_developers_share";
-
-    private static final String TODAYS_GAMES_EXCESS = "todays_games_excess";
-    // dividends paid according to this excess
-    private static final String GAMES_EXCESS_HISTORY = "games_excess_history";
-
-
-    private static final String APPLY_WATCH_DOG_METHOD = "apply_watch_dog_method";
-    private static final String MAXIMUM_PAYOUTS = "maximum_payouts";
-    private static final String MAXIMUM_LOSS = "maximum_loss";
-
-    private static final String GOVERNANCE_ENABLED = "governance_enabled";
-    private static final String VOTE_DEFINITION_CRITERION = "vote_definition_criterion";
-    private static final String QUORUM = "quorum";
-    private static final String TIME_OFFSET = "time_offset";
-    private static final String VOTE_DURATION = "vote_duration";
-    private static final String MAX_ACTIONS = "max_actions";
-
-    private static final String GAME_ADDRESSES = "game_addresses";
-    private static final String PROPOSAL_KEYS = "proposal_keys";
-    private static final String PROPOSAL_KEY_INDEX = PROPOSAL_KEYS + "_index";
-    private static final String PROPOSAL_COUNT = "proposal_count";
-    private static final String GAME_NAMES = "game_names";
-
-    private static final String OFFICIAL_REVIEW = "official_review";
-
-    private final VarDB<Address> roulette_score = Context.newVarDB(ROULETTE_SCORE, Address.class);
-    private final VarDB<Address> tapTokenScore = Context.newVarDB(TAP_TOKEN_SCORE, Address.class);
-    private final VarDB<Address> dividendDistributionScore = Context.newVarDB(DIVIDEND_DISTRIBUTION_SCORE, Address.class);
-    private final VarDB<Address> rewardsScore = Context.newVarDB(REWARDS_SCORE, Address.class);
-    private final VarDB<Address> uTapTokenScore = Context.newVarDB(UTAP_TOKEN_SCORE, Address.class);
-    private final ArrayDB<Address> admin_list = Context.newArrayDB(ADMIN_LIST, Address.class);
-    private final VarDB<Address> super_admin = Context.newVarDB(SUPER_ADMIN, Address.class);
-    //  question=?  why adrress
     private final DictDB<Address, String> proposal_data = Context.newDictDB(PROPOSAL_DATA, String.class);
     private final DictDB<Address, String> status_data = Context.newDictDB(STATUS_DATA, String.class);
     private final DictDB<Address, Address> owner_data = Context.newDictDB(OWNER_DATA, Address.class);
@@ -123,16 +57,6 @@ public class Authorization {
     private final VarDB<BigInteger> maximum_loss = Context.newVarDB(MAXIMUM_LOSS, BigInteger.class);
 
     private final VarDB<Boolean> _governance_enabled = Context.newVarDB(GOVERNANCE_ENABLED, Boolean.class);
-    private final VarDB<Integer> _tap_vote_definition_criterion = Context.newVarDB(VOTE_DEFINITION_CRITERION, Integer.class);
-    private final VarDB<Integer> _quorum = Context.newVarDB(QUORUM, Integer.class);
-    private final VarDB<BigInteger> _time_offset = Context.newVarDB(TIME_OFFSET, BigInteger.class);
-    private final VarDB<BigInteger> _vote_duration = Context.newVarDB(VOTE_DURATION, BigInteger.class);
-    private final VarDB<Integer> _max_actions = Context.newVarDB(MAX_ACTIONS, Integer.class);
-
-//	self._vote_execute = VoteActions(db, self)
-
-    private final ArrayDB<String> _game_names = Context.newArrayDB(GAME_NAMES, String.class);
-    private final DictDB<String, String> _game_addresses = Context.newDictDB(GAME_ADDRESSES, String.class);
 
     private final ArrayDB<String> proposalKeys = Context.newArrayDB(PROPOSAL_KEYS, String.class);
     private final DictDB<String, Integer> proposalKeysIndex = Context.newDictDB(PROPOSAL_KEY_INDEX, Integer.class);
@@ -141,16 +65,13 @@ public class Authorization {
     private final DictDB<String, Address> _official_review_sponsors = Context.newDictDB(OFFICIAL_REVIEW + "_sponsors", Address.class);
     private final DictDB<String, BigInteger> _official_review_costs = Context.newDictDB(OFFICIAL_REVIEW + "_costs", BigInteger.class);
 
-    private final ArrayDB<String> governanceProposalKeys = Context.newArrayDB(GOVERNANCE + "_proposal_keys", String.class);
-    private final ArrayDB<String> newGameProposalKeys = Context.newArrayDB(NEW_GAME + "_proposal_keys", String.class);
-    private final ArrayDB<String> gameApprovalProposalKeys = Context.newArrayDB(GAME_APPROVAL + "_proposal_keys", String.class);
-    private final DictDB<String, Integer> proposalCount = Context.newDictDB(PROPOSAL_COUNT, Integer.class);
-
-    private final Map<String, ArrayDB<String>> dbProposalKeys = Map.of(
-            GOVERNANCE, this.governanceProposalKeys,
-            NEW_GAME, this.newGameProposalKeys,
-            GAME_APPROVAL, this.gameApprovalProposalKeys
-    );
+    private final VarDB<Integer> _tap_vote_definition_criterion = Context.newVarDB(VOTE_DEFINITION_CRITERION, Integer.class);
+    private final VarDB<Integer> _quorum = Context.newVarDB(QUORUM, Integer.class);
+    private final VarDB<BigInteger> _time_offset = Context.newVarDB(TIME_OFFSET, BigInteger.class);
+    private final VarDB<BigInteger> _vote_duration = Context.newVarDB(VOTE_DURATION, BigInteger.class);
+    private final VarDB<Integer> _max_actions = Context.newVarDB(MAX_ACTIONS, Integer.class);
+    private final ArrayDB<String> _game_names = Context.newArrayDB(GAME_NAMES, String.class);
+    private final DictDB<String, String> _game_addresses = Context.newDictDB(GAME_ADDRESSES, String.class);
 
     public static class DBName {
         private static final String[] dbName = new String[]{GOVERNANCE, NEW_GAME, GAME_APPROVAL};
@@ -1468,8 +1389,8 @@ public class Authorization {
         proposalData.createProposal(proposalAttributes, proposalPrefix);
         this.proposalKeys.add(name);
         this.proposalKeysIndex.set(name, this.proposalKeys.size());
-        this.proposalCount.set(db_name, this.proposalCount.getOrDefault(db_name, 0) + 1);
-        this.dbProposalKeys.get(db_name).add(name);
+        proposalData.setProposalCount(db_name, proposalData.getProposalCount(db_name) + 1);
+        proposalData.dbProposalKeys.get(db_name).add(name);
     }
 
     private String proposalPrefix(String dbName, String proposalName) {
@@ -1579,19 +1500,19 @@ public class Authorization {
     }
 
     private int get_proposal_count(String db_name) {
-        DBName dbName = new DBName();
-        Context.require(containsInArray(db_name, dbName.dbName), TAG + ": Invalid DB name.");
-        return this.proposalCount.getOrDefault(db_name, 0);
+        ProposalData proposalData = new ProposalData();
+        Context.require(containsInList(db_name, dbName), TAG + ": Invalid DB name.");
+        return proposalData.getProposalCount(db_name);
     }
 
     private List<Map<String, Object>> get_proposals(String db_name, @Optional int batch_size, @Optional int offset) {
-        DBName dbName = new DBName();
-        Context.require(containsInArray(db_name, dbName.dbName), TAG + ": Invalid DB name");
+        Context.require(containsInList(db_name, dbName), TAG + ": Invalid DB name");
+        ProposalData proposalData = new ProposalData();
         List<Map<String, Object>> proposal_list = new ArrayList<>();
         int start = Math.max(1, offset);
         int end = Math.min(start + batch_size, this.get_proposal_count(db_name));
         for (int i = start; i < end + 1; i++) {
-            String proposalName = this.dbProposalKeys.get(db_name).get(i);
+            String proposalName = proposalData.dbProposalKeys.get(db_name).get(i);
             Map<String, Object> proposal = check_vote(db_name, proposalName);
             proposal_list.add(proposal);
         }
@@ -1713,7 +1634,7 @@ public class Authorization {
      ***/
     @External
     public void defineGameConceptVote(String name, String description, String ipfs_hash, BigInteger vote_start, BigInteger snapshot) {
-        if (containsInArray(name, get_approved_game_names().toArray(new String[0]))) {
+        if (containsInList(name, get_approved_game_names())) {
             Address scoreAddress = Address.fromString(this._game_addresses.get(name));
             Context.revert(TAG + ": " + name + " is already approved and deployed at " + scoreAddress);
         }
@@ -1770,17 +1691,20 @@ public class Authorization {
     //    TODO: proposal Index not needed as we have name as an identifier?
     @External(readonly = true)
     public int getGovernanceProposalCount() {
-        return dbProposalKeys.get(GOVERNANCE).size();
+        ProposalData proposalData = new ProposalData();
+        return proposalData.dbProposalKeys.get(GOVERNANCE).size();
     }
 
     @External(readonly = true)
     public int getGameConceptProposalCount() {
-        return dbProposalKeys.get(NEW_GAME).size();
+        ProposalData proposalData = new ProposalData();
+        return proposalData.dbProposalKeys.get(NEW_GAME).size();
     }
 
     @External(readonly = true)
     public int getGameApprovalProposalCount() {
-        return dbProposalKeys.get(GAME_APPROVAL).size();
+        ProposalData proposalData = new ProposalData();
+        return proposalData.dbProposalKeys.get(GAME_APPROVAL).size();
     }
 
     @External(readonly = true)
