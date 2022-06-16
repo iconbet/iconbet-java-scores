@@ -388,17 +388,19 @@ public class Authorization {
                 TAG + ": Only owner can call this method");
     }
 
-    private void validateSuperAdmin() {
-        Context.require(Context.getCaller().equals(super_admin.get()),
+    public void validateSuperAdmin() {
+        SettersGetters settersGetters = new SettersGetters();
+        Context.require(Context.getCaller().equals(settersGetters.super_admin.get()),
                 TAG + "Only super admin can call this method.");
     }
 
-    private void validateAdmin() {
-        Context.require(containsInArrayDb(Context.getCaller(), admin_list),
+    public void validateAdmin() {
+        SettersGetters settersGetters = new SettersGetters();
+        Context.require(containsInArrayDb(Context.getCaller(), settersGetters.admin_list),
                 TAG + "Only Admins can call this method");
     }
 
-    private void validateOwnerScore(Address score) {
+    public void validateOwnerScore(Address score) {
         validateOwner();
         Context.require(score.isContract(), TAG + ": The provided address is not a contract address 'cx....'");
     }
@@ -1610,7 +1612,7 @@ public class Authorization {
     private void cast_vote(String db_name, String name, boolean vote) {
 
         String proposalPrefix = proposalPrefix(db_name, name);
-        Context.require(containsInArray(db_name, DBName.dbName), TAG + "Invalid DB name");
+        Context.require(containsInList(db_name, dbName), TAG + "Invalid DB name");
 
         ProposalData proposalData = new ProposalData();
         BigInteger start_snap = proposalData.getStart_snapshot(proposalPrefix);
