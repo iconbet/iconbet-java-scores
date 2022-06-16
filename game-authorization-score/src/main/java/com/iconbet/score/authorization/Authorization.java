@@ -75,22 +75,20 @@ public class Authorization {
 
     public Authorization() {
 
-    public Authorization(@Optional boolean _on_update_var) {
+//        if (_on_update_var) {
+//            Context.println("updating contract only");
+//            onUpdate();
+//            return;
+//        }
 
-        if (_on_update_var) {
-            Context.println("updating contract only");
-            onUpdate();
-            return;
-        }
-
-        if (DEBUG) {
-            Context.println("In __init__." + TAG);
-            Context.println("owner is " + Context.getOwner() + " " + TAG);
-        }
-        BigInteger now = BigInteger.valueOf(Context.getBlockTimestamp());
-        day.set(now.divide(U_SECONDS_DAY));
-        //TODO: should we define it as false by default?
-        this.apply_watch_dog_method.set(false);
+//        if (DEBUG) {
+//            Context.println("In __init__." + TAG);
+//            Context.println("owner is " + Context.getOwner() + " " + TAG);
+//        }
+//        BigInteger now = BigInteger.valueOf(Context.getBlockTimestamp());
+//        day.set(now.divide(U_SECONDS_DAY));
+//        //TODO: should we define it as false by default?
+//        this.apply_watch_dog_method.set(false);
 
     }
 
