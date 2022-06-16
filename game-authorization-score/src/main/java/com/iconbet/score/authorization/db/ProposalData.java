@@ -3,6 +3,12 @@ package com.iconbet.score.authorization.db;
 import score.*;
 
 import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+
+import static com.iconbet.score.authorization.utils.Consts.*;
+import static com.iconbet.score.authorization.utils.Consts.PROPOSAL_COUNT;
+import static com.iconbet.score.authorization.utils.ArrayDBUtils.*;
 
 public class ProposalData {
     public static class ProposalAttributes {

@@ -2,6 +2,9 @@ package com.iconbet.score.authorization.utils;
 
 import score.ArrayDB;
 
+import scorex.util.ArrayList;
+import java.util.List;
+
 
 public final class ArrayDBUtils {
     public static void clearArrayDb(ArrayDB<?> array_db) {

@@ -4,7 +4,6 @@ import static java.math.BigInteger.ONE;
 import static java.math.BigInteger.ZERO;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +34,7 @@ import scorex.util.HashMap;
 
 import static com.iconbet.score.authorization.utils.ArrayDBUtils.*;
 import static com.iconbet.score.authorization.db.VoteActions.*;
+import com.iconbet.score.authorization.SettersGetters;
 
 public class Authorization {
 

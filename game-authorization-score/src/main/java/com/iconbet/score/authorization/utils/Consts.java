@@ -1,6 +1,7 @@
 package com.iconbet.score.authorization.utils;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public class Consts {
     public static final BigInteger EXA = new BigInteger("1000000000000000000");
