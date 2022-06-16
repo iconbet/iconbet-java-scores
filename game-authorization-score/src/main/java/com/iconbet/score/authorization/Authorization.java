@@ -191,7 +191,199 @@ public class Authorization {
     public void GameSuspended(Address scoreAddress, String note) {
     }
 
-    private void validateOwner() {
+    @External
+    public void set_roulette_score(Address _scoreAddress) {
+        //TODO: should we call address isContract()?? contract means score?
+        SettersGetters settersGetters = new SettersGetters();
+        validateOwnerScore(_scoreAddress);
+        settersGetters.roulette_score.set(_scoreAddress);
+    }
+
+    /**
+     * Returns the roulette score address
+     * :return: Address of the roulette score
+     * :rtype: :class:`iconservice.base.address.Address
+     ***/
+    @External(readonly = true)
+    public Address get_roulette_score() {
+        SettersGetters settersGetters = new SettersGetters();
+        return settersGetters.roulette_score.get();
+    }
+
+    /***
+     Sets the address of tap token score
+     :param _scoreAddress: Address of tap_token
+     :type _scoreAddress: :class:`iconservice.base.address.Address`
+     :return:
+     ***/
+    @External
+    public void set_tap_token_score(Address _scoreAddress) {
+        validateOwnerScore(_scoreAddress);
+        SettersGetters settersGetters = new SettersGetters();
+        settersGetters.tapTokenScore.set(_scoreAddress);
+    }
+
+    /***
+     Returns the tap token score address
+     :return: Address of the tap_token score
+     :rtype: :class:`iconservice.base.address.Address`
+     ***/
+    @External(readonly = true)
+    public Address get_tap_token_score() {
+        SettersGetters settersGetters = new SettersGetters();
+        return settersGetters.tapTokenScore.get();
+    }
+
+    /***
+     Sets the address of dividend distribution/game score
+     :param _scoreAddress: Address of dividend_distribution
+     :type _scoreAddress: :class:`iconservice.base.address.Address`
+     :return:
+     ***/
+    @External
+    public void set_dividend_distribution_score(Address _scoreAddress) {
+        validateOwnerScore(_scoreAddress);
+        SettersGetters settersGetters = new SettersGetters();
+        settersGetters.dividendDistributionScore.set(_scoreAddress);
+    }
+
+    /***
+     Returns the dividend distribution score address
+     :return: Address of the tap_token score
+     :rtype: :class:`iconservice.base.address.Address`
+     ***/
+    @External(readonly = true)
+    public Address get_dividend_distribution() {
+        SettersGetters settersGetters = new SettersGetters();
+        return settersGetters.dividendDistributionScore.get();
+    }
+
+    /***
+     Sets the address of rewards/game score
+     :param _scoreAddress: Address of rewards
+     :type _scoreAddress: :class:`iconservice.base.address.Address`
+     :return:
+     ***/
+    @External
+    public void set_rewards_score(Address _scoreAddress) {
+        validateOwnerScore(_scoreAddress);
+        SettersGetters settersGetters = new SettersGetters();
+        settersGetters.rewardsScore.set(_scoreAddress);
+    }
+
+    /***
+     Returns the rewards score address
+     :return: Address of the rewards score
+     :rtype: :class:`iconservice.base.address.Address`
+     ***/
+    @External(readonly = true)
+    public Address get_rewards_score() {
+        SettersGetters settersGetters = new SettersGetters();
+        return settersGetters.rewardsScore.get();
+    }
+
+    /***
+     Sets the address of uTAP Token score
+     :param _scoreAddress: Address of uTAP Token
+     :type _scoreAddress: :class:`iconservice.base.address.Address`
+     :return:
+     ***/
+    @External
+    public void set_utap_token_score(Address _scoreAddress) {
+        validateOwnerScore(_scoreAddress);
+        SettersGetters settersGetters = new SettersGetters();
+        settersGetters.uTapTokenScore.set(_scoreAddress);
+    }
+
+    /***
+     Returns the uTAP Token score address
+     :return: Address of the uTAP Token score
+     :rtype: :class:`iconservice.base.address.Address`
+     ***/
+    @External(readonly = true)
+    public Address get_utap_token_score() {
+        SettersGetters settersGetters = new SettersGetters();
+        return settersGetters.uTapTokenScore.get();
+    }
+
+    /***
+     Sets super admin. Super admin is also added in admins list. Only allowed
+     by the contract owner.
+     :param _super_admin: Address of super admin
+     :type _super_admin: :class:`iconservice.base.address.Address`
+     ***/
+    @External
+    public void set_super_admin(Address _super_admin) {
+        validateOwner();
+        SettersGetters settersGetters = new SettersGetters();
+        settersGetters.super_admin.set(_super_admin);
+        settersGetters.admin_list.add(_super_admin);
+    }
+
+    /**
+     * Return the super admin address
+     * :return: Super admin wallet address
+     * :rtype: :class:`iconservice.base.address.Address
+     **/
+    @External(readonly = true)
+    public Address get_super_admin() {
+        if (DEBUG) {
+            Context.println(Context.getOrigin().toString() + " is getting super admin address." + TAG);
+        }
+        SettersGetters settersGetters = new SettersGetters();
+        return settersGetters.super_admin.get();
+    }
+
+    /**
+     * Sets admin. Only allowed by the super admin.
+     * :param _admin: Wallet address of admin
+     * :type _admin: :class:`iconservice.base.address.Address`
+     * :return:
+     ***/
+    @External
+    public void set_admin(Address _admin) {
+        validateSuperAdmin();
+        SettersGetters settersGetters = new SettersGetters();
+        Context.require(!containsInArrayDb(_admin, settersGetters.admin_list), TAG + ": Already in admin list");
+        settersGetters.admin_list.add(_admin);
+    }
+
+    /***
+     Returns all the admin list
+     :return: List of admins
+     :rtype: list
+     ***/
+    @External(readonly = true)
+    public List<Address> get_admin() {
+        if (DEBUG) {
+            Context.println(Context.getOrigin().toString() + " is getting admin addresses." + TAG);
+        }
+        SettersGetters settersGetters = new SettersGetters();
+        Address[] admin_list = new Address[settersGetters.admin_list.size()];
+        for (int i = 0; i < settersGetters.admin_list.size(); i++) {
+            admin_list[i] = settersGetters.admin_list.get(i);
+        }
+        return List.of(admin_list);
+    }
+
+    /***
+     Removes admin from the admin arrayDB. Only called by the super admin
+     :param _admin: Address of admin to be removed
+     :type _admin: :class:`iconservice.base.address.Address`
+     :return:
+     ***/
+    @External
+    public void remove_admin(Address _admin) {
+        validateSuperAdmin();
+        SettersGetters settersGetters = new SettersGetters();
+        Context.require(containsInArrayDb(_admin, settersGetters.admin_list), TAG + "Invalid Address: Not in list");
+        removeArrayItem(settersGetters.admin_list, _admin);
+        if (DEBUG) {
+            Context.println(_admin.toString() + " has been removed from admin list." + TAG);
+        }
+    }
+
+    public void validateOwner() {
         Context.require(Context.getCaller().equals(Context.getOwner()),
                 TAG + ": Only owner can call this method");
     }
@@ -260,121 +452,6 @@ public class Authorization {
     }
 
     /**
-     * Sets the address of roulette/game score
-     * :param _scoreAddress: Address of roulette
-     * :type _scoreAddress: :class:`iconservice.base.address.Address`
-     * :return:
-     **/
-    @External
-    public void set_roulette_score(Address _scoreAddress) {
-        //TODO: should we call address isContract()?? contract means score?
-        validateOwnerScore(_scoreAddress);
-        this.roulette_score.set(_scoreAddress);
-    }
-
-    /**
-     * Returns the roulette score address
-     * :return: Address of the roulette score
-     * :rtype: :class:`iconservice.base.address.Address
-     ***/
-    @External(readonly = true)
-    public Address get_roulette_score() {
-        return this.roulette_score.get();
-    }
-
-    /***
-     Sets the address of tap token score
-     :param _scoreAddress: Address of tap_token
-     :type _scoreAddress: :class:`iconservice.base.address.Address`
-     :return:
-     ***/
-    @External
-    public void set_tap_token_score(Address _scoreAddress) {
-        validateOwnerScore(_scoreAddress);
-        this.tapTokenScore.set(_scoreAddress);
-    }
-
-    /***
-     Returns the tap token score address
-     :return: Address of the tap_token score
-     :rtype: :class:`iconservice.base.address.Address`
-     ***/
-    @External(readonly = true)
-    public Address get_tap_token_score() {
-        return this.tapTokenScore.get();
-    }
-
-    /***
-     Sets the address of dividend distribution/game score
-     :param _scoreAddress: Address of dividend_distribution
-     :type _scoreAddress: :class:`iconservice.base.address.Address`
-     :return:
-     ***/
-    @External
-    public void set_dividend_distribution_score(Address _scoreAddress) {
-
-
-        validateOwnerScore(_scoreAddress);
-        this.dividendDistributionScore.set(_scoreAddress);
-    }
-
-    /***
-     Returns the dividend distribution score address
-     :return: Address of the tap_token score
-     :rtype: :class:`iconservice.base.address.Address`
-     ***/
-    @External(readonly = true)
-    public Address get_dividend_distribution() {
-
-        return this.dividendDistributionScore.get();
-    }
-
-    /***
-     Sets the address of rewards/game score
-     :param _scoreAddress: Address of rewards
-     :type _scoreAddress: :class:`iconservice.base.address.Address`
-     :return:
-     ***/
-    @External
-    public void set_rewards_score(Address _scoreAddress) {
-
-        validateOwnerScore(_scoreAddress);
-        this.rewardsScore.set(_scoreAddress);
-    }
-
-    /***
-     Returns the rewards score address
-     :return: Address of the rewards score
-     :rtype: :class:`iconservice.base.address.Address`
-     ***/
-    @External(readonly = true)
-    public Address get_rewards_score() {
-        return this.rewardsScore.get();
-    }
-
-    /***
-     Sets the address of uTAP Token score
-     :param _scoreAddress: Address of uTAP Token
-     :type _scoreAddress: :class:`iconservice.base.address.Address`
-     :return:
-     ***/
-    @External
-    public void set_utap_token_score(Address _scoreAddress) {
-        validateOwnerScore(_scoreAddress);
-        this.uTapTokenScore.set(_scoreAddress);
-    }
-
-    /***
-     Returns the uTAP Token score address
-     :return: Address of the uTAP Token score
-     :rtype: :class:`iconservice.base.address.Address`
-     ***/
-    @External(readonly = true)
-    public Address get_utap_token_score() {
-        return this.uTapTokenScore.get();
-    }
-
-    /**
      * Sets the sum of game developers as well as platform share
      * :param _share: Sum of game_devs as well as platform share
      * :type _share: int
@@ -394,79 +471,6 @@ public class Authorization {
     @External(readonly = true)
     public BigInteger get_game_developers_share() {
         return this.game_developers_share.getOrDefault(ZERO);
-    }
-
-
-    /***
-     Sets super admin. Super admin is also added in admins list. Only allowed
-     by the contract owner.
-     :param _super_admin: Address of super admin
-     :type _super_admin: :class:`iconservice.base.address.Address`
-     ***/
-    @External
-    public void set_super_admin(Address _super_admin) {
-        validateOwner();
-        this.super_admin.set(_super_admin);
-        this.admin_list.add(_super_admin);
-    }
-
-    /**
-     * Return the super admin address
-     * :return: Super admin wallet address
-     * :rtype: :class:`iconservice.base.address.Address
-     **/
-    @External(readonly = true)
-    public Address get_super_admin() {
-        if (DEBUG) {
-            Context.println(Context.getOrigin().toString() + " is getting super admin address." + TAG);
-        }
-        return this.super_admin.get();
-    }
-
-    /**
-     * Sets admin. Only allowed by the super admin.
-     * :param _admin: Wallet address of admin
-     * :type _admin: :class:`iconservice.base.address.Address`
-     * :return:
-     ***/
-    @External
-    public void set_admin(Address _admin) {
-        validateSuperAdmin();
-        Context.require(!containsInArrayDb(_admin, admin_list), TAG + ": Already in admin list");
-        this.admin_list.add(_admin);
-    }
-
-    /***
-     Returns all the admin list
-     :return: List of admins
-     :rtype: list
-     ***/
-    @External(readonly = true)
-    public List<Address> get_admin() {
-        if (DEBUG) {
-            Context.println(Context.getOrigin().toString() + " is getting admin addresses." + TAG);
-        }
-        Address[] admin_list = new Address[this.admin_list.size()];
-        for (int i = 0; i < this.admin_list.size(); i++) {
-            admin_list[i] = this.admin_list.get(i);
-        }
-        return List.of(admin_list);
-    }
-
-    /***
-     Removes admin from the admin arrayDB. Only called by the super admin
-     :param _admin: Address of admin to be removed
-     :type _admin: :class:`iconservice.base.address.Address`
-     :return:
-     ***/
-    @External
-    public void remove_admin(Address _admin) {
-        validateSuperAdmin();
-        Context.require(containsInArrayDb(_admin, this.admin_list), TAG + "Invalid Address: Not in list");
-        removeArrayItem(this.admin_list, _admin);
-        if (DEBUG) {
-            Context.println(_admin.toString() + " has been removed from admin list." + TAG);
-        }
     }
 
     @External(readonly = true)
@@ -562,7 +566,8 @@ public class Authorization {
     @External
     public void set_game_status(String _status, Address _scoreAddress) {
         Address sender = Context.getCaller();
-        if (!this.get_admin().contains(sender)) {
+        SettersGetters settersGetters = new SettersGetters();
+        if (!settersGetters.get_admin().contains(sender)) {
             Context.revert("Sender not an admin");
         }
         if (!STATUS_TYPE.contains(_status)) {
@@ -684,8 +689,8 @@ public class Authorization {
     @External
     public void accumulate_daily_wagers(Address game, BigInteger wager) {
         Address sender = Context.getCaller();
-
-        if (!sender.equals(this.roulette_score.get())) {
+        SettersGetters settersGetters = new SettersGetters();
+        if (!sender.equals(settersGetters.roulette_score.get())) {
             Context.revert("Only roulette score can invoke this method.");
         }
         BigInteger now = BigInteger.valueOf(Context.getBlockTimestamp());
@@ -747,7 +752,8 @@ public class Authorization {
      ***/
     @External
     public boolean accumulate_daily_payouts(Address game, BigInteger payout) {
-        Address roulette = this.roulette_score.get();
+        SettersGetters settersGetters = new SettersGetters();
+        Address roulette = settersGetters.roulette_score.get();
         if (!Context.getCaller().equals(roulette)) {
             Context.revert("Only roulette score can invoke this method.");
         }
@@ -994,7 +1000,7 @@ public class Authorization {
         Context.println("In record excess method." + TAG);
         Address sender = Context.getCaller();
 
-        if (!sender.equals(this.roulette_score.get())) {
+        if (!sender.equals(get_roulette_score())) {
             Context.revert("This method can only be called by Roulette score");
         }
         BigInteger positive_excess = BigInteger.ZERO;
@@ -1105,6 +1111,7 @@ public class Authorization {
         if (maxLoss.compareTo(_1_ICX) == -1) { // 0.1 ICX = 10^18 * 0.1
             Context.revert("maxLoss is set to a value less than 0.1 ICX");
         }
+        SettersGetters settersGetters = new SettersGetters();
         Address sender = Context.getCaller();
         if (!this.get_admin().contains(sender)) {
             Context.revert("Sender not an admin");
@@ -1180,93 +1187,93 @@ public class Authorization {
     //    governance methods on TAP
     public void setMinimumStake(BigInteger amount) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "set_minimum_stake", amount);
+        Context.call(get_tap_token_score(), "set_minimum_stake", amount);
     }
 
     public void setUnstakingPeriod(BigInteger time) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "set_unstaking_period", time);
+        Context.call(get_tap_token_score(), "set_unstaking_period", time);
     }
 
     public void setMaxLoop(@Optional int loops) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "set_max_loop", loops);
+        Context.call(get_tap_token_score(), "set_max_loop", loops);
     }
 
     public void remove_from_blacklist_tap(Address _address) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "remove_from_blacklist", _address);
+        Context.call(get_tap_token_score(), "remove_from_blacklist", _address);
     }
 
     public void set_blacklist_address_tap(Address _address) {
         this.validateAdmin();
-        Context.call(tapTokenScore.get(), "set_blacklist_address", _address);
+        Context.call(get_tap_token_score(), "set_blacklist_address", _address);
     }
 
     public void remove_from_locklist(Address _address) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "remove_from_locklist", _address);
+        Context.call(get_tap_token_score(), "remove_from_locklist", _address);
     }
 
     public void set_locklist_address(Address _address) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "set_locklist_address", _address);
+        Context.call(get_tap_token_score(), "set_locklist_address", _address);
     }
 
     public void remove_from_whitelist(Address _address) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "remove_from_whitelist", _address);
+        Context.call(get_tap_token_score(), "remove_from_whitelist", _address);
     }
 
     public void set_whitelist_address(Address _address) {
         validateAdmin();
-        Context.call(tapTokenScore.get(), "set_whitelist_address", _address);
+        Context.call(get_tap_token_score(), "set_whitelist_address", _address);
     }
 
     //    Governance methods on Dividend Distribution
     public void set_dividend_percentage(int _tap, int _gamedev, int _promo, int _platform) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "set_dividend_percentage", _tap, _gamedev, _promo, _platform);
+        Context.call(get_dividend_distribution(), "set_dividend_percentage", _tap, _gamedev, _promo, _platform);
     }
 
     public void set_non_tax_period(BigInteger period) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "set_non_tax_period", period);
+        Context.call(get_dividend_distribution(), "set_non_tax_period", period);
     }
 
     public void set_tax_percentage(int percentage) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "set_tax_percentage", percentage);
+        Context.call(get_dividend_distribution(), "set_tax_percentage", percentage);
     }
 
     public void remove_from_blacklist_dividend(Address _address) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "remove_from_blacklist", _address);
+        Context.call(get_dividend_distribution(), "remove_from_blacklist", _address);
     }
 
     public void set_blacklist_address_dividend(Address _address) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "set_blacklist_address", _address);
+        Context.call(get_dividend_distribution(), "set_blacklist_address", _address);
     }
 
     public void set_inhouse_games(Address _score) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "set_inhouse_games", _score);
+        Context.call(get_dividend_distribution(), "set_inhouse_games", _score);
     }
 
     public void remove_from_inhouse_games(Address _score) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "remove_from_inhouse_games", _score);
+        Context.call(get_dividend_distribution(), "remove_from_inhouse_games", _score);
     }
 
     public void add_exception_address(Address _address) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "add_exception_address", _address);
+        Context.call(get_dividend_distribution(), "add_exception_address", _address);
     }
 
     public void remove_exception_address(Address _address) {
         validateAdmin();
-        Context.call(dividendDistributionScore.get(), "remove_exception_address", _address);
+        Context.call(get_dividend_distribution(), "remove_exception_address", _address);
     }
 
     /*------------------------------------------------------------------------------------------------------------------
@@ -1358,9 +1365,9 @@ public class Authorization {
      ***/
     @External
     public void startGovernance(BigInteger vote_duration, int tap_vote_definition_criterion, int max_actions, int quorum) {
-        boolean snapshotEnabled = (Boolean) Context.call(tapTokenScore.get(), "get_snapshot_enabled");
+        boolean snapshotEnabled = (Boolean) Context.call(get_tap_token_score(), "get_snapshot_enabled");
         Context.require(snapshotEnabled, TAG + ": Snapshot must be enabled in TAP Token to start governance.");
-        BigInteger time_offset = (BigInteger) Context.call(tapTokenScore.get(), "get_time_offset");
+        BigInteger time_offset = (BigInteger) Context.call(get_tap_token_score(), "get_time_offset");
         this._time_offset.set(time_offset);
 
         setTAPVoteDefinitionCriterion(tap_vote_definition_criterion);
@@ -1422,15 +1429,17 @@ public class Authorization {
         Context.require(proposalKeysIndex.getOrDefault(name, 0) == 0, TAG + "Poll name " + name + "has already been used.");
 
 //        #Test TAP staking criterion.
-        BigInteger tap_total = (BigInteger) Context.call(tapTokenScore.get(), "totalSupply");
+        Address tapTokenScore = get_tap_token_score();
+        Address uTapTokenScore = get_utap_token_score();
+        BigInteger tap_total = (BigInteger) Context.call(tapTokenScore, "totalSupply");
 
-        BigInteger tap_in_rewards = (BigInteger) Context.call(tapTokenScore.get(), "balanceOf", this.rewardsScore.get());
+        BigInteger tap_in_rewards = (BigInteger) Context.call(tapTokenScore, "balanceOf", get_rewards_score());
         BigInteger total_tap_in_circulation = tap_total.subtract(tap_in_rewards);
 
-        BigInteger user_staked = (BigInteger) Context.call(tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
-        BigInteger uTapTokenTradingContractBalance = (BigInteger) Context.call(uTapTokenScore.get(), "tradingTokenContractbalanceOf");
-        BigInteger uTapTokenBalanceOfSender = (BigInteger) Context.call(uTapTokenScore.get(), "balanceOf", Context.getCaller());
-        BigInteger uTapTotalSupply = (BigInteger) Context.call(tapTokenScore.get(), "totalSupply");
+        BigInteger user_staked = (BigInteger) Context.call(tapTokenScore, "staked_balanceOf", Context.getCaller());
+        BigInteger uTapTokenTradingContractBalance = (BigInteger) Context.call(uTapTokenScore, "tradingTokenContractbalanceOf");
+        BigInteger uTapTokenBalanceOfSender = (BigInteger) Context.call(uTapTokenScore, "balanceOf", Context.getCaller());
+        BigInteger uTapTotalSupply = (BigInteger) Context.call(tapTokenScore, "totalSupply");
         user_staked = user_staked.add(uTapTokenTradingContractBalance.multiply(uTapTokenBalanceOfSender).divide(uTapTotalSupply));
 
         int tap_criterion = this._tap_vote_definition_criterion.get();
@@ -1467,7 +1476,7 @@ public class Authorization {
 
     @External(readonly = true)
     public BigInteger totalTap(int _day) {
-        return (BigInteger) Context.call(tapTokenScore.get(), "totalStakedBalanceOfAt", _day);
+        return (BigInteger) Context.call(get_tap_token_score(), "totalStakedBalanceOfAt", _day);
     }
 
     private Map<String, Object> check_vote(String db_name, String name) {
@@ -1612,10 +1621,11 @@ public class Authorization {
         Address sender = Context.getCaller();
         BigInteger snapshot = proposalData.getVote_snapshot(proposalPrefix);
 
-        BigInteger total_vote = (BigInteger) Context.call(tapTokenScore.get(), "stakedBalanceOfAt", sender, snapshot);
-        total_vote = total_vote.add(((BigInteger) Context.call(uTapTokenScore.get(), "tradingTokenContractbalanceOf"))
-                .multiply((BigInteger) Context.call(uTapTokenScore.get(), "balanceOf", sender))
-                .divide((BigInteger) Context.call(uTapTokenScore.get(), "totalSupply")));
+        Address uTapTokenScore = get_utap_token_score();
+        BigInteger total_vote = (BigInteger) Context.call(get_tap_token_score(), "stakedBalanceOfAt", sender, snapshot);
+        total_vote = total_vote.add(((BigInteger) Context.call(uTapTokenScore, "tradingTokenContractbalanceOf"))
+                .multiply((BigInteger) Context.call(uTapTokenScore, "balanceOf", sender))
+                .divide((BigInteger) Context.call(uTapTokenScore, "totalSupply")));
 
         Context.require(total_vote.compareTo(ZERO) > 0, TAG + ": TAP tokens need to be staked");
         BigInteger[] prior_vote = new BigInteger[]{proposalData.getForVotesOfUser(proposalPrefix, sender), proposalData.getAgainstVotesOfUser(proposalPrefix, sender)};
@@ -1911,7 +1921,7 @@ public class Authorization {
 
     @External
     public void tokenFallback(Address _from, BigInteger _value, @Optional byte[] _data) {
-        Context.require(Context.getCaller().equals(tapTokenScore.get()), TAG + " accepts only TAP token.");
+        Context.require(Context.getCaller().equals(get_tap_token_score()), TAG + " accepts only TAP token.");
         if (_data == null) {
             _data = "{}".getBytes();
         }
@@ -1927,7 +1937,7 @@ public class Authorization {
         Address sponsor_address = this._official_review_sponsors.get(name);
         BigInteger official_review_cost = this._official_review_costs.get(name);
 
-        Context.call(tapTokenScore.get(), "transfer", sponsor_address, official_review_cost);
+        Context.call(get_tap_token_score(), "transfer", sponsor_address, official_review_cost);
     }
 
 
