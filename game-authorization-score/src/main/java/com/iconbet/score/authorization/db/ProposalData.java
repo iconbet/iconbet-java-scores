@@ -22,7 +22,7 @@ public class ProposalData {
     private final BranchDB<String, VarDB<Integer>> proposals_count = Context.newBranchDB(Prefix + "_proposals_count", Integer.class);
     private final BranchDB<String, VarDB<Address>> proposer = Context.newBranchDB(Prefix + "_proposer",Address.class);
     private final BranchDB<String, VarDB<BigInteger>> quorum = Context.newBranchDB(Prefix + "_quorum", BigInteger.class);
-    private final BranchDB<String, VarDB<BigInteger>> majority = Context.newBranchDB(Prefix + "_majority", Integer.class);
+    private final BranchDB<String, VarDB<BigInteger>> majority = Context.newBranchDB(Prefix + "_majority", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> vote_snapshot = Context.newBranchDB(Prefix + "_vote_snapshot", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> start_snapshot = Context.newBranchDB(Prefix + "_start_snapshot", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> end_snapshot = Context.newBranchDB(Prefix + "_end_snapshot", BigInteger.class);
