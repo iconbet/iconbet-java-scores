@@ -37,7 +37,6 @@ import static com.iconbet.score.authorization.db.VoteActions.*;
 import com.iconbet.score.authorization.SettersGetters;
 
 public class Authorization {
-
     protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
 
     public static final String TAG = "AUTHORIZATION";

@@ -32,10 +32,10 @@ public class ProposalData {
     private final BranchDB<String, VarDB<BigInteger>> vote_snapshot = Context.newBranchDB(Prefix + "_vote_snapshot", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> start_snapshot = Context.newBranchDB(Prefix + "_start_snapshot", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> end_snapshot = Context.newBranchDB(Prefix + "_end_snapshot", BigInteger.class);
-    private final BranchDB<String, VarDB<String> >actions = Context.newBranchDB(Prefix + "_actions", String.class);
-    private final BranchDB<String, VarDB<String> >name = Context.newBranchDB(Prefix + "_name", String.class);
-    private final BranchDB<String, VarDB<String> >description = Context.newBranchDB(Prefix + "_description", String.class);
-    private final BranchDB<String, VarDB<String> >ipfs_hash = Context.newBranchDB(Prefix + "_ipfs_hash", String.class);
+    private final BranchDB<String, VarDB<String>>actions = Context.newBranchDB(Prefix + "_actions", String.class);
+    private final BranchDB<String, VarDB<String>>name = Context.newBranchDB(Prefix + "_name", String.class);
+    private final BranchDB<String, VarDB<String>>description = Context.newBranchDB(Prefix + "_description", String.class);
+    private final BranchDB<String, VarDB<String>>ipfs_hash = Context.newBranchDB(Prefix + "_ipfs_hash", String.class);
     private final BranchDB<String, VarDB<Boolean>> active = Context.newBranchDB(Prefix + "_active", Boolean.class);
     private final BranchDB<String, DictDB<Address, BigInteger>> for_votes_of_user = Context.newBranchDB(Prefix + "_for_votes_of_user", BigInteger.class);
     private final BranchDB<String, DictDB<Address, BigInteger>> against_votes_of_user = Context.newBranchDB(Prefix + "_against_votes_of_user", BigInteger.class);
