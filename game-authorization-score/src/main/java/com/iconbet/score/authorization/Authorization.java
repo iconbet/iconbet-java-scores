@@ -300,20 +300,17 @@ public class Authorization {
     }
 
     public void validateOwner() {
-        Context.require(Context.getCaller().equals(Context.getOwner()),
-                TAG + ": Only owner can call this method");
+        Context.require(Context.getCaller().equals(Context.getOwner()), TAG + ": Only owner can call this method");
     }
 
     public void validateSuperAdmin() {
         SettersGetters settersGetters = new SettersGetters();
-        Context.require(Context.getCaller().equals(settersGetters.super_admin.get()),
-                TAG + "Only super admin can call this method.");
+        Context.require(Context.getCaller().equals(settersGetters.super_admin.get()), TAG + "Only super admin can call this method.");
     }
 
     public void validateAdmin() {
         SettersGetters settersGetters = new SettersGetters();
-        Context.require(containsInArrayDb(Context.getCaller(), settersGetters.admin_list),
-                TAG + "Only Admins can call this method");
+        Context.require(containsInArrayDb(Context.getCaller(), settersGetters.admin_list), TAG + "Only Admins can call this method");
     }
 
     public void validateOwnerScore(Address score) {
@@ -455,8 +452,7 @@ public class Authorization {
 
         ProposalSubmitted(sender, game_address);
 
-        Context.require(!containsInArrayDb(game_address, this.proposal_list),
-                TAG + "Already listed scoreAddress in the proposal list.");
+        Context.require(!containsInArrayDb(game_address, this.proposal_list), TAG + "Already listed scoreAddress in the proposal list.");
         this.proposal_list.add(game_address);
 
         /// question =?   self._owner_data[Address.from_string(metadata['scoreAddress'])] = self.msg.sender
@@ -495,9 +491,7 @@ public class Authorization {
         if (_status.equals("gameRejected") && !statusScoreAddress.equals("gameReady")) {
             Context.revert("This game cannot be rejected from state " + statusScoreAddress);
         }
-        if (_status.equals("gameApproved") && !(
-                statusScoreAddress.equals("gameReady") || statusScoreAddress.equals("gameSuspended")
-        )) {
+        if (_status.equals("gameApproved") && !(statusScoreAddress.equals("gameReady") || statusScoreAddress.equals("gameSuspended"))) {
             Context.revert("This game cannot be approved from state " + statusScoreAddress);
         }
         if (_status.equals("gameSuspended") && !statusScoreAddress.equals("gameApproved")) {
@@ -682,9 +676,7 @@ public class Authorization {
             try {
                 Context.println("apply watch dog enabled . " + TAG);
                 if (payout.compareTo(this.maximum_payouts.getOrDefault(game, ZERO)) == 1) {
-                    Context.revert("Preventing Overpayment. Requested payout: " + payout.toString() +
-                            ". MaxPayout for this game: " + this.maximum_payouts.get(game) +
-                            ". " + TAG);
+                    Context.revert("Preventing Overpayment. Requested payout: " + payout.toString() + ". MaxPayout for this game: " + this.maximum_payouts.get(game) + ". " + TAG);
                 }
 
                 BigInteger payOutDay = this.payouts.at(day).getOrDefault(game, ZERO);
@@ -693,8 +685,7 @@ public class Authorization {
                 BigInteger incurred = payOutDay.subtract(wagerDay);
                 Context.println("incurred payout: " + incurred);
                 if (incurred.compareTo(this.maximum_loss.getOrDefault(ZERO)) >= 1) {
-                    Context.revert("Limit loss. MaxLoss: " + this.maximum_loss.getOrDefault(ZERO) + ". Loss Incurred if payout: " +
-                            incurred.intValue() + " " + TAG);
+                    Context.revert("Limit loss. MaxLoss: " + this.maximum_loss.getOrDefault(ZERO) + ". Loss Incurred if payout: " + incurred.intValue() + " " + TAG);
                 }
 
             } catch (Exception e) {
@@ -711,8 +702,7 @@ public class Authorization {
         this.payouts.at(day).set(game, payout);
         Context.println("new payout:" + payout + "at day " + day + " ." + TAG);
 
-        if (this.new_div_changing_time.getOrDefault(ZERO).compareTo(ZERO) != 0 &&
-                day.compareTo(this.new_div_changing_time.get()) >= 1) {
+        if (this.new_div_changing_time.getOrDefault(ZERO).compareTo(ZERO) != 0 && day.compareTo(this.new_div_changing_time.get()) >= 1) {
             BigInteger accumulate = this.todays_games_excess.getOrDefault(game, ZERO);
             this.todays_games_excess.set(game, accumulate.subtract(payout));
         }
@@ -890,8 +880,7 @@ public class Authorization {
         for (int i = 0; i < this.get_approved_games().size(); i++) {
             Address game = this.get_approved_games().get(i);
             BigInteger game_excess = this.todays_games_excess.get(game);
-            if (game_excess != null &&
-                    game_excess.compareTo(BigInteger.ZERO) >= 0) {
+            if (game_excess != null && game_excess.compareTo(BigInteger.ZERO) >= 0) {
                 positive_excess = positive_excess.add(game_excess);
             }
         }
@@ -940,8 +929,7 @@ public class Authorization {
             }
             BigInteger game_excess = this.todays_games_excess.get(game);
             this.games_excess_history.at(day.subtract(BigInteger.ONE)).set(game, game_excess);
-            if (game_excess != null &&
-                    game_excess.compareTo(BigInteger.ZERO) >= 0) {
+            if (game_excess != null && game_excess.compareTo(BigInteger.ZERO) >= 0) {
                 positive_excess = positive_excess.add(game_excess);
                 this.todays_games_excess.set(game, BigInteger.ZERO);
             }
@@ -1328,8 +1316,7 @@ public class Authorization {
      '<action_2>': {<kwargs_for_action_2>},..}
      ***/
 
-    public void define_vote(String db_name, String name, String description, BigInteger vote_start,
-                            BigInteger snapshot, @Optional String actions, @Optional String ipfs_hash) {
+    public void define_vote(String db_name, String name, String description, BigInteger vote_start, BigInteger snapshot, @Optional String actions, @Optional String ipfs_hash) {
         if (actions == null) {
             actions = "{}";
         }
@@ -1484,9 +1471,7 @@ public class Authorization {
 
         Context.require(containsInArray(Context.getCaller(), eligible_addresses), TAG + ": Only owner or proposer may call this method.");
 
-        Context.require(proposalData.getStart_snapshot(proposalPrefix).compareTo(getDay()) >= 0
-                        && Context.getCaller().equals(Context.getOwner()),
-                TAG + "Only owner can cancel a vote that has started.");
+        Context.require(proposalData.getStart_snapshot(proposalPrefix).compareTo(getDay()) >= 0 && Context.getCaller().equals(Context.getOwner()), TAG + "Only owner can cancel a vote that has started.");
 
         Context.require(proposalData.getStatus(proposalPrefix).equals(ACTIVE), TAG + ": Proposal can be cancelled only from active status.");
 
@@ -1541,9 +1526,7 @@ public class Authorization {
 
         Address uTapTokenScore = get_utap_token_score();
         BigInteger total_vote = (BigInteger) Context.call(get_tap_token_score(), "stakedBalanceOfAt", sender, snapshot);
-        total_vote = total_vote.add(((BigInteger) Context.call(uTapTokenScore, "tradingTokenContractbalanceOf"))
-                .multiply((BigInteger) Context.call(uTapTokenScore, "balanceOf", sender))
-                .divide((BigInteger) Context.call(uTapTokenScore, "totalSupply")));
+        total_vote = total_vote.add(((BigInteger) Context.call(uTapTokenScore, "tradingTokenContractbalanceOf")).multiply((BigInteger) Context.call(uTapTokenScore, "balanceOf", sender)).divide((BigInteger) Context.call(uTapTokenScore, "totalSupply")));
 
         Context.require(total_vote.compareTo(ZERO) > 0, TAG + ": TAP tokens need to be staked");
         BigInteger[] prior_vote = new BigInteger[]{proposalData.getForVotesOfUser(proposalPrefix, sender), proposalData.getAgainstVotesOfUser(proposalPrefix, sender)};
@@ -1740,8 +1723,7 @@ public class Authorization {
 
     @External(readonly = true)
     public String getGameAddress(String name) {
-        Context.require(containsInArrayDb(name, this.proposalKeys), TAG + ": Game address of the game with the " +
-                "name '" + name + "' not found");
+        Context.require(containsInArrayDb(name, this.proposalKeys), TAG + ": Game address of the game with the " + "name '" + name + "' not found");
         return this._game_addresses.get(name);
     }
 
@@ -1764,8 +1746,7 @@ public class Authorization {
     public void evaluateGovernanceVote(String name) {
         String proposalPrefix = proposalPrefix(GOVERNANCE, name);
 
-        Context.require(this.proposalKeysIndex.getOrDefault(name, 0) > 0, TAG + "" +
-                ": Proposal with the name '" + name + "' is not found.");
+        Context.require(this.proposalKeysIndex.getOrDefault(name, 0) > 0, TAG + "" + ": Proposal with the name '" + name + "' is not found.");
         ProposalData proposalData = new ProposalData();
         BigInteger end_snap = proposalData.getEnd_snapshot(proposalPrefix);
         String actions = proposalData.getActions(proposalPrefix);

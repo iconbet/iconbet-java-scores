@@ -229,10 +229,9 @@ public class SettersGetters {
         Context.require(score.isContract(), TAG + ": The provided address is not a contract address 'cx....'");
     }
 
-    public Address getCaller(){
+    public Address getCaller() {
         return Context.getCaller();
     }
-
 
 
 }
