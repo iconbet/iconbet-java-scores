@@ -34,7 +34,6 @@ import scorex.util.HashMap;
 
 import static com.iconbet.score.authorization.utils.ArrayDBUtils.*;
 import static com.iconbet.score.authorization.db.VoteActions.*;
-import com.iconbet.score.authorization.SettersGetters;
 
 public class Authorization {
     protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
