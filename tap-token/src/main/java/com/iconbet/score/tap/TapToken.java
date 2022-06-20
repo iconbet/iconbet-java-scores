@@ -18,6 +18,9 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
+
+import static com.iconbet.score.tap.utils.Constants.*;
+
 public class TapToken implements IRC2{
 
 	public static class ArrayDbToMigrate{
@@ -40,56 +43,6 @@ public class TapToken implements IRC2{
 
 	public static final String TAG = "TapToken";
 
-	private static final BigInteger DAY_TO_MICROSECOND = new BigInteger("86400000000");
-	private static final String BALANCES = "balances";
-	private static final String TOTAL_SUPPLY = "total_supply";
-	private static final String DECIMALS = "decimals";
-	private static final String ADDRESSES = "addresses";
-	private static final String IDS = "ids";
-	private static final String AMOUNT = "amount";
-	private static final String EVEN_DAY_CHANGES = "even_day_changes";
-	private static final String ODD_DAY_CHANGES = "odd_day_changes";
-
-	private static final String MAX_LOOPS = "max_loops";
-	private static final String INDEX_ADDRESS_CHANGES = "index_address_changes";
-	private static final String INDEX_UPDATE_BALANCE = "index_update_balance";
-	private static final String BALANCE_UPDATE_DB = "balance_update_db";
-	private static final String ADDRESS_UPDATE_DB = "address_update_db";
-
-	private static final String DIVIDENDS_SCORE = "dividends_score";
-	private static final String BLACKLIST_ADDRESS = "blacklist_address";
-
-	private static final String STAKED_BALANCES = "staked_balances";
-	private static final String MINIMUM_STAKE = "minimum_stake";
-	private static final String UNSTAKING_PERIOD = "unstaking_period";
-	private static final String TOTAL_STAKED_BALANCE = "total_staked_balance";
-
-	private static final String EVEN_DAY_STAKE_CHANGES = "even_day_stake_changes";
-	private static final String ODD_DAY_STAKE_CHANGES = "odd_day_stake_changes";
-
-	private static final String INDEX_STAKE_ADDRESS_CHANGES = "index_address_stake_changes";
-	private static final String INDEX_UPDATE_STAKE = "index_update_stake";
-	private static final String STAKE_UPDATE_DB = "stake_update_db";
-	private static final String STAKE_ADDRESS_UPDATE_DB = "stake_address_update_db";
-
-	private static final String STAKING_ENABLED = "staking_enabled";
-	private static final String SWITCH_DIVS_TO_STAKED_TAP_ENABLED = "switch_divs_to_staked_tap";
-
-	private static final String PAUSED = "paused";
-	private static final String PAUSE_WHITELIST = "pause_whitelist";
-	private static final String LOCKLIST = "locklist";
-
-	//TODO:verify the usage of BigInteger
-
-	private static final String _LINEAR_COMPLEXITY_MIGRATION = "linear_complexity_migration";
-
-	private static final String _TIME_OFFSET = "time_offset";
-	private static final String _STAKE_SNAPSHOTS = "stake_snapshots";
-	private static final String _TOTAL_SNAPSHOTS = "total_snapshots";
-	private static final String _TOTAL_STAKED_SNAPSHOT = "total_staked_snapshot";
-	private static final String _TOTAL_STAKED_SNAPSHOT_COUNT = "total_staked_snapshot_count";
-
-	private static final String _ENABLE_SNAPSHOTS = "enable_snapshots";
 	private final VarDB<BigInteger> totalSupply = Context.newVarDB(TOTAL_SUPPLY, BigInteger.class);
 	//this variable is defined as int in the icon samples
 	private final VarDB<BigInteger> decimals = Context.newVarDB(DECIMALS, BigInteger.class);
@@ -100,7 +53,7 @@ public class TapToken implements IRC2{
 	private final ArrayDB<Address> evenDayChanges = Context.newArrayDB(EVEN_DAY_CHANGES, Address.class);
 	private final ArrayDB<Address> oddDayChanges = Context.newArrayDB(ODD_DAY_CHANGES, Address.class);
 
-	private List<ArrayDB<Address>> changes = List.of(evenDayChanges, oddDayChanges);
+	private final List<ArrayDB<Address>> changes = List.of(evenDayChanges, oddDayChanges);
 
 	private final VarDB<Integer> maxLoop = Context.newVarDB(MAX_LOOPS, Integer.class);
 	private final VarDB<BigInteger> indexUpdateBalance = Context.newVarDB(INDEX_UPDATE_BALANCE, BigInteger.class);
@@ -124,7 +77,7 @@ public class TapToken implements IRC2{
 	private final ArrayDB<Address> evenDayStakeChanges = Context.newArrayDB(EVEN_DAY_STAKE_CHANGES, Address.class);
 	private final ArrayDB<Address> oddDayStakeChanges = Context.newArrayDB(ODD_DAY_STAKE_CHANGES, Address.class);
 
-	private List<ArrayDB<Address>> stakeChanges  = List.of(evenDayStakeChanges, oddDayStakeChanges);
+	private final List<ArrayDB<Address>> stakeChanges  = List.of(evenDayStakeChanges, oddDayStakeChanges);
 
 	private final VarDB<BigInteger> indexUpdateStake = Context.newVarDB(INDEX_UPDATE_STAKE, BigInteger.class);
 	private final VarDB<BigInteger> indexStakeAddressChanges = Context.newVarDB(INDEX_STAKE_ADDRESS_CHANGES, BigInteger.class);
@@ -143,26 +96,6 @@ public class TapToken implements IRC2{
 	private final ArrayDB<Address> pauseWhitelist = Context.newArrayDB(PAUSE_WHITELIST, Address.class);
 	private final ArrayDB<Address> locklist = Context.newArrayDB(LOCKLIST, Address.class);
 
-	private final VarDB<Boolean> linear_complexity_migration_start = Context.newVarDB(_LINEAR_COMPLEXITY_MIGRATION + "_start", Boolean.class);
-	private final DictDB<String, Boolean> linear_complexity_migration_complete = Context.newDictDB(_LINEAR_COMPLEXITY_MIGRATION + "_complete", Boolean.class);
-	private final DictDB<String, Integer> linear_complexity_migration_index = Context.newDictDB(_LINEAR_COMPLEXITY_MIGRATION + "_index", Integer.class);
-
-	private final DictDB<Address, Integer> _pause_whitelist_index = Context.newDictDB(PAUSE_WHITELIST + "_index", Integer.class);
-	private final DictDB<Address, Integer> _blacklist_address_index = Context.newDictDB(BLACKLIST_ADDRESS + "_index", Integer.class);
-	private final DictDB<Address, Integer> _locklist_index = Context.newDictDB(LOCKLIST + "_index", Integer.class);
-
-	private final VarDB<BigInteger> _time_offset = Context.newVarDB(_TIME_OFFSET, BigInteger.class);
-
-//        [address][snapshot_id]["ids" || "amount"]
-	private final BranchDB<Address, BranchDB<Integer, DictDB<String, Object>>> _stake_snapshots = Context.newBranchDB(_STAKE_SNAPSHOTS, Integer.class);
-//        [address] = total_number_of_snapshots_taken
-	private final DictDB<Address, Integer> _total_snapshots = Context.newDictDB(_TOTAL_SNAPSHOTS, Integer.class);
-
-//        [snapshot_id]["ids" || "amount"]
-	private final BranchDB<Integer, DictDB<String, Object>> _total_staked_snapshot = Context.newBranchDB(_TOTAL_STAKED_SNAPSHOT, Integer.class);
-	private final VarDB<Integer> _total_staked_snapshot_count = Context.newVarDB(_TOTAL_STAKED_SNAPSHOT_COUNT, Integer.class);
-
-	private final VarDB<Boolean> _enable_snapshots = Context.newVarDB(_ENABLE_SNAPSHOTS, Boolean.class);
 	public TapToken(BigInteger _initialSupply, BigInteger _decimals, @Optional boolean _on_update_var) {
 		//we mimic on_update py feature, updating java score will call <init> (constructor) method
 		if(_on_update_var) {
@@ -438,7 +371,8 @@ public class TapToken implements IRC2{
 
 		checkMigration();
 
-		if (this._enable_snapshots.get()){
+		Snapshot snapshot = new Snapshot();
+		if (snapshot._enable_snapshots.get()){
 			updateSnapshotForAddress(Context.getCaller(), _value);
 			updateTotalStakedSnapshot(this.totalStakedBalance.get());
 		}
@@ -448,9 +382,10 @@ public class TapToken implements IRC2{
 	@External
 	public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
 		//TODO: review all the loops that are use for searching
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 		if (this.paused.get()){
-			if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
-				if (this._pause_whitelist_index.getOrDefault(Context.getCaller(), 0) == 0){
+			if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
+				if (linearComplexityMigration._pause_whitelist_index.getOrDefault(Context.getCaller(), 0) == 0){
 					Context.revert("Tap token transfers are paused");
 				}
 			}
@@ -460,8 +395,8 @@ public class TapToken implements IRC2{
 				}
 			}
 		}
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
-			if (this._locklist_index.getOrDefault(Context.getCaller(), 0) > 0){
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
+			if (linearComplexityMigration._locklist_index.getOrDefault(Context.getCaller(), 0) > 0){
 				Context.revert("Transfer of TAP has been locked for this address.");
 			}
 		}
@@ -523,16 +458,17 @@ public class TapToken implements IRC2{
 		// Emits an event log `Transfer`
 		Context.println("Emit an event log Transfer from "+ from + " to " + to);
 		this.Transfer(from, to, value, data);
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 		if ( !this.switchDivsToStakedTapEnabled.getOrDefault(false) ) {
 			ArrayDB<Address> addressChanges = this.changes.get(this.addressUpdateDb.getOrDefault(0));
-			if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
-				if (this._blacklist_address_index.getOrDefault(from, 0) == 0) {
+			if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
+				if (linearComplexityMigration._blacklist_address_index.getOrDefault(from, 0) == 0) {
 					addressChanges.add(from);
-					this._blacklist_address_index.set(from, addressChanges.size());
+					linearComplexityMigration._blacklist_address_index.set(from, addressChanges.size());
 				}
-				if (this._blacklist_address_index.getOrDefault(to, 0) == 0) {
+				if (linearComplexityMigration._blacklist_address_index.getOrDefault(to, 0) == 0) {
 					addressChanges.add(to);
-					this._blacklist_address_index.set(to, addressChanges.size());
+					linearComplexityMigration._blacklist_address_index.set(to, addressChanges.size());
 				}
 			}
 
@@ -744,10 +680,10 @@ public class TapToken implements IRC2{
 	 */
 	@External
 	public void remove_from_blacklist(Address _address) {
-
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 		if (Context.getCaller().equals(Context.getOwner())) {
-			if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
-				if (this._blacklist_address_index.getOrDefault(_address, 0) == 0) {
+			if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
+				if (linearComplexityMigration._blacklist_address_index.getOrDefault(_address, 0) == 0) {
 					Context.revert(_address + " not in blacklist address");
 				}
 			} else {
@@ -759,11 +695,11 @@ public class TapToken implements IRC2{
 			this.BlacklistAddress(_address, "Removed from blacklist");
 			Address top = this.blacklistAddress.pop();
 
-			if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
-				int i = this._blacklist_address_index.getOrDefault(_address, 0);
+			if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
+				int i = linearComplexityMigration._blacklist_address_index.getOrDefault(_address, 0);
 				this.blacklistAddress.set(i, top);
-				this._blacklist_address_index.set(top, i);
-				this._blacklist_address_index.set(_address, 0);
+				linearComplexityMigration._blacklist_address_index.set(top, i);
+				linearComplexityMigration._blacklist_address_index.set(_address, 0);
 			} else {
 				if (!top.equals(_address)) {
 					for (int i = 0; i < this.blacklistAddress.size(); i++) {
@@ -785,12 +721,13 @@ public class TapToken implements IRC2{
 	 */
 	@External
 	public void set_blacklist_address(Address _address) {
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 		if ( Context.getCaller().equals(Context.getOwner())) {
 			this.BlacklistAddress(_address, "Added to Blacklist");
-			if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
-				if (this._blacklist_address_index.getOrDefault(_address, 0) == 0) {
+			if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
+				if (linearComplexityMigration._blacklist_address_index.getOrDefault(_address, 0) == 0) {
 					this.blacklistAddress.add(_address);
-					this._blacklist_address_index.set(_address, this.blacklistAddress.size());
+					linearComplexityMigration._blacklist_address_index.set(_address, this.blacklistAddress.size());
 				}
 			} else {
 				if (!containsInArrayDb(_address, this.blacklistAddress)) {
@@ -902,8 +839,9 @@ public class TapToken implements IRC2{
 	@External
 	public void remove_from_locklist(Address _address) {
 		this.ownerOnly();
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)) {
-			if (this._locklist_index.getOrDefault(_address, 0) == 0) {
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)) {
+			if (linearComplexityMigration._locklist_index.getOrDefault(_address, 0) == 0) {
 				Context.revert(_address + " not in locklist address");
 			}
 		} else {
@@ -914,11 +852,11 @@ public class TapToken implements IRC2{
 		}
 		this.LocklistAddress(_address, "Removed from Locklist");
 		Address top = this.locklist.pop();
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
-			int i = this._locklist_index.getOrDefault(_address, 0);
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
+			int i = linearComplexityMigration._locklist_index.getOrDefault(_address, 0);
 			this.locklist.set(i, top);
-			this._locklist_index.set(top, i);
-			this._locklist_index.set(_address, 0);
+			linearComplexityMigration._locklist_index.set(top, i);
+			linearComplexityMigration._locklist_index.set(_address, 0);
 		}
 		else {
 			if (!top.equals(_address)) {
@@ -942,12 +880,13 @@ public class TapToken implements IRC2{
 	public void set_locklist_address(Address _address) {
 		this.ownerOnly();
 		this.stakingEnabledOnly();
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 
 		this.LocklistAddress(_address, "Added to Locklist");
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
-			if (this._locklist_index.getOrDefault(_address, 0) == 0){
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
+			if (linearComplexityMigration._locklist_index.getOrDefault(_address, 0) == 0){
 				this.locklist.add(_address);
-				this._locklist_index.set(_address, this.locklist.size());
+				linearComplexityMigration._locklist_index.set(_address, this.locklist.size());
 			}
 		}
 		else {
@@ -993,8 +932,9 @@ public class TapToken implements IRC2{
 	@External
 	public void remove_from_whitelist(Address _address) {
 		this.ownerOnly();
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
-			if (this._pause_whitelist_index.getOrDefault(_address, 0) == 0){
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
+			if (linearComplexityMigration._pause_whitelist_index.getOrDefault(_address, 0) == 0){
 				Context.revert( _address + " not in whitelist address");
 			}
 		}
@@ -1005,11 +945,11 @@ public class TapToken implements IRC2{
 		}
 		this.WhitelistAddress(_address, "Removed from whitelist");
 		Address top = this.pauseWhitelist.pop();
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
-			int i = this._pause_whitelist_index.get(_address);
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
+			int i = linearComplexityMigration._pause_whitelist_index.get(_address);
 			this.pauseWhitelist.set(i, top);
-			this._pause_whitelist_index.set(top, i);
-			this._pause_whitelist_index.set(_address, 0);
+			linearComplexityMigration._pause_whitelist_index.set(top, i);
+			linearComplexityMigration._pause_whitelist_index.set(_address, 0);
 		}
 		else {
 			if (!top.equals(_address)) {
@@ -1033,10 +973,11 @@ public class TapToken implements IRC2{
 	public void set_whitelist_address(Address _address) {
 		this.ownerOnly();
 		this.WhitelistAddress(_address, "Added to Pause Whitelist");
-		if (this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
-			if (this._pause_whitelist_index.getOrDefault(_address, 0) == 0){
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+		if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
+			if (linearComplexityMigration._pause_whitelist_index.getOrDefault(_address, 0) == 0){
 				this.pauseWhitelist.add(_address);
-				this._pause_whitelist_index.set(_address, this.pauseWhitelist.size());
+				linearComplexityMigration._pause_whitelist_index.set(_address, this.pauseWhitelist.size());
 			}
 		}
 		else {
@@ -1049,13 +990,16 @@ public class TapToken implements IRC2{
 	@External
 	public void startLinearComplexityMigration(){
 		this.ownerOnly();
-		this.linear_complexity_migration_start.set(Boolean.TRUE);
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+		linearComplexityMigration.linear_complexity_migration_start.set(Boolean.TRUE);
 	}
 
 	private void migrateFromLinearComplexity(ArrayDB<Address> fromArray, DictDB<Address, Integer> toDict, String arrayName){
 		int count = this.maxLoop.get();
 		int length = fromArray.size();
-		int start = this.linear_complexity_migration_index.get(arrayName);
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+
+		int start = linearComplexityMigration.linear_complexity_migration_index.get(arrayName);
 		int remainingAddresses = length - start;
 		if (count > remainingAddresses){
 			count = remainingAddresses;
@@ -1069,23 +1013,24 @@ public class TapToken implements IRC2{
 			}
 		}
 		if (end == length){
-			this.linear_complexity_migration_complete.set(arrayName, Boolean.TRUE);
+			linearComplexityMigration.linear_complexity_migration_complete.set(arrayName, Boolean.TRUE);
 		}
 		else{
-			this.linear_complexity_migration_index.set(arrayName, start + count);
+			linearComplexityMigration.linear_complexity_migration_index.set(arrayName, start + count);
 		}
 	}
 
 	private void checkMigration(){
-		if (this.linear_complexity_migration_start.get()){
-			if(!this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
-				migrateFromLinearComplexity(this.locklist, this._locklist_index, ArrayDbToMigrate.LOCKLIST);
+		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+		if (linearComplexityMigration.linear_complexity_migration_start.get()){
+			if(!linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
+				migrateFromLinearComplexity(this.locklist, linearComplexityMigration._locklist_index, ArrayDbToMigrate.LOCKLIST);
 			}
-			if(!this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)){
-				migrateFromLinearComplexity(this.blacklistAddress, this._blacklist_address_index, ArrayDbToMigrate.BLACKLIST);
+			if(!linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)){
+				migrateFromLinearComplexity(this.blacklistAddress, linearComplexityMigration._blacklist_address_index, ArrayDbToMigrate.BLACKLIST);
 			}
-			if(!this.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
-				migrateFromLinearComplexity(this.pauseWhitelist, this._pause_whitelist_index, ArrayDbToMigrate.WHITELIST);
+			if(!linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
+				migrateFromLinearComplexity(this.pauseWhitelist, linearComplexityMigration._pause_whitelist_index, ArrayDbToMigrate.WHITELIST);
 			}
 		}
 	}
@@ -1093,60 +1038,69 @@ public class TapToken implements IRC2{
 	@External
 	public void toggleEnableSnapshot(){
 		ownerOnly();
-		if (!this._enable_snapshots.get() && this._time_offset.get().equals(ZERO)){
+
+		Snapshot snapshot = new Snapshot();
+		if (!snapshot._enable_snapshots.get() && snapshot._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
-		this._enable_snapshots.set(!this._enable_snapshots.get());
+		snapshot._enable_snapshots.set(!snapshot._enable_snapshots.get());
 	}
 
 	@External(readonly = true)
 	public boolean getSnapshotEnabled(){
-		return this._enable_snapshots.get();
+		Snapshot snapshot = new Snapshot();
+		return snapshot._enable_snapshots.get();
 	}
 
 	private void setTimeOffset(){
-		this._time_offset.set(BigInteger.valueOf(Context.getBlockTimestamp()));
+
+		Snapshot snapshot = new Snapshot();
+		snapshot._time_offset.set(BigInteger.valueOf(Context.getBlockTimestamp()));
 	}
 
 	@External(readonly = true)
 	public BigInteger getTimeOffset(){
-		return this._time_offset.get();
+		Snapshot snapshot = new Snapshot();
+		return snapshot._time_offset.get();
 	}
 
 	@External(readonly = true)
 	public BigInteger getDay(){
-		return BigInteger.valueOf(Context.getBlockTimestamp()).subtract(this._time_offset.get()).divide(DAY_TO_MICROSECOND);
+		Snapshot snapshot = new Snapshot();
+		return BigInteger.valueOf(Context.getBlockTimestamp()).subtract(snapshot._time_offset.get()).divide(DAY_TO_MICROSECOND);
 	}
 
 	private void updateSnapshotForAddress(Address _account, BigInteger _amount){
-		if (this._time_offset.get().equals(ZERO)){
+		Snapshot snapshot = new Snapshot();
+		if (snapshot._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
 		BigInteger current_id = getDay();
-		int totalSnapshotsTaken = this._total_snapshots.getOrDefault(_account, 0);
-		if (totalSnapshotsTaken > 0 && (int) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, 0) == 0){
-			this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
+		int totalSnapshotsTaken = snapshot._total_snapshots.getOrDefault(_account, 0);
+		if (totalSnapshotsTaken > 0 && (int) snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, 0) == 0){
+			snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
 		}
 		else{
-			this._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(IDS, current_id);
-			this._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(IDS, _amount);
-			this._total_snapshots.set(_account, totalSnapshotsTaken + 1);
+			snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(IDS, current_id);
+			snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(IDS, _amount);
+			snapshot._total_snapshots.set(_account, totalSnapshotsTaken + 1);
 		}
 	}
 
 	private void updateTotalStakedSnapshot(BigInteger _amount){
-		if (this._time_offset.get().equals(ZERO)){
+		Snapshot snapshot = new Snapshot();
+		if (snapshot._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
 		BigInteger current_id = getDay();
-		int totalSnapshotsTaken = this._total_staked_snapshot_count.getOrDefault(0);
-		if (totalSnapshotsTaken > 0 && ((BigInteger) this._total_staked_snapshot.at(totalSnapshotsTaken -1).get(IDS)).equals(current_id)){
-			this._total_staked_snapshot.at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
+		int totalSnapshotsTaken = snapshot._total_staked_snapshot_count.getOrDefault(0);
+		if (totalSnapshotsTaken > 0 && ((BigInteger) snapshot._total_staked_snapshot.at(totalSnapshotsTaken -1).get(IDS)).equals(current_id)){
+			snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
 		}
 		else{
-			this._total_staked_snapshot.at(totalSnapshotsTaken).set(IDS, current_id);
-			this._total_staked_snapshot.at(totalSnapshotsTaken).set(IDS, _amount);
-			this._total_staked_snapshot_count.set(totalSnapshotsTaken + 1);
+			snapshot._total_staked_snapshot.at(totalSnapshotsTaken).set(IDS, current_id);
+			snapshot._total_staked_snapshot.at(totalSnapshotsTaken).set(IDS, _amount);
+			snapshot._total_staked_snapshot_count.set(totalSnapshotsTaken + 1);
 		}
 	}
 
@@ -1156,16 +1110,17 @@ public class TapToken implements IRC2{
 		if (_day.compareTo(current_day) > 0){
 			Context.revert(TAG + ": Asked _day is greater than the current day.");
 		}
-		int totalSnapshotsTaken = this._total_snapshots.getOrDefault(_account, 0);
+		Snapshot snapshot = new Snapshot();
+		int totalSnapshotsTaken = snapshot._total_snapshots.getOrDefault(_account, 0);
 		if (totalSnapshotsTaken == 0){
 			return ZERO;
 		}
 
-		if (((BigInteger) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
-			return (BigInteger) this._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
+		if (((BigInteger) snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
+			return (BigInteger) snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
 		}
 
-		if (((BigInteger) this._stake_snapshots.at(_account).at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
+		if (((BigInteger) snapshot._stake_snapshots.at(_account).at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
 			return ZERO;
 		}
 
@@ -1173,7 +1128,7 @@ public class TapToken implements IRC2{
 		int high = totalSnapshotsTaken -1;
 		while (high > low){
 			int mid = high - (high - low) / 2;
-			DictDB<String, Object> mid_value = this._stake_snapshots.at(_account).at(mid);
+			DictDB<String, Object> mid_value = snapshot._stake_snapshots.at(_account).at(mid);
 			if (((BigInteger) mid_value.get(IDS)).compareTo(_day) == 0){
 				return (BigInteger) mid_value.get(AMOUNT);
 			}
@@ -1184,25 +1139,26 @@ public class TapToken implements IRC2{
 				high = mid - 1;
 			}
 		}
-		return (BigInteger) this._stake_snapshots.at(_account).at(low).getOrDefault(AMOUNT, ZERO);
+		return (BigInteger) snapshot._stake_snapshots.at(_account).at(low).getOrDefault(AMOUNT, ZERO);
 	}
 
 	@External(readonly = true)
 	public BigInteger totalStakedBalanceOFAt(BigInteger _day){
 		BigInteger current_day = getDay();
 		if (_day.compareTo(current_day) > 0){
-			Context.revert(TAG + ": Adked _day is greater than the current day.");
+			Context.revert(TAG + ": Asked _day is greater than the current day.");
 		}
-		int totalSnapshotsTaken = this._total_staked_snapshot_count.getOrDefault(0);
+		Snapshot snapshot = new Snapshot();
+		int totalSnapshotsTaken = snapshot._total_staked_snapshot_count.getOrDefault(0);
 		if (totalSnapshotsTaken == 0){
 			return ZERO;
 		}
 
-		if (((BigInteger) this._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
-			return (BigInteger) this._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
+		if (((BigInteger) snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
+			return (BigInteger) snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
 		}
 
-		if (((BigInteger) this._total_staked_snapshot.at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
+		if (((BigInteger) snapshot._total_staked_snapshot.at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
 			return ZERO;
 		}
 
@@ -1210,7 +1166,7 @@ public class TapToken implements IRC2{
 		int high = totalSnapshotsTaken - 1;
 		while (high > low){
 			int mid = high - (high - low) / 2;
-			DictDB<String, Object> mid_value = this._total_staked_snapshot.at(mid);
+			DictDB<String, Object> mid_value = snapshot._total_staked_snapshot.at(mid);
 			if (((BigInteger) mid_value.get(IDS)).compareTo(_day) == 0){
 				return (BigInteger) mid_value.get(AMOUNT);
 			}
@@ -1221,13 +1177,14 @@ public class TapToken implements IRC2{
 				high = mid - 1;
 			}
 		}
-		return (BigInteger) this._total_staked_snapshot.at(low).getOrDefault(AMOUNT, ZERO);
+		return (BigInteger) snapshot._total_staked_snapshot.at(low).getOrDefault(AMOUNT, ZERO);
 	}
 
 	@External
 	public void loadTAPStakeSnapshot(StakedTAPTokenSnapshots[] _data){
 		ownerOnly();
-		if (this._time_offset.get().equals(ZERO)){
+		Snapshot snapshot = new Snapshot();
+		if (snapshot._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
 		for (int i = 0; i < _data.length; i++){
@@ -1235,10 +1192,10 @@ public class TapToken implements IRC2{
 			BigInteger current_id = stake.day;
 			if (current_id.compareTo(this.getDay()) < 0){
 				Address _account = stake.address;
-				int length = this._total_snapshots.getOrDefault(_account, 0);
-				this._stake_snapshots.at(_account).at(length).set(IDS, current_id);
-				this._stake_snapshots.at(_account).at(length).set(AMOUNT, stake.amount);
-				this._total_snapshots.set(_account, this._total_snapshots.getOrDefault(_account, 0) + 1);
+				int length = snapshot._total_snapshots.getOrDefault(_account, 0);
+				snapshot._stake_snapshots.at(_account).at(length).set(IDS, current_id);
+				snapshot._stake_snapshots.at(_account).at(length).set(AMOUNT, stake.amount);
+				snapshot._total_snapshots.set(_account, snapshot._total_snapshots.getOrDefault(_account, 0) + 1);
 			}
 		}
 	}
@@ -1246,7 +1203,8 @@ public class TapToken implements IRC2{
 	@External
 	public void loadTotalStakeSnapshot(TotalStakedTAPTokenSnapshots[] _data){
 		ownerOnly();
-		if (this._time_offset.get().equals(ZERO)){
+		Snapshot snapshot = new Snapshot();
+		if (snapshot._time_offset.get().equals(ZERO)){
 			setTimeOffset();
 		}
 		for (int i = 0; i < _data.length; i++){
@@ -1254,10 +1212,10 @@ public class TapToken implements IRC2{
 			BigInteger current_id = _id.day;
 			if (current_id.compareTo(this.getDay()) < 0){
 				BigInteger amount = _id.amount;
-				int length = this._total_staked_snapshot_count.getOrDefault(0);
-				this._total_staked_snapshot.at(length).set(IDS, current_id);
-				this._total_staked_snapshot.at(length).set(AMOUNT, _id.amount);
-				this._total_staked_snapshot_count.set(this._total_staked_snapshot_count.getOrDefault(0) + 1);
+				int length = snapshot._total_staked_snapshot_count.getOrDefault(0);
+				snapshot._total_staked_snapshot.at(length).set(IDS, current_id);
+				snapshot._total_staked_snapshot.at(length).set(AMOUNT, amount);
+				snapshot._total_staked_snapshot_count.set(snapshot._total_staked_snapshot_count.getOrDefault(0) + 1);
 			}
 		}
 	}
@@ -1265,7 +1223,8 @@ public class TapToken implements IRC2{
 	@External
 	public void advanceDayManually(){
 		ownerOnly();
-		this._time_offset.set(this._time_offset.getOrDefault(ZERO).subtract(DAY_TO_MICROSECOND));
+		Snapshot snapshot = new Snapshot();
+		snapshot._time_offset.set(snapshot._time_offset.getOrDefault(ZERO).subtract(DAY_TO_MICROSECOND));
 	}
 
 	private <T> boolean containsInArrayDb(T value, ArrayDB<T> arraydb) {
