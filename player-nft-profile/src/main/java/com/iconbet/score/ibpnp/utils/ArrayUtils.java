@@ -71,5 +71,61 @@ public final class ArrayUtils {
             arrayDB.add(username_list.get(i));
         }
     }
+
+    public static <T> boolean containsInArrayDb(T value, ArrayDB<T> array) {
+        boolean contains = false;
+        if (array == null || value == null) {
+            return contains;
+        }
+
+        for (int i = 0; i < array.size(); i++) {
+            if (array.get(i) != null && array.get(i).equals(value)) {
+                contains = true;
+                break;
+            }
+        }
+        return contains;
+    }
+
+    public static <T> boolean containsInArray(T value, T[] array){
+        boolean contains = false;
+        if (array == null || value == null){
+            return contains;
+        }
+
+        for (int i = 0; i < array.length; i++){
+            if (array[i] != null && array[i].equals(value)){
+                contains = true;
+                break;
+            }
+        }
+        return contains;
+    }
+
+    public static <T> boolean containsInList(T value, List<T> listOfValues){
+        boolean contains = false;
+        if (listOfValues == null || value ==  null){
+            return contains;
+        }
+
+        for (int i = 0; i < listOfValues.size(); i++){
+            if (listOfValues.get(i) != null && listOfValues.get(i).equals(value)){
+                contains = true;
+                break;
+            }
+        }
+        return contains;
+    }
+
+    public static <T> List<T> arrayDBToList(ArrayDB<T> array){
+        List<T> listOfValues = new ArrayList<>();
+        if (array.size() == 0){
+            return listOfValues;
+        }
+        for (int i = 0; i < array.size(); i++){
+            listOfValues.add(array.get(i));
+        }
+        return listOfValues;
+    }
 }
 
