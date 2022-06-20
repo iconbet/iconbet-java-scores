@@ -560,18 +560,18 @@ public class RewardDistribution {
 	}
 
 	@External(readonly = true)
-	public Boolean getLinearityComplexityMigrationStart(){
+	public boolean getLinearityComplexityMigrationStart(){
 		return this.linearityComplexityMigrationStart.get();
 	}
 
 	@External
-	public void setLinearityComplexityMigrationStart(Boolean start){
+	public void setLinearityComplexityMigrationStart(boolean start){
 		Context.require(Context.getCaller().equals(Context.getOwner()), TAG + ": Only owner of the score call this method.");
 		this.linearityComplexityMigrationStart.set(start);
 	}
 
 	@External(readonly = true)
-	public Boolean getLinearityComplexityMigrationComplete(){
+	public boolean getLinearityComplexityMigrationComplete(){
 		return linearityComplexityMigrationComplete.get();
 	}
 
