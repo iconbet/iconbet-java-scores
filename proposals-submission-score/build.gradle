@@ -29,6 +29,7 @@ deployJar {
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
             nid = 0x7
+            to = 'cx5eec55bb4fc13a526fd93e1d836633f03c2a2b3b'
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
