@@ -1,7 +1,11 @@
 package com.iconbet.score.ibpnp;
 
 import com.iconloop.score.token.irc3.IRC3Basic;
-import score.*;
+import score.VarDB;
+import score.ArrayDB;
+import score.DictDB;
+import score.Context;
+import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
 
@@ -47,6 +51,18 @@ public class IBPNP extends IRC3Basic {
     private final VarDB<Address> tapTokenScore = Context.newVarDB("TAP_TOKEN_SCORE", Address.class);
     private final VarDB<Address> rewardsScore = Context.newVarDB("REWARDS_SCORE", Address.class);
 
+    public static class GameData {
+        BigInteger game_amount_wagered;
+        BigInteger game_amount_won;
+        BigInteger game_amount_lost;
+        int game_bets_won;
+        int game_bets_lost;
+        BigInteger game_largest_bet;
+        BigInteger game_wager_level;
+        Address wallet_address;
+        String remarks;
+    }
+
     public IBPNP(String _name, String _symbol) {
         super(_name, _symbol);
         this.total_supply.set(BigInteger.ZERO);
@@ -55,7 +71,7 @@ public class IBPNP extends IRC3Basic {
 
     @External
     public void setTreasuryScore(Address scoreAddress) {
-        Context.require(Context.getCaller().equals(Context.getOwner()), "Only owner can call this method " + TAG);
+        Context.require(Context.getCaller().equals(Context.getOwner()), TAG + ": Only owner can call this method");
         this.treasury_score.set(scoreAddress);
     }
 
@@ -66,7 +82,7 @@ public class IBPNP extends IRC3Basic {
 
     @External
     public void setTapTokenScore(Address scoreAddress) {
-        Context.require(Context.getCaller().equals(Context.getOwner()), "Only owner can call this method " + TAG);
+        Context.require(Context.getCaller().equals(Context.getOwner()), TAG + ": Only owner can call this method");
         this.tapTokenScore.set(scoreAddress);
     }
 
@@ -77,7 +93,7 @@ public class IBPNP extends IRC3Basic {
 
     @External
     public void setRewardsScore(Address scoreAddress) {
-        Context.require(Context.getCaller().equals(Context.getOwner()), "Only owner can call this method " + TAG);
+        Context.require(Context.getCaller().equals(Context.getOwner()), TAG + ": Only owner can call this method");
         this.rewardsScore.set(scoreAddress);
     }
 
@@ -95,7 +111,7 @@ public class IBPNP extends IRC3Basic {
     @Override
     @External
     public void transferFrom(Address _from, Address _to, BigInteger _tokenId) {
-        Context.revert(TAG + ": Transfer is not allowed");
+        Context.revert(TAG + ": Transfer is not allowed.");
     }
 
     private void _set_username(Address address, String username) {
@@ -140,11 +156,7 @@ public class IBPNP extends IRC3Basic {
 
     @External(readonly = true)
     public boolean hasIBPNPProfile(Address address){
-        boolean hasProfile = false;
-        if (this.user_wallet_index.getOrDefault(address, 0) > 0){
-            hasProfile = true;
-        }
-        return hasProfile;
+        return _checkIfWalletPresent(address);
     }
 
     @External
@@ -157,7 +169,7 @@ public class IBPNP extends IRC3Basic {
         }
         super._mint(owner, tokenId);
         this.user_wallets_list.add(owner);
-        int index = this.username_list.size();
+        int index = this.user_wallets_list.size();
         this.user_wallet_index.set(owner, index);
         _set_username(owner, user_name);
         add_data_to_userdb(user_name, owner, tokenId);
@@ -165,14 +177,10 @@ public class IBPNP extends IRC3Basic {
     }
 
     @External
-    public void addGameData(BigInteger game_amount_wagered, BigInteger game_amount_won,
-                            BigInteger game_amount_lost, int game_bets_won,
-                            int game_bets_lost, BigInteger game_largest_bet,
-                            BigInteger game_wager_level, Address wallet_address, String remarks) {
+    public void addGameData(GameData gameData) {
         Context.require(Context.getCaller().equals(this.treasury_score.get()), "Only treasury score can call this method.");
         UserData userData = new UserData();
-        Address userWallet = Context.getOrigin();
-        String userPrefix = userDBPrefix(userWallet);
+        String userPrefix = userDBPrefix(gameData.wallet_address);
         BigInteger amount_wagered = userData.getAmount_wagered(userPrefix);
         BigInteger amount_won = userData.getAmount_won(userPrefix);
         BigInteger amount_lost = userData.getAmount_lost(userPrefix);
@@ -181,17 +189,17 @@ public class IBPNP extends IRC3Basic {
         BigInteger largest_bet = userData.getLargest_bet(userPrefix);
         int wager_level = userData.getWager_level(userPrefix);
 
-        if (remarks.equals("wager_payout")) {
-            userData.setAmount_won(userPrefix, amount_won.add(game_amount_won));
-            userData.setAmount_lost(userPrefix, amount_lost.subtract(game_amount_wagered));
-            userData.setBets_won(userPrefix, bets_won + game_bets_won);
-            userData.setBets_lost(userPrefix, bets_lost - game_bets_won);
+        if (gameData.remarks.equals("wager_payout")) {
+            userData.setAmount_won(userPrefix, amount_won.add(gameData.game_amount_won));
+            userData.setAmount_lost(userPrefix, amount_lost.subtract(gameData.game_amount_wagered));
+            userData.setBets_won(userPrefix, bets_won + gameData.game_bets_won);
+            userData.setBets_lost(userPrefix, bets_lost - gameData.game_bets_won);
         }
 
-        if (remarks.equals("take_wager")) {
-            userData.setAmount_wagered(userPrefix, game_amount_wagered);
-            if (game_largest_bet.compareTo(largest_bet) > 0) {
-                userData.setLargest_bet(userPrefix, game_largest_bet);
+        if (gameData.remarks.equals("take_wager")) {
+            userData.setAmount_wagered(userPrefix, amount_wagered.add(gameData.game_amount_wagered));
+            if (gameData.game_largest_bet.compareTo(largest_bet) > 0) {
+                userData.setLargest_bet(userPrefix, gameData.game_largest_bet);
             }
 
             BigInteger amount_wagered1 = userData.getAmount_wagered(userPrefix);
@@ -199,16 +207,17 @@ public class IBPNP extends IRC3Basic {
                 int wager_level_1 = amount_wagered1.divide(new BigInteger("1000000")).intValue();
                 userData.setWager_level(userPrefix, wager_level_1);
             }
-            userData.setBets_lost(userPrefix, game_bets_lost + bets_lost);
-            userData.setAmount_lost(userPrefix, game_amount_lost.add(amount_lost));
+            userData.setBets_lost(userPrefix, gameData.game_bets_lost + bets_lost);
+            userData.setAmount_lost(userPrefix, gameData.game_amount_lost.add(amount_lost));
         }
         AddedGameData("Game data is added to " + Context.getOrigin().toString());
     }
 
+
     @External(readonly = true)
     public Map<String, Object> getUserData(Address address) {
         Map<String, Object> userData = get_user_data(address);
-        BigInteger dailyEarning = (BigInteger) Context.call(rewardsScore.get(), "get_expected_rewards", address.toString());
+        BigInteger dailyEarning = callScore(BigInteger.class, rewardsScore.get(), "get_expected_rewards", address.toString());
         userData.put("daily_earning", dailyEarning);
         return userData;
     }
@@ -259,7 +268,7 @@ public class IBPNP extends IRC3Basic {
         boolean canRequest = false;
         List<String> statusList = List.of("reject", "_unlinked", "");
         int hasReachedRequestingBlockheight = BigInteger.valueOf(Context.getBlockTimestamp()).subtract(walletLinkData.getRequested_block(walletPrefix)).compareTo(REQUEST_WITHDRAW_BLOCK_HEIGHT);
-        if (walletLinkData.getRequest_status(walletPrefix).equals("_pending") && hasReachedRequestingBlockheight < 0) {
+        if (walletLinkData.getRequest_status(walletPrefix).equals("_pending") && hasReachedRequestingBlockheight > 0) {
             canRequest = true;
         } else if (containsInList(walletLinkData.getRequest_status(walletPrefix), statusList)) {
             canRequest = true;
@@ -290,7 +299,7 @@ public class IBPNP extends IRC3Basic {
             Context.revert(TAG + ": Cannot request the requested wallet before one day of requesting it.");
         }
         if (!walletLinkData.getRequested_wallet(senderPrefix).equals("")) {
-            if (containsInList(walletLinkData.getRequest_status(senderPrefix), List.of("_reject", "_unlinked"))) {
+            if (containsInList(walletLinkData.getRequest_status(senderPrefix), List.of("_reject", "_unlinked", ""))) {
                 _add_data_to_wallet_link_data(sender, _wallet, "_pending", "");
                 _add_data_to_wallet_link_data(_wallet, sender, "_pending", _walletType);
                 this.requested_to_requesting.set(_wallet, sender.toString());
@@ -301,6 +310,11 @@ public class IBPNP extends IRC3Basic {
             } else {
                 Context.revert(TAG + ": Cannot request linking wallet before one day of requesting a wallet.");
             }
+        }
+        else {
+            _add_data_to_wallet_link_data(sender, _wallet, "_pending", "");
+            _add_data_to_wallet_link_data(_wallet, sender, "_pending", _walletType);
+            this.requested_to_requesting.set(_wallet, sender.toString());
         }
         RequestToLinkWalletSent("Request to link wallet is sent to " + _wallet);
     }
@@ -319,6 +333,7 @@ public class IBPNP extends IRC3Basic {
         Context.require(userData.getLinked_wallet(walletUserDataPrefix).equals("") &&
                         userData.getLinked_wallet(senderUserDataPrefix).equals(""),
                 TAG + ": The wallet is already linked to another wallet.");
+        Context.require(requested_to_requesting.getOrDefault(sender, "").equals(_wallet.toString()), TAG + ": " + _wallet + " is not the requesting wallet");
         if (_response.equals("_approve")) {
             userData.setLinked_wallet(senderUserDataPrefix, _wallet.toString());
             userData.setLinked_wallet(walletUserDataPrefix, sender.toString());
@@ -347,10 +362,10 @@ public class IBPNP extends IRC3Basic {
 
     @External
     public void changeUsername(String newusername) {
+        Address sender = Context.getCaller();
+        Context.require(_checkIfWalletPresent(sender), "This sender does not have an IBPNP profile." + TAG);
         String newusername_without_space = newusername.replace(" ", "");
         String new_username = newusername_without_space.toLowerCase();
-        Address sender = Context.getCaller();
-        Context.require(checkIfWalletPresent(sender), "This sender does not have an IBPNP profile." + TAG);
         String old_username = this.wallet_to_username.getOrDefault(sender, "None");
         Context.require(!old_username.equals(new_username), "Cannot change into the same username. " + TAG);
         _check_username_validity(newusername);
@@ -423,11 +438,6 @@ public class IBPNP extends IRC3Basic {
         return this.user_wallet_index.getOrDefault(address, 0) > 0;
     }
 
-    @External(readonly = true)
-    public boolean checkIfWalletPresent(Address address) {
-        return _checkIfWalletPresent(address);
-    }
-
     private void add_data_to_userdb(String username, Address wallet_address, BigInteger tokenId) {
         String userPrefix = userDBPrefix(wallet_address);
         UserData userData = new UserData();
@@ -453,6 +463,18 @@ public class IBPNP extends IRC3Basic {
         tokenData.put("wager_level", userData.getWager_level(userPrefix));
         tokenData.put("linked_wallet", userData.getLinked_wallet(userPrefix));
         return tokenData;
+    }
+
+    public <T> T callScore(Class<T> t, Address address, String method, Object... params) {
+        return Context.call(t, address, method, params);
+    }
+
+    public void callScore(Address address, String method, Object... params) {
+        Context.call(address, method, params);
+    }
+
+    public void callScore(BigInteger amount, Address address, String method, Object... params) {
+        Context.call(amount, address, method, params);
     }
 
     @EventLog(indexed = 1)
