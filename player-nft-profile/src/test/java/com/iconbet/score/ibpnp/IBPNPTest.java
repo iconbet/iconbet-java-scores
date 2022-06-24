@@ -101,7 +101,7 @@ public class IBPNPTest extends TestBase {
     @Test
     void setTreasuryScoreNotOwner() {
         Executable setTreasuryScoreNotOwner = () -> setTreasuryScoreExceptions();
-        expectErrorMessage(setTreasuryScoreNotOwner, TAG + ": Only owner can call this method");
+        expectErrorMessage(setTreasuryScoreNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
     }
 
     private void setTreasuryScoreExceptions() {
@@ -115,7 +115,7 @@ public class IBPNPTest extends TestBase {
     @Test
     void setTapTokenScoreNotOwner() {
         Executable setTapTokenScoreNotOwner = () -> setTapTokenScoreExceptions();
-        expectErrorMessage(setTapTokenScoreNotOwner, TAG + ": Only owner can call this method");
+        expectErrorMessage(setTapTokenScoreNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
     }
 
     private void setTapTokenScoreExceptions() {
@@ -129,7 +129,7 @@ public class IBPNPTest extends TestBase {
     @Test
     void setRewardsScoreNotOwner() {
         Executable setRewardsScoreNotOwner = () -> setRewardsScoreExceptions();
-        expectErrorMessage(setRewardsScoreNotOwner, TAG + ": Only owner can call this method");
+        expectErrorMessage(setRewardsScoreNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
     }
 
 
