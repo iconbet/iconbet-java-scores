@@ -13,7 +13,7 @@ import java.util.Map;
 import scorex.util.ArrayList;
 
 import com.iconbet.score.proposalsfund.db.ProposalData;
-import com.iconbet.score.proposalsfund.utils.Constants;
+import static com.iconbet.score.proposalsfund.utils.Constants.*;
 
 public class ProposalsFund extends ProposalData {
     private static final String TAG = "ICONBet ProposalsFund";
