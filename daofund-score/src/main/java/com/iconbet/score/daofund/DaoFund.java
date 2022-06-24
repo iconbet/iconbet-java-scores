@@ -92,10 +92,8 @@ public class DaoFund {
     @External
     public void add_admin(Address _admin) {
         Address sender = Context.getCaller();
-        Address owner = Context.getOrigin();
-        if (!sender.equals(owner)) {
-            Context.revert(TAG + ": Only admins can set new admins.");
-        }
+        Address owner = Context.getOwner();
+        Context.require(sender.equals(owner), TAG + ": Only owners can set new admins.");
 
         if (!containsInArrayDb(_admin, this.admins)) {
             this.admins.add(_admin);
@@ -109,7 +107,7 @@ public class DaoFund {
     @External
     public void remove_admin(Address _admin) {
         Address sender = Context.getCaller();
-        Address owner = Context.getOrigin();
+        Address owner = Context.getOwner();
         if (!sender.equals(owner)) {
             Context.revert(TAG + ": Only admins can remove admins.");
         }
