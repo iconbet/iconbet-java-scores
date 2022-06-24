@@ -138,22 +138,22 @@ public class ProposalsFund extends ProposalData {
             String proposalPrefix = proposalPrefix(_ipfs_key);
             // todo: getting entire proposal details or getting individual values?
             Map<String, ?> proposal_details = getDataFromProposalDB(proposalPrefix);
-            if (!proposal_details.get(Constants.STATUS).equals(_DISQUALIFIED)) {
-                if (proposal_details.get(Constants.PROPOSER_ADDRESS).equals(_wallet_address)) {
-                    int totalInstallment = (int) proposal_details.get(Constants.PROJECT_DURATION);
-                    int totalPaidCount = totalInstallment - (int) proposal_details.get(Constants.INSTALLMENT_COUNT);
+            if (!proposal_details.get(STATUS).equals(_DISQUALIFIED)) {
+                if (proposal_details.get(PROPOSER_ADDRESS).equals(_wallet_address)) {
+                    int totalInstallment = (int) proposal_details.get(PROJECT_DURATION);
+                    int totalPaidCount = totalInstallment - (int) proposal_details.get(INSTALLMENT_COUNT);
 
                     if (totalPaidCount < totalInstallment) {
-                        BigInteger totalBudget = (BigInteger) proposal_details.get(Constants.TOTAL_BUDGET);
-                        BigInteger totalPaidAmount = (BigInteger) proposal_details.get(Constants.WITHDRAW_AMOUNT);
+                        BigInteger totalBudget = (BigInteger) proposal_details.get(TOTAL_BUDGET);
+                        BigInteger totalPaidAmount = (BigInteger) proposal_details.get(WITHDRAW_AMOUNT);
 
                         Map<String, ?> project_details = Map.of(
-                                Constants.IPFS_HASH, _ipfs_key,
-                                Constants.TOTAL_BUDGET, totalBudget,
-                                Constants.TOTAL_INSTALLMENT_PAID, totalPaidAmount,
-                                Constants.TOTAL_INSTALLMENT_COUNT, totalInstallment,
-                                Constants.TOTAL_TIMES_INSTALLMENT_PAID, totalPaidCount,
-                                Constants.INSTALLMENT_AMOUNT, totalBudget.divide(BigInteger.valueOf(totalInstallment)));
+                                IPFS_HASH, _ipfs_key,
+                                TOTAL_BUDGET, totalBudget,
+                                TOTAL_INSTALLMENT_PAID, totalPaidAmount,
+                                TOTAL_INSTALLMENT_COUNT, totalInstallment,
+                                TOTAL_TIMES_INSTALLMENT_PAID, totalPaidCount,
+                                INSTALLMENT_AMOUNT, totalBudget.divide(BigInteger.valueOf(totalInstallment)));
 
                         projectDetails.add(project_details);
                         totalAmountToBePaidICX = totalBudget.divide(BigInteger.valueOf(totalInstallment));
