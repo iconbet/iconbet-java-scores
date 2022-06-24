@@ -156,7 +156,7 @@ public class DaoFund {
             Context.revert(TAG + ": Not Enough balance. Available Balance =" + _available_amount.toString());
         }
 
-        int _count = this.withdraw_count.get();
+        int _count = this.withdraw_count.getOrDefault(0);
         int _withdraw_count = _count + 1;
 
         BigInteger now = BigInteger.valueOf(Context.getBlockTimestamp());
@@ -312,7 +312,7 @@ public class DaoFund {
     public void transfer_proposal_fund_to_proposals_fund(String _ipfs_key, int _total_installment_count, Address _proposer_address, BigInteger _total_budget) {
         this.validateProposalsSubmissionScore();
         Context.require(Context.getBalance(Context.getAddress()).compareTo(_total_budget) >= 0, TAG + ": Not enough fund in DAOfund");
-        if (this.proposalKeyIndex.get(_ipfs_key) == 0) {
+        if (this.proposalKeyIndex.getOrDefault(_ipfs_key, 0) == 0) {
             this._proposals_keys.add(_ipfs_key);
             this.proposalKeyIndex.set(_ipfs_key, this._proposals_keys.size());
             this._proposal_budgets.set(_ipfs_key, _total_budget);
