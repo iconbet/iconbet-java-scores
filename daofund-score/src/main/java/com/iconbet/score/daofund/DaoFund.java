@@ -63,7 +63,7 @@ public class DaoFund {
 
     private <T> boolean remove_array_item(ArrayDB<T> arraydb, T target) {
 
-        T _out = arraydb.get(-1);
+        T _out = arraydb.get(arraydb.size() - 1);
         if (_out != null && _out.equals(target)) {
             arraydb.pop();
             return Boolean.TRUE;
