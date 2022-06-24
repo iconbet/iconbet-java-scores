@@ -203,7 +203,7 @@ public class DaoFund {
             _end = wd_count;
         }
 
-        Context.require(_start < _end, "Start must not be greater than or equal to end.");
+        Context.require(_start <= _end, "Start must not be greater than or equal to end.");
 
 
         Context.require((_end - _start) < BATCH_SIZE, "Maximum allowed range is " + BATCH_SIZE);
