@@ -211,7 +211,7 @@ public class DaoFund {
         for (int _withdraw = _start; _withdraw <= _end; _withdraw++) {
             Map<String, ?> withdrawRecords = Map.ofEntries(Map.entry("withdraw_address", this.withdraw_record.at(_withdraw).get("withdraw_address")),
                     Map.entry("withdraw_timestamp", this.withdraw_record.at(_withdraw).get("withdraw_timestamp")),
-                    Map.entry("withdraw_reason", this.withdraw_record.at(_withdraw).get("withdraw_reason")),
+                    Map.entry("withdraw_memo", this.withdraw_record.at(_withdraw).get("withdraw_memo")),
                     Map.entry("withdraw_amount", this.withdraw_record.at(_withdraw).get("withdraw_amount")));
             withdrawRecordsList.add(withdrawRecords);
         }
@@ -228,7 +228,7 @@ public class DaoFund {
         return Map.of(
                 "withdraw_address", this.withdraw_record.at(_idx).get("withdraw_address"),
                 "withdraw_timestamp", this.withdraw_record.at(_idx).get("withdraw_timestamp"),
-                "withdraw_reason", this.withdraw_record.at(_idx).get("withdraw_reason"),
+                "withdraw_reason", this.withdraw_record.at(_idx).get("withdraw_memo"),
                 "withdraw_amount", this.withdraw_record.at(_idx).get("withdraw_amount"));
     }
 
