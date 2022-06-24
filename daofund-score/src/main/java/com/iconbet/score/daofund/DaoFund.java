@@ -120,7 +120,7 @@ public class DaoFund {
             remove_array_item(this.admins, _admin);
             AdminRemoved(_admin);
         } else {
-            Context.revert(TAG + ":  " + _admin + " not in Admins List");
+            Context.revert(TAG + ": " + _admin + " not in Admins List");
         }
     }
 
