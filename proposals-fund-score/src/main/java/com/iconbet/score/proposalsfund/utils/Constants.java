@@ -129,4 +129,30 @@ public class Constants {
     public static final String INSTALLMENT_AMOUNT = "installment_amount";
     public static final String TOTAL_INSTALLMENT_COUNT = "total_installment_count";
     public static final String SPONSOR_BOND_AMOUNT = "sponsor_bond_amount";
+
+    public static final String TAG = "ICONBet ProposalsFund";
+    public static final String PROPOSAL_DB_PREFIX = "iconbetProposal";
+    public static final String ID = "id";
+    public static final String _PROPOSALS_KEYS = "_proposals_keys";
+    public static final String _FUND_RECORD = "fund_record";
+
+    public static final String _TOTAL_INSTALLMENT_COUNT = "_total_installment_count";
+    public static final String _TOTAL_TIMES_INSTALLMENT_PAID = "_total_times_installment_paid";
+    public static final String _TOTAL_TIMES_REWARD_PAID = "_total_times_reward_paid";
+    public static final String _TOTAL_INSTALLMENT_PAID = "_total_installment_paid";
+    public static final String _TOTAL_REWARD_PAID = "_total_reward_paid";
+    public static final String _INSTALLMENT_AMOUNT = "installment_amount";
+
+    public static final String _PROPOSAL_SUBMISSION_SCORE = "_proposal_submission_score";
+    public static final String _DAOFUND_SCORE = "_daofund_score";
+
+    public static final String _PROPOSER_ADDRESS = "proposer_address";
+    public static final String _STATUS = "status";
+    public static final String _IPFS_HASH = "ipfs_hash";
+    public static final String _TOTAL_BUDGET = "total_budget";
+
+    public static final String _ACTIVE = "active";
+    public static final String _DISQUALIFIED = "disqualified";
+    public static final String _COMPLETED = "completed";
+
 }
