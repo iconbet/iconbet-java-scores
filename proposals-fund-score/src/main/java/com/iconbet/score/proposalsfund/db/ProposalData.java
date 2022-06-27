@@ -7,6 +7,7 @@ import score.VarDB;
 
 import java.math.BigInteger;
 import java.util.Map;
+import static com.iconbet.score.proposalsfund.utils.Constants.*;
 
 public class ProposalData {
     public static class ProposalAttributes{
@@ -36,6 +37,7 @@ public class ProposalData {
         this.withdraw_amount.at(proposalPrefix).set(BigInteger.ZERO);
         this.remaining_amount.at(proposalPrefix).set(proposalAttributes.totalBudget);
         this.installment_count.at(proposalPrefix).set(proposalAttributes.projectDuration);
+        this.status.at(proposalPrefix).set(_ACTIVE);
     }
 
     public Map<String, ?> getDataFromProposalDB(String proposalPrefix){
@@ -45,7 +47,8 @@ public class ProposalData {
                 "proposer_address", proposer_address.at(proposalPrefix).get(),
                 "withdraw_amount",  withdraw_amount.at(proposalPrefix).getOrDefault(BigInteger.ZERO),
                 "installment_count", installment_count.at(proposalPrefix).getOrDefault(0),
-                "remaining_amount", remaining_amount.at(proposalPrefix).getOrDefault(BigInteger.ZERO));
+                "remaining_amount", remaining_amount.at(proposalPrefix).getOrDefault(BigInteger.ZERO),
+                "status", status.at(proposalPrefix).getOrDefault(""));
     }
 
     public void setTotalBudget(String proposalPrefix, BigInteger totalBudget){
