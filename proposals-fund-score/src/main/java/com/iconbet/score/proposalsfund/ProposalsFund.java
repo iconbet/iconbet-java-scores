@@ -16,31 +16,6 @@ import com.iconbet.score.proposalsfund.db.ProposalData;
 import static com.iconbet.score.proposalsfund.utils.Constants.*;
 
 public class ProposalsFund extends ProposalData {
-    private static final String TAG = "ICONBet ProposalsFund";
-    private static final String PROPOSAL_DB_PREFIX = "iconbetProposal";
-    private static final String ID = "id";
-    private static final String _PROPOSALS_KEYS = "_proposals_keys";
-    private static final String _FUND_RECORD = "fund_record";
-
-    private static final String _TOTAL_INSTALLMENT_COUNT = "_total_installment_count";
-    private static final String _TOTAL_TIMES_INSTALLMENT_PAID = "_total_times_installment_paid";
-    private static final String _TOTAL_TIMES_REWARD_PAID = "_total_times_reward_paid";
-    private static final String _TOTAL_INSTALLMENT_PAID = "_total_installment_paid";
-    private static final String _TOTAL_REWARD_PAID = "_total_reward_paid";
-    private static final String _INSTALLMENT_AMOUNT = "installment_amount";
-
-    private static final String _PROPOSAL_SUBMISSION_SCORE = "_proposal_submission_score";
-    private static final String _DAOFUND_SCORE = "_daofund_score";
-
-    private static final String _PROPOSER_ADDRESS = "proposer_address";
-    private static final String _STATUS = "status";
-    private static final String _IPFS_HASH = "ipfs_hash";
-    private static final String _TOTAL_BUDGET = "total_budget";
-
-    private static final String _ACTIVE = "active";
-    private static final String _DISQUALIFIED = "disqualified";
-    private static final String _COMPLETED = "completed";
-
     private final ArrayDB<String> proposalsKeys = Context.newArrayDB(_PROPOSALS_KEYS, String.class);
     private final DictDB<String, Integer> proposalKeyIndex = Context.newDictDB(_PROPOSALS_KEYS + "_index", Integer.class);
     private final DictDB<String, BigInteger> fundRecord = Context.newDictDB(_FUND_RECORD, BigInteger.class);
@@ -130,6 +105,12 @@ public class ProposalsFund extends ProposalData {
     }
 
     @External(readonly = true)
+    public Map<String, ?> getProposalDetails(String ipfsHash){
+        String proposalPrefix = proposalPrefix(ipfsHash);
+        return getDataFromProposalDB(proposalPrefix);
+    }
+
+    @External(readonly = true)
     public Map<String, ?> get_proposer_projected_fund(Address _wallet_address) {
         BigInteger totalAmountToBePaidICX = BigInteger.ZERO;
         List<Map<String, ?>> projectDetails = new ArrayList<>();
@@ -152,7 +133,9 @@ public class ProposalsFund extends ProposalData {
                                 TOTAL_BUDGET, totalBudget,
                                 TOTAL_INSTALLMENT_PAID, totalPaidAmount,
                                 TOTAL_INSTALLMENT_COUNT, totalInstallment,
+                                INSTALLMENT_COUNT, proposal_details.get(INSTALLMENT_COUNT),
                                 TOTAL_TIMES_INSTALLMENT_PAID, totalPaidCount,
+                                REMAINING_AMOUNT, proposal_details.get(REMAINING_AMOUNT),
                                 INSTALLMENT_AMOUNT, totalBudget.divide(BigInteger.valueOf(totalInstallment)));
 
                         projectDetails.add(project_details);
@@ -164,7 +147,7 @@ public class ProposalsFund extends ProposalData {
         return Map.of(
                 "data", projectDetails,
                 "project_count", projectDetails.size(),
-                "total_amount", Map.of("ICX", totalAmountToBePaidICX),
+                "total_amount", totalAmountToBePaidICX,
                 "withdraw_amount_icx", this.fundRecord.getOrDefault(_wallet_address.toString(), BigInteger.ZERO));
     }
 
