@@ -226,7 +226,7 @@ public class ProposalsSubmission {
 
     @External(readonly = true)
     public Map<String, ?> getProposalDetailsByHash(String ipfs_hash) {
-        return _getProposalDetails(proposalPrefix(ipfs_hash));
+        return _getProposalDetails(ipfs_hash);
     }
 
     @External(readonly = true)
@@ -250,7 +250,7 @@ public class ProposalsSubmission {
         }
 
         for (int i = _start_index; i < _end_index; i++) {
-            Map<String, ?> proposal_details = _getProposalDetails(proposalPrefix(proposals_keys.get(i)));
+            Map<String, ?> proposal_details = _getProposalDetails(proposals_keys.get(i));
             if (proposal_details.get(STATUS).equals(_status)) {
                 proposals_list.add(proposal_details);
             }
@@ -307,7 +307,7 @@ public class ProposalsSubmission {
     private Map<String, ?> _getProposalDetails(String ipfsHash) {
         String proposalPrefix = proposalPrefix(ipfsHash);
         ProposalData proposalData = new ProposalData();
-        return proposalData.getDataFromProposalDB(ipfsHash);
+        return proposalData.getDataFromProposalDB(proposalPrefix);
     }
 
     private BigInteger getStake() {
