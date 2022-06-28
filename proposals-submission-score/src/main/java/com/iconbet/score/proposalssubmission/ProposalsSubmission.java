@@ -492,7 +492,7 @@ public class ProposalsSubmission {
         }
 
         for (int i = _start_index; i < _end_index; i++) {
-            Map<String, ?> proposal_details = _getProgressReportDetails(progressReportPrefix(progressKeys.get(i)));
+            Map<String, ?> proposal_details = _getProgressReportDetails(progressKeys.get(i));
             if (proposal_details.get(STATUS).equals(_status)) {
                 progressList.add(proposal_details);
             }
@@ -646,8 +646,7 @@ public class ProposalsSubmission {
             pendingProposals.add(this.pending.get(i));
         }
         for (String pendingProposal : pendingProposals) {
-            String proposalPrefix = proposalPrefix(pendingProposal);
-            Map<String, ?> proposal_details = _getProposalDetails(proposalPrefix);
+            Map<String, ?> proposal_details = _getProposalDetails(pendingProposal);
 
             BigInteger approved_votes = (BigInteger) proposal_details.get(APPROVED_VOTES);
             BigInteger total_votes = (BigInteger) proposal_details.get(TOTAL_VOTES);
