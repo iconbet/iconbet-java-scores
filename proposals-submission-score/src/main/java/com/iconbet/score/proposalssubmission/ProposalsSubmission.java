@@ -835,22 +835,6 @@ public class ProposalsSubmission {
         return _getProgressReportKeysByStatus(status);
     }
 
-
-    @External
-    public void setNextBlock(BigInteger block) {
-        validateOwner();
-        this.nextBlock.set(BigInteger.valueOf(Context.getBlockHeight()).add(block));
-    }
-
-    @External
-    public void change_period() {
-        if (this.periodName.get().equals(APPLICATION_PERIOD)) {
-            this.periodName.set(VOTING_PERIOD);
-        } else {
-            this.periodName.set(APPLICATION_PERIOD);
-        }
-    }
-
     private String recordTxHash(byte[] tx_hash) {
         String tx_hash_string = encodeHexString(tx_hash);
         return "0x" + tx_hash_string;
@@ -950,6 +934,35 @@ public class ProposalsSubmission {
     public Address getProposer(String prefix){
         ProposalData proposalData = new ProposalData();
         return proposalData.getProposerAddress(prefix);
+    }
+
+    /*
+    for testing only removing in production
+     */
+    @External(readonly = true)
+    public BigInteger getCurrnetBlock(){
+        return BigInteger.valueOf(Context.getBlockHeight());
+    }
+
+    @External
+    public void setNextBlock(BigInteger nextBlock){
+        validateOwner();
+        this.nextBlock.set(BigInteger.valueOf(Context.getBlockTimestamp()));
+    }
+
+    @External
+    public void change_period() {
+        validateOwner();
+        if (this.periodName.get().equals(APPLICATION_PERIOD)) {
+            this.periodName.set(VOTING_PERIOD);
+        } else {
+            this.periodName.set(APPLICATION_PERIOD);
+        }
+    }
+
+    @External(readonly = true)
+    public int periodIndex(){
+        return this.updatePeriodIndex.get();
     }
 
 }
