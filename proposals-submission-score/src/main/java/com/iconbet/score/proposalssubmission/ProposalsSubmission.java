@@ -515,7 +515,9 @@ public class ProposalsSubmission {
         updatePeriod();
         Context.require(this.periodName.getOrDefault("None").equals(VOTING_PERIOD),
                 TAG + ": Progress reports can be voted only on voting period");
-        BigInteger staked_balance = (BigInteger) Context.call(this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
+        Context.require(proposalsKeyListIndex.getOrDefault(ipfs_hash, 0) != 0, TAG + ": The proposal does not exist.");
+        Context.require(progressKeyListIndex.getOrDefault(report_hash, 0) != 0, TAG + ": The report key does not exist.");
+        BigInteger staked_balance = getStake();
         Context.require(staked_balance.compareTo(MINIMUM_TAP_TO_VOTE) > 0, TAG + ": Must stake at least " + MINIMUM_TAP_TO_VOTE + " tap to vote progress report.");
         Context.require(!isInProgressReportVotersList(Context.getCaller(), report_hash), "Already voted for this progress_report");
         ProgressReportData progressReportData = new ProgressReportData();
