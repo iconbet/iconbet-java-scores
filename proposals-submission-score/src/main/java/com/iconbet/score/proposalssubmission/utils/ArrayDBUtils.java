@@ -14,16 +14,19 @@ public final class ArrayDBUtils {
 
     public static <T> boolean removeArrayItem(ArrayDB<T> array_db, Object target) {
         int size = array_db.size();
+        if (size == 0){
+            return false;
+        }
         T _out = array_db.get(size - 1);
         if (_out.equals(target)) {
             array_db.pop();
-            return false;
+            return true;
         }
         for (int i = 0; i < size - 1; i++) {
             if (array_db.get(i).equals(target)) {
                 array_db.set(i, _out);
                 array_db.pop();
-                return false;
+                return true;
             }
         }
         return false;
