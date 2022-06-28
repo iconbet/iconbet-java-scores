@@ -153,6 +153,18 @@ public class ProposalsSubmission {
         return this.tapTokenScore.get();
     }
 
+    @External
+    public void setProposalsFundScore(Address _score){
+        validateAdmins(Context.getCaller());
+        Context.require(_score.isContract(), "The given address is not a contract address");
+        this.proposalsFundScore.set(_score);
+    }
+
+    @External(readonly = true)
+    public Address getProposalsFundScore(){
+        return this.proposalsFundScore.get();
+    }
+
     private void removeProposer(Address _address) {
         Context.require(ArrayDBUtils.containsInArrayDb(_address, this.proposers),
                 "The provided address could not be removed from proposer list. " +
