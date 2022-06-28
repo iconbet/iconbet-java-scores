@@ -376,7 +376,7 @@ public class ProposalsSubmission {
         Context.require(this.periodName.get().equals(VOTING_PERIOD), TAG + " Proposals can be voted on Voting period only.");
         BigInteger staked_balances = callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
         Context.require(staked_balances.compareTo(MINIMUM_TAP_TO_VOTE) >= 0, "Must stake at least " + MINIMUM_TAP_TO_VOTE + " tap to vote.");
-        Context.require(List.of(ABSTAIN,APPROVE,REJECT).contains(_vote), TAG + " Vote should be on _approve, _reject, _abstain");
+        Context.require(List.of(APPROVE,REJECT).contains(_vote), TAG + " Vote should be on _approve, _reject");
 
         Context.require(!isInProposalVotersList(Context.getCaller(), _ipfs_key), TAG + " Already voted on this proposal");
         String proposalPrefix = proposalPrefix(_ipfs_key);
