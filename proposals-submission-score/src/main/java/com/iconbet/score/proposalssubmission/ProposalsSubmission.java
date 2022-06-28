@@ -26,7 +26,7 @@ import static com.iconbet.score.proposalssubmission.db.ProposalData.proposalPref
 import static com.iconbet.score.proposalssubmission.db.ProgressReportData.progressReportPrefix;
 
 public class ProposalsSubmission {
-    public static final String TAG = "ICONbet: Proposal Submission";
+    public static final String TAG = "ICONbet Proposal Submission";
     private static final String PENDING = "_pending";
     private static final String ACTIVE = "_active";
     private static final String PAUSED = "_paused";
@@ -191,7 +191,7 @@ public class ProposalsSubmission {
         if (_proposals.totalBudget.compareTo(remaining_fund) > 0) {
             Context.revert(TAG + "Budget Exceeds than Daofund Treasury Amount. remaining_fund: " + remaining_fund.toString() + ", total_budget: " + _proposals.totalBudget.toString());
         }
-        BigInteger staked_balance = (BigInteger) Context.call(this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
+        BigInteger staked_balance = callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
         if (staked_balance.compareTo(MINIMUM_TAP_TO_SUBMIT_PROPOSAL) < 0) {
             Context.revert(TAG + "Must stake atleast " + MINIMUM_TAP_TO_SUBMIT_PROPOSAL + " to submit proposal.");
         }
@@ -311,7 +311,7 @@ public class ProposalsSubmission {
     }
 
     private BigInteger getStake() {
-        return (BigInteger) Context.call(this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
+        return callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
     }
 
     @External(readonly = true)
@@ -374,7 +374,7 @@ public class ProposalsSubmission {
     public void voteProposal(String _ipfs_key, String _vote, String _vote_reason) {
         updatePeriod();
         Context.require(this.periodName.get().equals(VOTING_PERIOD), TAG + " Proposals can be voted on Voting period only.");
-        BigInteger staked_balances = (BigInteger) Context.call(this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
+        BigInteger staked_balances = callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
         Context.require(staked_balances.compareTo(MINIMUM_TAP_TO_VOTE) >= 0, "Must stake at least " + MINIMUM_TAP_TO_VOTE + " tap to vote.");
         Context.require(List.of(ABSTAIN,APPROVE,REJECT).contains(_vote), TAG + " Vote should be on _approve, _reject, _abstain");
 
@@ -659,7 +659,7 @@ public class ProposalsSubmission {
                 updateProposalStatus(pendingProposal, REJECTED);
             } else if (approved_votes.divide(total_votes).doubleValue() > MAJORITY) {
                 updateProposalStatus(pendingProposal, ACTIVE);
-                Context.call(this.daoFundScore.get(), "allocateFundsToProposals", pendingProposal, period_count, proposer_address, total_budget);
+                callScore(this.daoFundScore.get(), "allocateFundsToProposals", pendingProposal, period_count, proposer_address, total_budget);
             } else {
                 updateProposalStatus(pendingProposal, REJECTED);
                 removeProposer(proposer_address);
@@ -685,13 +685,12 @@ public class ProposalsSubmission {
             Map<String, ?> proposalDetails = _getProposalDetails(ipfs_hash);
             String proposalStatus = (String) proposalDetails.get(STATUS);
             Address proposerAddress = (Address) proposalDetails.get(PROPOSER_ADDRESS);
-
-            if (proposalData.getSubmitProgressReport(proposalPrefix)) {
+            if (!proposalData.getSubmitProgressReport(proposalPrefix)) {
                 if (proposalStatus.equals(ACTIVE)) {
                     updateProposalStatus(ipfs_hash, PAUSED);
                 } else if (proposalStatus.equals(PAUSED)) {
                     updateProposalStatus(ipfs_hash, DISQUALIFIED);
-                    Context.call(this.daoFundScore.get(), "disqualify_project", ipfs_hash);
+                    callScore(this.daoFundScore.get(), "disqualify_project", ipfs_hash);
                     removeProposer(proposerAddress);
                 }
             }
@@ -736,7 +735,7 @@ public class ProposalsSubmission {
                     updateProposalStatus(ipfs_hash, ACTIVE);
                 }
                 proposalData.setApprovedReports(proposalPrefix, approvedReportsCount);
-                Context.call(this.daoFundScore.get(), "send_installment_to_proposer", ipfs_hash);
+                callScore(this.daoFundScore.get(), "send_installment_to_proposer", ipfs_hash);
             } else {
                 updateProgressReportStatus(waiting_reports, PROGRESS_REPORT_REJECTED);
                 if (proposalStatus.equals(ACTIVE)) {
@@ -770,7 +769,7 @@ public class ProposalsSubmission {
             proposalData.setProjectDuration(proposalPrefix, periodCount + additionalDuration);
             proposalData.setTotalBudget(proposalPrefix, totalBudget.add(additionalBudget));
             progressReportData.setBudgetAdjustmentStatus(progressReportPrefix, APPROVED);
-            Context.call(this.daoFundScore.get(), "update_proposal_fund", ipfsHash, additionalBudget, additionalDuration);
+            callScore(this.daoFundScore.get(), "update_proposal_fund", ipfsHash, additionalBudget, additionalDuration);
         } else {
             progressReportData.setBudgetAdjustmentStatus(progressReportPrefix, REJECTED);
         }
