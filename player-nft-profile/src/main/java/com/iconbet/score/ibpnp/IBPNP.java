@@ -52,15 +52,15 @@ public class IBPNP extends IRC3Basic {
     private final VarDB<Address> rewardsScore = Context.newVarDB("REWARDS_SCORE", Address.class);
 
     public static class GameData {
-        BigInteger game_amount_wagered;
-        BigInteger game_amount_won;
-        BigInteger game_amount_lost;
-        int game_bets_won;
-        int game_bets_lost;
-        BigInteger game_largest_bet;
-        BigInteger game_wager_level;
-        Address wallet_address;
-        String remarks;
+        public BigInteger game_amount_wagered;
+        public BigInteger game_amount_won;
+        public BigInteger game_amount_lost;
+        public int game_bets_won;
+        public int game_bets_lost;
+        public BigInteger game_largest_bet;
+        public BigInteger game_wager_level;
+        public Address wallet_address;
+        public String remarks;
     }
 
     public IBPNP(String _name, String _symbol, int update) {
