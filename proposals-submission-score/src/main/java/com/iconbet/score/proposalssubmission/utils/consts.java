@@ -4,7 +4,7 @@ import java.math.BigInteger;
 
 public class consts {
     //# ICX Multiplier
-    public static final BigInteger MULTIPLIER = BigInteger.valueOf(10^18);
+    public static final BigInteger MULTIPLIER = new BigInteger("1000000000000000000");
     //    # MAXIMUM PROJECT PERIOD
     public static final int MAX_PROJECT_PERIOD = 6;
 
@@ -115,6 +115,6 @@ public class consts {
 
     //            # MINIMUM TAP
     public static final BigInteger MINIMUM_TAP_TO_SUBMIT_PROPOSAL = BigInteger.valueOf(10000).multiply(MULTIPLIER);
-    public static final BigInteger MINIMUM_TAP_TO_VOTE = BigInteger.valueOf(10 ^ 18);
+    public static final BigInteger MINIMUM_TAP_TO_VOTE = MULTIPLIER;
 
 }
