@@ -40,6 +40,7 @@ public class ProposalsSubmission {
 
     private final VarDB<Address> tapTokenScore = Context.newVarDB(TAP_TOKEN_SCORE, Address.class);
     private final VarDB<Address> daoFundScore = Context.newVarDB(DAOFUND_SCORE, Address.class);
+    private final VarDB<Address> proposalsFundScore = Context.newVarDB(PROPOSALS_FUND_SCORE, Address.class);
     private final VarDB<BigInteger> initialBlock = Context.newVarDB(INITIAL_BLOCK, BigInteger.class);
     private final VarDB<String> periodName = Context.newVarDB(PERIOD_NAME, String.class);
     private final VarDB<String> previousPeriodName = Context.newVarDB(PREVIOUS_PERIOD_NAME, String.class);
