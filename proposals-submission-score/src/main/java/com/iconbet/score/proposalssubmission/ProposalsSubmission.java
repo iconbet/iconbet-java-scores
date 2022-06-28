@@ -411,7 +411,7 @@ public class ProposalsSubmission {
     public void submitProgressReport(ProgressReportAttributes _progress) {
         updatePeriod();
         Context.require(this.periodName.getOrDefault("None").equals(APPLICATION_PERIOD),
-                TAG + " Proposals can only be submitted on application period.");
+                TAG + ": Progress Reports can only be submitted on application period.");
         Context.require(!Context.getCaller().isContract(), TAG + " Contract addresses are not supported.");
 
         ProposalData proposalData = new ProposalData();
