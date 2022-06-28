@@ -45,8 +45,8 @@ public class ProposalsFundTest extends TestBase{
 
     private Score ProposalsFundScore;
     private final SecureRandom secureRandom = new SecureRandom();
-    private final MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
 
+    private static MockedStatic<Context> contextMock;
 
     ProposalsFund scoreSpy;
 
@@ -56,6 +56,12 @@ public class ProposalsFundTest extends TestBase{
         ProposalsFund instance = (ProposalsFund) ProposalsFundScore.getInstance();
         scoreSpy = spy(instance);
         ProposalsFundScore.setInstance(scoreSpy);
+
+    }
+
+    @BeforeAll
+    public static void init(){
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
     }
 
     @Test
