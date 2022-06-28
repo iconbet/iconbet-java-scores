@@ -850,6 +850,18 @@ public class ProposalsSubmission {
         // just receive incoming funds
     }
 
+    public <T> T callScore(Class<T> t, Address address, String method, Object... params) {
+        return Context.call(t, address, method, params);
+    }
+
+    public void callScore(Address address, String method, Object... params) {
+        Context.call(address, method, params);
+    }
+
+    public void callScore(BigInteger amount, Address address, String method, Object... params) {
+        Context.call(amount, address, method, params);
+    }
+
     private boolean isInProposalVotersList(Address address, String ipfs_hash) {
         ProposalData proposalData = new ProposalData();
         String proposalPrefix = proposalPrefix(ipfs_hash);
