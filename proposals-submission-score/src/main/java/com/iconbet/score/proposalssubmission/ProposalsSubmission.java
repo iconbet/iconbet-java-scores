@@ -594,6 +594,19 @@ public class ProposalsSubmission {
 
     private void updateApplicationResult() {
         if (_getProposalsKeysByStatus(PENDING).size() == 0 && this.progressReportStatus.get(WAITING).size() == 0) {
+            if (this.active.size() + this.paused.size() > 0){
+                for( int i = 0; i < this.active.size(); i++){
+                    if (isInActiveProposals(this.active.get(i))){
+                        this.activeProposals.add(this.active.get(i));
+                    }
+                }
+                for (int i = 0; i < this.paused.size(); i++) {
+                    if (isInActiveProposals(this.paused.get(i))) {
+                        this.activeProposals.add(this.paused.get(i));
+                    }
+                }
+                checkProgressReportSubmission();
+            }
             this.periodName.set(APPLICATION_PERIOD);
             PeriodUpdate("Period Updated back to Application Period due not enough Voting Proposals or Progress Reports.");
         } else {
