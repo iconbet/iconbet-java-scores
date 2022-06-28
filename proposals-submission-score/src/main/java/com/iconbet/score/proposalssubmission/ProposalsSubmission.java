@@ -801,14 +801,14 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public Map<String, String> getPeriodStatus() {
+    public Map<String, ?> getPeriodStatus() {
         BigInteger remainingTime = (this.nextBlock.get().subtract(BigInteger.valueOf(Context.getBlockHeight()))).multiply(BigInteger.TWO);
         return Map.of(
                 PERIOD_NAME, this.periodName.getOrDefault("None"),
-                NEXTBLOCK, this.nextBlock.get().toString(),
-                REMAINING_TIME, remainingTime.toString(),
+                NEXTBLOCK, this.nextBlock.get(),
+                REMAINING_TIME, remainingTime,
                 PREVIOUS_PERIOD_NAME, this.previousPeriodName.get(),
-                PERIOD_SPAN, BigInteger.valueOf(BLOCKS_DAY_COUNT * DAY_COUNT * 2).toString());
+                PERIOD_SPAN, BigInteger.valueOf(BLOCKS_DAY_COUNT * DAY_COUNT * 2));
     }
 
     private List<String> _getProposalsKeysByStatus(String status) {
