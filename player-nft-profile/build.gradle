@@ -47,6 +47,7 @@ deployJar {
     parameters {
         arg('_name', 'ICONbet Player NFT Profile')
         arg('_symbol', 'IBPNP')
+        arg('update', '1')
     }
 }
 

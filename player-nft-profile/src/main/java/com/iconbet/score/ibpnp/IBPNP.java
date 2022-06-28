@@ -63,9 +63,18 @@ public class IBPNP extends IRC3Basic {
         String remarks;
     }
 
-    public IBPNP(String _name, String _symbol) {
+    public IBPNP(String _name, String _symbol, int update) {
         super(_name, _symbol);
-        this.total_supply.set(BigInteger.ZERO);
+        if (update == 0) {
+            this.total_supply.set(BigInteger.ZERO);
+        }
+        else {
+            on_update();
+        }
+    }
+
+    private void on_update(){
+
     }
 
 

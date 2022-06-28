@@ -51,7 +51,7 @@ public class IBPNPTest extends TestBase {
 
     @BeforeEach
     public void setup() throws Exception {
-        IBPNPScore = sm.deploy(owner, IBPNP.class, TAG, "IBPNP");
+        IBPNPScore = sm.deploy(owner, IBPNP.class, TAG, "IBPNP", 0);
         IBPNP instance = (IBPNP) IBPNPScore.getInstance();
         scoreSpy = spy(instance);
         IBPNPScore.setInstance(scoreSpy);
