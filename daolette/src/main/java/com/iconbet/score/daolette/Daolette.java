@@ -81,6 +81,19 @@ public class Daolette{
 	private static String _DAOFUND_SCORE = "daofund_score";
 	private static String _YESTERDAYS_EXCESS = "yesterdays_excess";
 	private static String _DAOFUND_TO_DISTRIBUTE = "daofund_to_distribute";
+	private static final String IBPNP_SCORE = "ibpnp_score";
+
+	public static class GameData {
+		public BigInteger game_amount_wagered;
+		public BigInteger game_amount_won;
+		public BigInteger game_amount_lost;
+		public int game_bets_won;
+		public int game_bets_lost;
+		public BigInteger game_largest_bet;
+		public BigInteger game_wager_level;
+		public Address wallet_address;
+		public String remarks;
+	}
 
 	private VarDB<BigInteger> _excess = Context.newVarDB(_EXCESS, BigInteger.class);
 	private VarDB<BigInteger> _total_distributed = Context.newVarDB(_TOTAL_DISTRIBUTED, BigInteger.class);
@@ -114,6 +127,7 @@ public class Daolette{
 	private VarDB<Address> _daofund_score = Context.newVarDB(_DAOFUND_SCORE, Address.class);
 	private VarDB<BigInteger> _yesterdays_excess = Context.newVarDB(_YESTERDAYS_EXCESS, BigInteger.class);
 	private VarDB<BigInteger> _daofund_to_distirbute = Context.newVarDB(_DAOFUND_TO_DISTRIBUTE, BigInteger.class);
+	private VarDB<Address> ibpnpScore = Context.newVarDB(IBPNP_SCORE, Address.class);
 
 	public Daolette(@Optional boolean _on_update_var) {
 		if(_on_update_var) {
@@ -213,6 +227,29 @@ public class Daolette{
         :rtype: :class:`iconservice.base.address.Address`
 		 */
 		return this._token_score.getOrDefault(ZERO_ADDRESS);
+	}
+
+	@External
+	public void set_ibpnp_score(Address _score) {
+		/*
+        Sets the IBPNP score address. Only owner can set the address.
+        :param _score: Address of the IBPNP score
+        :type _score: :class:`iconservice.base.address.Address`
+        :return:
+		 */
+		if ( Context.getCaller().equals(Context.getOwner())){
+			this.ibpnpScore.set(_score);
+		}
+	}
+
+	@External(readonly=true)
+	public Address get_ibpnp_score() {
+		/*
+        Returns the IBPNP score address
+        :return: IBPNP token score address
+        :rtype: :class:`iconservice.base.address.Address`
+		 */
+		return this.ibpnpScore.getOrDefault(ZERO_ADDRESS);
 	}
 
 	@External
@@ -555,6 +592,10 @@ public class Daolette{
 			Context.revert("Bet only accepted through approved games.");
 		}
 
+		Address userSender = Context.getOrigin();
+		boolean hasIBPNPProfile = (boolean) Context.call(ibpnpScore.get(), "hasIBPNPProfile", userSender);
+		Context.require(hasIBPNPProfile, TAG + ": The sender " + userSender + " doesnot have an IBPNP profile.");
+
 		if (this.__day_advanced()) {
 			this.__check_for_dividends();
 		}
@@ -568,6 +609,23 @@ public class Daolette{
 		Context.call(this._rewards_score.get(),  "accumulate_wagers", Context.getOrigin().toString(), _amount, days);
 
 		this._treasury_balance.set(Context.getBalance(Context.getAddress()));
+
+		GameData gameData = new GameData();
+		BigInteger value = Context.getValue();
+		gameData.game_amount_lost = value;
+		gameData.game_amount_wagered = value;
+		gameData.game_amount_won = BigInteger.ZERO;
+		gameData.game_bets_lost = 1;
+		gameData.game_bets_won = 0;
+		gameData.game_wager_level = BigInteger.ZERO;
+		gameData.game_largest_bet = value;
+		gameData.remarks = "take_wager";
+		gameData.wallet_address = userSender;
+		addGameDataToIBPNP(gameData);
+	}
+
+	private void addGameDataToIBPNP(GameData gameData){
+		Context.call(ibpnpScore.get(), "addGameData", gameData);
 	}
 
 	/*
@@ -638,6 +696,20 @@ public class Daolette{
 				Context.revert("Network problem. Winnings not sent. Returning funds. Exception: "+ e.getMessage());
 			}
 			this._treasury_balance.set( Context.getBalance(Context.getAddress()) );
+
+			GameData gameData = new GameData();
+			BigInteger value = Context.getValue();
+			Address userSender = Context.getOrigin();
+			gameData.game_amount_lost = BigInteger.ZERO;
+			gameData.game_amount_wagered = value;
+			gameData.game_amount_won = _payout;
+			gameData.game_bets_lost = 0;
+			gameData.game_bets_won = 1;
+			gameData.game_wager_level = BigInteger.ZERO;
+			gameData.game_largest_bet = BigInteger.ZERO;
+			gameData.remarks = "wager_payout";
+			gameData.wallet_address = userSender;
+			addGameDataToIBPNP(gameData);
 		}
 	}
 
