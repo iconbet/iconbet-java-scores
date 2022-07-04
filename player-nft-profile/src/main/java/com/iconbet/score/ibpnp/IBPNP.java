@@ -1,6 +1,7 @@
 package com.iconbet.score.ibpnp;
 
 import com.iconloop.score.token.irc3.IRC3Basic;
+
 import score.VarDB;
 import score.ArrayDB;
 import score.DictDB;
@@ -12,7 +13,6 @@ import score.annotation.External;
 import java.math.BigInteger;
 
 import scorex.util.HashMap;
-import scorex.util.ArrayList;
 
 import java.util.List;
 import java.util.Map;
@@ -127,7 +127,7 @@ public class IBPNP extends IRC3Basic {
         _check_username_validity(username);
         String usernameWithoutSpace = username.replace(" ", "");
         String lowercase_name = usernameWithoutSpace.toLowerCase();
-        if (checkIfUsernamePresent(lowercase_name)) {
+        if (_checkIfUsernamePresent(lowercase_name)) {
             Context.revert("This username is already taken.");
         }
         this.username.set(lowercase_name, address.toString());
@@ -137,7 +137,7 @@ public class IBPNP extends IRC3Basic {
         this.username_index.set(lowercase_name, index);
     }
 
-    private boolean checkIfUsernamePresent(String username) {
+    private boolean _checkIfUsernamePresent(String username) {
         if (this.username_list.size() == 0) {
             return false;
         } else {
@@ -168,8 +168,15 @@ public class IBPNP extends IRC3Basic {
         return _checkIfWalletPresent(address);
     }
 
+    @External(readonly = true)
+    public boolean isUsernameAlreadyPresent(String username){
+        String usernameWithoutSpace = username.replace(" ", "");
+        String _username = usernameWithoutSpace.toLowerCase();
+        return _checkIfUsernamePresent(_username);
+    }
+
     @External
-    public void createIBPNP(String user_name) {
+    public void createIBPNP(String userName) {
         BigInteger tokenId = this.total_supply.get().add(BigInteger.ONE);
         this.total_supply.set(tokenId);
         Address owner = Context.getCaller();
@@ -180,9 +187,9 @@ public class IBPNP extends IRC3Basic {
         this.user_wallets_list.add(owner);
         int index = this.user_wallets_list.size();
         this.user_wallet_index.set(owner, index);
-        _set_username(owner, user_name);
-        add_data_to_userdb(user_name, owner, tokenId);
-        CreatedIconBetNFTProfile("Created IconBet NFT profile of " + Context.getCaller().toString() + "with username " + user_name);
+        _set_username(owner, userName);
+        add_data_to_userdb(userName, owner, tokenId);
+        CreatedIconBetNFTProfile("Created IconBet NFT profile of " + Context.getCaller().toString() + "with username " + userName);
     }
 
     @External
@@ -378,7 +385,7 @@ public class IBPNP extends IRC3Basic {
         String old_username = this.wallet_to_username.getOrDefault(sender, "None");
         Context.require(!old_username.equals(new_username), "Cannot change into the same username. " + TAG);
         _check_username_validity(newusername);
-        Context.require(!checkIfUsernamePresent(new_username), "This username is already taken.");
+        Context.require(!_checkIfUsernamePresent(new_username), "This username is already taken.");
         UserData userData = new UserData();
         String userPrefix = userDBPrefix(sender);
         int old_index = this.username_index.get(old_username);
