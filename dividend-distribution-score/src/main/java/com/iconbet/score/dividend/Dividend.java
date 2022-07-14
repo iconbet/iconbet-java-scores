@@ -559,7 +559,7 @@ public class Dividend extends Utils {
             String address = this._blacklist_address.get(i);
             Address address_from_str = Address.fromString(address);
             if (!address_from_str.isContract()) {
-                BigInteger balanceOfAdd = Context.call(BigInteger.class, scoreAddresses._token_score.get(), "balanceOf", address_from_str);
+                BigInteger balanceOfAdd = callScore(BigInteger.class, scoreAddresses._token_score.get(), "balanceOf", address_from_str);
                 total_platform_tap = total_platform_tap.add(balanceOfAdd);
             }
         }
@@ -570,7 +570,7 @@ public class Dividend extends Utils {
         for (int i = 0; i < this._blacklist_address.size(); i++) {
             String address = this._blacklist_address.get(i);
             Address address_from_str = Address.fromString(address);
-            BigInteger balance = Context.call(BigInteger.class, scoreAddresses._token_score.get(), "balanceOf", address_from_str);
+            BigInteger balance = callScore(BigInteger.class, scoreAddresses._token_score.get(), "balanceOf", address_from_str);
             if (!address_from_str.isContract() && total_platform_tap.compareTo(ZERO) > 0 && balance.compareTo(ZERO) > 0 && dividends.compareTo(ZERO) > 0) {
                 BigInteger amount = balance.multiply(dividends).divide(total_platform_tap);
                 dividends = dividends.subtract(amount);
@@ -616,9 +616,13 @@ public class Dividend extends Utils {
                 tokens_total = tokens_total.subtract(holder_balance);
 
                 Address addressKey = Address.fromString(address);
-                String value = tapDividendsTax.tapDividendsClaimablePerDay.get(addressKey);
-                tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, value + amount + ",");
-                BigInteger claimableDividends = tapDividendsTax.tapDividendsClaimable.get(addressKey);
+                String value = tapDividendsTax.tapDividendsClaimablePerDay.getOrDefault(addressKey, "");
+                if (value.equals("")){
+                    tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, ZERO.add(amount) + ",");
+                } else {
+                    tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, new BigInteger(value).add(amount) + ",");
+                }
+                BigInteger claimableDividends = tapDividendsTax.tapDividendsClaimable.getOrDefault(addressKey, ZERO);
                 tapDividendsTax.tapDividendsClaimable.set(addressKey, claimableDividends.add(amount));
                 tapDividendsTax.tapDividendsTaxable.set(addressKey, getTaxableAmount(addressKey));
             }
@@ -1067,7 +1071,7 @@ public class Dividend extends Utils {
     public void setNonTaxPeriod(int period) {
         Context.require(Context.getCaller() == Context.getOwner(), TAG + ": This method is only available for the owner.");
         TapDividendsTax tapDividendsTax = new TapDividendsTax();
-        Context.require(period < 0, TAG + ": Percentage must be greater than 0.");
+        Context.require(period > 0, TAG + ": Percentage must be greater than 0.");
         tapDividendsTax.tapDividendsNonTaxPeriod.set(period);
     }
 
