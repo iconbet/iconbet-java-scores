@@ -112,13 +112,13 @@ public class TapToken implements IRC2{
 			Context.revert("Decimals cannot be less than zero");
 		}
 
-		BigInteger totalSupply = _initialSupply.multiply( pow( TEN , _decimals.intValue()) );
-		Context.println(TAG+" : total_supply "+ totalSupply );
-
-		this.totalSupply.set(totalSupply);
-		this.decimals.set(_decimals);
-		this.balances.set(Context.getOwner(), totalSupply);
-		this.addresses.add(Context.getOwner());
+//		BigInteger totalSupply = _initialSupply.multiply( pow( TEN , _decimals.intValue()) );
+//		Context.println(TAG+" : total_supply "+ totalSupply );
+//
+//		this.totalSupply.set(totalSupply);
+//		this.decimals.set(_decimals);
+//		this.balances.set(Context.getOwner(), totalSupply);
+//		this.addresses.add(Context.getOwner());
 
 	}
 
@@ -168,10 +168,8 @@ public class TapToken implements IRC2{
 
 	@Override
 	@External(readonly=true)
-	public int decimals() {
-		return this.decimals
-				.getOrDefault(ZERO)
-				.intValue();
+	public BigInteger decimals() {
+		return this.decimals.getOrDefault(ZERO);
 	}
 
 	@Override
@@ -314,7 +312,7 @@ public class TapToken implements IRC2{
 	@External
 	public void togglePaused() {
 		this.ownerOnly();
-		this.paused.set(! this.paused.getOrDefault(false));
+		this.paused.set(!this.paused.getOrDefault(false));
 	}
 
 	@External
@@ -347,7 +345,7 @@ public class TapToken implements IRC2{
 		}
 
 		DictDB<Integer, BigInteger> sb = this.stakedBalances.at(from);
-		BigInteger oldStake = sb.getOrDefault(Status.STAKED, ZERO).add( sb.get(Status.UNSTAKING));
+		BigInteger oldStake = sb.getOrDefault(Status.STAKED, ZERO).add( sb.getOrDefault(Status.UNSTAKING, ZERO));
 		//big integer is immutable, not need this next line
 		BigInteger newStake = _value;
 
@@ -355,7 +353,7 @@ public class TapToken implements IRC2{
 		BigInteger unstakeAmount = ZERO;
 		if (newStake.compareTo(oldStake) > 0 ) {
 			BigInteger offset = newStake.subtract(oldStake);
-			sb.set(Status.AVAILABLE, sb.get(Status.AVAILABLE).subtract(offset));
+			sb.set(Status.AVAILABLE, sb.getOrDefault(Status.AVAILABLE, ZERO).subtract(offset));
 		}else {
 			unstakeAmount = oldStake.subtract(newStake);
 		}
@@ -372,9 +370,9 @@ public class TapToken implements IRC2{
 		checkMigration();
 
 		Snapshot snapshot = new Snapshot();
-		if (snapshot._enable_snapshots.get()){
+		if (snapshot._enable_snapshots.getOrDefault(Boolean.FALSE)){
 			updateSnapshotForAddress(Context.getCaller(), _value);
-			updateTotalStakedSnapshot(this.totalStakedBalance.get());
+			updateTotalStakedSnapshot(this.totalStakedBalance.getOrDefault(ZERO));
 		}
 	}
 
@@ -383,15 +381,15 @@ public class TapToken implements IRC2{
 	public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
 		//TODO: review all the loops that are use for searching
 		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
-		if (this.paused.get()){
+		if (this.paused.getOrDefault(Boolean.FALSE)){
 			if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)){
 				if (linearComplexityMigration._pause_whitelist_index.getOrDefault(Context.getCaller(), 0) == 0){
-					Context.revert("Tap token transfers are paused");
+					Context.revert("TAP token transfers are paused");
 				}
 			}
 			else{
 				if (containsInArrayDb(Context.getCaller(), this.pauseWhitelist)){
-					Context.revert("Tap token transfers are paused");
+					Context.revert("TAP token transfers are paused");
 				}
 			}
 		}
@@ -1022,7 +1020,7 @@ public class TapToken implements IRC2{
 
 	private void checkMigration(){
 		LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
-		if (linearComplexityMigration.linear_complexity_migration_start.get()){
+		if (linearComplexityMigration.linear_complexity_migration_start.getOrDefault(Boolean.FALSE)){
 			if(!linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)){
 				migrateFromLinearComplexity(this.locklist, linearComplexityMigration._locklist_index, ArrayDbToMigrate.LOCKLIST);
 			}
@@ -1040,10 +1038,10 @@ public class TapToken implements IRC2{
 		ownerOnly();
 
 		Snapshot snapshot = new Snapshot();
-		if (!snapshot._enable_snapshots.get() && snapshot._time_offset.get().equals(ZERO)){
+		if (!snapshot._enable_snapshots.getOrDefault(Boolean.FALSE) && snapshot._time_offset.getOrDefault(ZERO).equals(ZERO)){
 			setTimeOffset();
 		}
-		snapshot._enable_snapshots.set(!snapshot._enable_snapshots.get());
+		snapshot._enable_snapshots.set(!snapshot._enable_snapshots.getOrDefault(Boolean.FALSE));
 	}
 
 	@External(readonly = true)
@@ -1113,17 +1111,20 @@ public class TapToken implements IRC2{
 		Snapshot snapshot = new Snapshot();
 		int totalSnapshotsTaken = snapshot._total_snapshots.getOrDefault(_account, 0);
 		if (totalSnapshotsTaken == 0){
+			Context.println("1");
 			return ZERO;
 		}
 
 		if (((BigInteger) snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
+			Context.println("2");
 			return (BigInteger) snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
 		}
 
 		if (((BigInteger) snapshot._stake_snapshots.at(_account).at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
+			Context.println("3");
 			return ZERO;
 		}
-
+		Context.println("4");
 		int low = 0;
 		int high = totalSnapshotsTaken -1;
 		while (high > low){
@@ -1151,14 +1152,17 @@ public class TapToken implements IRC2{
 		Snapshot snapshot = new Snapshot();
 		int totalSnapshotsTaken = snapshot._total_staked_snapshot_count.getOrDefault(0);
 		if (totalSnapshotsTaken == 0){
+			Context.println("01");
 			return ZERO;
 		}
 
 		if (((BigInteger) snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0){
+			Context.println("02");
 			return (BigInteger) snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
 		}
 
 		if (((BigInteger) snapshot._total_staked_snapshot.at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0){
+			Context.println("03");
 			return ZERO;
 		}
 
