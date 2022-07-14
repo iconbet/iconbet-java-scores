@@ -51,10 +51,8 @@ public class DividendTest extends TestBase{
     private static final Account tapStakeUser3 = sm.createAccount();
     private static final Account tapStakeUser4 = sm.createAccount();
     private static final Account revshareWallet = sm.createAccount();
-
-
+    private static final Account notRevshareWallet = sm.createAccount();
     public static final BigInteger decimal = new BigInteger("1000000000000000000");
-
     private Score DividendScore;
     private final SecureRandom secureRandom = new SecureRandom();
     private static MockedStatic<Context> contextMock;
@@ -74,11 +72,12 @@ public class DividendTest extends TestBase{
 
     @BeforeAll
     public static void init(){
-        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+        contextMock = Mockito.mockStatic(Context.class, CALLS_REAL_METHODS);
     }
 
     @Test
     void setDividendPercentage(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DividendScore.invoke(owner, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
         System.out.println(DividendScore.call("get_dividend_percentage"));
     }
@@ -89,6 +88,7 @@ public class DividendTest extends TestBase{
 
     @Test
     void setDividendPercentageNotOwner(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(testingAccount, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
         expectErrorMessage(setDividendPercentageNotOwner, "Reverted(0): " + TAG + ": Only the owner of the score can call the method");
     }
@@ -123,6 +123,7 @@ public class DividendTest extends TestBase{
     }
 
     private void setScoresMethod(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DividendScore.invoke(owner, "set_token_score", tapToken);
         DividendScore.invoke(owner, "setIBPNPScore", ibpnpScore);
         DividendScore.invoke(owner, "set_game_auth_score", gameAuth);
@@ -134,6 +135,7 @@ public class DividendTest extends TestBase{
     @Test
     void setScoresNotContractAddresses(){
         Address _score = testingAccount.getAddress();
+
         Executable setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "set_token_score", _score);
         expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
 
@@ -156,6 +158,7 @@ public class DividendTest extends TestBase{
     @Test
     void setContractAddressesNotOwner(){
         Address _score = tapToken;
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable setScoresNotContractAddresses = () -> DividendScore.invoke(testingAccount, "set_token_score", _score);
         expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": Only owner can call this method.");
 
@@ -177,6 +180,7 @@ public class DividendTest extends TestBase{
 
     @Test
     void toggleSwitchDividendsToStakedTapEnabled(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DividendScore.invoke(owner, "toggle_switch_dividends_to_staked_tap_enabled");
         assertEquals(true, DividendScore.call("get_switch_dividends_to_staked_tap"));
         DividendScore.invoke(owner, "toggle_switch_dividends_to_staked_tap_enabled");
@@ -185,6 +189,7 @@ public class DividendTest extends TestBase{
 
     @Test
     void toggleSwitchDividendsToStakedTapEnabledNotOwner(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable toggleSwitchDividendsToStakedTapEnabledNotOwner = () -> DividendScore.invoke(testingAccount, "toggle_switch_dividends_to_staked_tap_enabled");
         expectErrorMessage(toggleSwitchDividendsToStakedTapEnabledNotOwner, "Reverted(0): " + TAG + ": Only owner can enable or disable switch dividends to staked tap holders.");
     }
@@ -477,9 +482,305 @@ public class DividendTest extends TestBase{
         DividendScore.invoke(owner, "distribute");
     }
 
+    @Test
+    void distributeRemainingTapDivsGreaterThanZero(){
+        setScoresMethod();
+        setDividendPercentageMethod();
+        contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_address_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        doReturn(BigInteger.valueOf(1000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("staked_balanceOf"), any());
+
+        doReturn(BigInteger.valueOf(1000000000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("totalSupply"));
+        Map<String, BigInteger> stakedBalanceOf = Map.of(
+                testingAccount.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                testingAccount1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser2.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser3.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser4.toString(), BigInteger.valueOf(1000).multiply(decimal)
+        );
+        Map<String, BigInteger> stakeBalanceOfFromUpdates = Map.of();
+        doReturn(stakeBalanceOfFromUpdates).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        doReturn(BigInteger.valueOf(100000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("total_staked_balance"));
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_stake_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "fallback");
+
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount1.getAddress());
+
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(gameScore), eq("get_treasury_status"));
+        doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
+
+        Map<String, String> gamesExcess = Map.of(
+                dice.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                roulette.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                blackjack.toString(), BigInteger.valueOf(100).multiply(decimal).toString()
+        );
+        doReturn(gamesExcess).when(scoreSpy).callScore(eq(Map.class), eq(gameAuth), eq("get_yesterdays_games_excess"));
+        doReturn(revshareWallet.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(gameAuth), eq("get_revshare_wallet_address"), any());
+        contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(100000).multiply(decimal));
+
+        doNothing().when(scoreSpy).callScore(eq(tapToken), eq("clear_yesterdays_stake_changes"));
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(stakedBalanceOf).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        DividendScore.invoke(owner, "setTaxPercentage", 10);
+        DividendScore.invoke(owner, "setNonTaxPeriod", 10);
+        DividendScore.invoke(owner, "distribute");
+        System.out.println(DividendScore.call("divs_share"));
+    }
+
+    @Test
+    void distributePromoDivsGreaterThanZero(){
+        setScoresMethod();
+        setDividendPercentageMethod();
+        contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_address_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        doReturn(BigInteger.valueOf(1000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("staked_balanceOf"), any());
+
+        doReturn(BigInteger.valueOf(1000000000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("totalSupply"));
+        Map<String, BigInteger> stakedBalanceOf = Map.of(
+                testingAccount.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                testingAccount1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser2.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser3.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser4.toString(), BigInteger.valueOf(1000).multiply(decimal)
+        );
+        Map<String, BigInteger> stakeBalanceOfFromUpdates = Map.of();
+        doReturn(stakeBalanceOfFromUpdates).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        doReturn(BigInteger.valueOf(100000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("total_staked_balance"));
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_stake_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "fallback");
+
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount1.getAddress());
+
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(gameScore), eq("get_treasury_status"));
+        doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
+
+        Map<String, String> gamesExcess = Map.of(
+                dice.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                roulette.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                blackjack.toString(), BigInteger.valueOf(100).multiply(decimal).toString()
+        );
+        doReturn(gamesExcess).when(scoreSpy).callScore(eq(Map.class), eq(gameAuth), eq("get_yesterdays_games_excess"));
+        doReturn(revshareWallet.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(gameAuth), eq("get_revshare_wallet_address"), any());
+        contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(100000).multiply(decimal));
+
+        doNothing().when(scoreSpy).callScore(eq(tapToken), eq("clear_yesterdays_stake_changes"));
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(stakedBalanceOf).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        DividendScore.invoke(owner, "setTaxPercentage", 10);
+        DividendScore.invoke(owner, "setNonTaxPeriod", 10);
+        DividendScore.invoke(owner, "distribute");
+
+        contextMock.when(() -> Context.transfer(any(), any())).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "distribute");
+        System.out.println(DividendScore.call("divs_share"));
+        System.out.println(DividendScore.call("getDaofundDivs"));
+    }
+
+    @Test
+    void distributeDaofundDivsGreaterThanZero(){
+        setScoresMethod();
+        DividendScore.invoke(owner, "set_inhouse_games", dice);
+        DividendScore.invoke(owner, "set_inhouse_games", roulette);
+        DividendScore.invoke(owner, "set_inhouse_games", blackjack);
+        contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_address_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        doReturn(BigInteger.valueOf(1000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("staked_balanceOf"), any());
+
+        doReturn(BigInteger.valueOf(1000000000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("totalSupply"));
+        Map<String, BigInteger> stakedBalanceOf = Map.of(
+                testingAccount.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                testingAccount1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser2.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser3.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser4.toString(), BigInteger.valueOf(1000).multiply(decimal)
+        );
+        Map<String, BigInteger> stakeBalanceOfFromUpdates = Map.of();
+        doReturn(stakeBalanceOfFromUpdates).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        doReturn(BigInteger.valueOf(100000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("total_staked_balance"));
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_stake_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "fallback");
+
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount1.getAddress());
+
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(gameScore), eq("get_treasury_status"));
+        doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
+        DividendScore.invoke(owner, "toggle_switch_dividends_to_staked_tap_enabled");
+
+        Map<String, String> gamesExcess = Map.of(
+                dice.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                roulette.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                blackjack.toString(), BigInteger.valueOf(100).multiply(decimal).toString()
+        );
+        doReturn(gamesExcess).when(scoreSpy).callScore(eq(Map.class), eq(gameAuth), eq("get_yesterdays_games_excess"));
+        doReturn(notRevshareWallet.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(gameAuth), eq("get_revshare_wallet_address"), any());
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(stakedBalanceOf).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        DividendScore.invoke(owner, "setTaxPercentage", 10);
+        DividendScore.invoke(owner, "setNonTaxPeriod", 10);
+
+        contextMock.when(() -> Context.transfer(any(), any())).thenAnswer((Answer<Void>) invocation -> null);
+        System.out.println(DividendScore.call("getDaofundDivs"));
+
+        DividendScore.invoke(owner, "distribute");
+        System.out.println(DividendScore.call("divs_share"));
+        System.out.println(DividendScore.call("getDaofundDivs"));
+    }
+
+    @Test
+    void distributeGameDevelopersDivsGreaterThanZero(){
+        setScoresMethod();
+        setDividendPercentageMethod();
+        contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_address_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        doReturn(BigInteger.valueOf(1000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("staked_balanceOf"), any());
+
+        doReturn(BigInteger.valueOf(1000000000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("totalSupply"));
+        Map<String, BigInteger> stakedBalanceOf = Map.of(
+                testingAccount.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                testingAccount1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser2.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser3.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser4.toString(), BigInteger.valueOf(1000).multiply(decimal)
+        );
+        Map<String, BigInteger> stakeBalanceOfFromUpdates = Map.of();
+        doReturn(stakeBalanceOfFromUpdates).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        doReturn(BigInteger.valueOf(100000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("total_staked_balance"));
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_stake_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "fallback");
+
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount1.getAddress());
+
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(gameScore), eq("get_treasury_status"));
+        doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
+
+        Map<String, String> gamesExcess = Map.of(
+                dice.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                roulette.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                blackjack.toString(), BigInteger.valueOf(100).multiply(decimal).toString()
+        );
+        doReturn(gamesExcess).when(scoreSpy).callScore(eq(Map.class), eq(gameAuth), eq("get_yesterdays_games_excess"));
+        doReturn(revshareWallet.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(gameAuth), eq("get_revshare_wallet_address"), any());
+        contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(100000).multiply(decimal));
+
+        doNothing().when(scoreSpy).callScore(eq(tapToken), eq("clear_yesterdays_stake_changes"));
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(stakedBalanceOf).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        DividendScore.invoke(owner, "setTaxPercentage", 10);
+        DividendScore.invoke(owner, "setNonTaxPeriod", 10);
+        DividendScore.invoke(owner, "distribute");
+
+        contextMock.when(() -> Context.transfer(any(), any())).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+        System.out.println(DividendScore.call("divs_share"));
+        System.out.println(DividendScore.call("getDaofundDivs"));
+    }
+
+    @Test
+    void distributePlatformDivsGreaterThanZero(){
+        setScoresMethod();
+        setDividendPercentageMethod();
+        contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_address_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        doReturn(BigInteger.valueOf(1000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("staked_balanceOf"), any());
+
+        doReturn(BigInteger.valueOf(1000000000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("totalSupply"));
+        Map<String, BigInteger> stakedBalanceOf = Map.of(
+                testingAccount.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                testingAccount1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser1.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser2.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser3.toString(), BigInteger.valueOf(1000).multiply(decimal),
+                tapStakeUser4.toString(), BigInteger.valueOf(1000).multiply(decimal)
+        );
+        Map<String, BigInteger> stakeBalanceOfFromUpdates = Map.of();
+        doReturn(stakeBalanceOfFromUpdates).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        doReturn(BigInteger.valueOf(100000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("total_staked_balance"));
+        contextMock.when(() -> Context.call(eq(tapToken), eq("switch_stake_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "fallback");
+
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "add_exception_address", testingAccount1.getAddress());
+
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(gameScore), eq("get_treasury_status"));
+        doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
+
+        Map<String, String> gamesExcess = Map.of(
+                dice.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                roulette.toString(), BigInteger.valueOf(100).multiply(decimal).toString(),
+                blackjack.toString(), BigInteger.valueOf(100).multiply(decimal).toString()
+        );
+        doReturn(gamesExcess).when(scoreSpy).callScore(eq(Map.class), eq(gameAuth), eq("get_yesterdays_games_excess"));
+        doReturn(revshareWallet.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(gameAuth), eq("get_revshare_wallet_address"), any());
+        contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(100000).multiply(decimal));
+
+        doNothing().when(scoreSpy).callScore(eq(tapToken), eq("clear_yesterdays_stake_changes"));
+        DividendScore.invoke(owner, "distribute");
+
+        doReturn(stakedBalanceOf).when(scoreSpy).callScore(eq(Map.class), eq(tapToken), eq("get_stake_updates"));
+        DividendScore.invoke(owner, "setTaxPercentage", 10);
+        DividendScore.invoke(owner, "setNonTaxPeriod", 10);
+        DividendScore.invoke(owner, "distribute");
+
+        contextMock.when(() -> Context.transfer(any(), any())).thenAnswer((Answer<Void>) invocation -> null);
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "distribute");
+
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress().toString());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress().toString());
+
+        doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+        DividendScore.invoke(owner, "distribute");
+
+        System.out.println(DividendScore.call("divs_share"));
+    }
+
     public void expectErrorMessage(Executable contractCall, String errorMessage) {
         AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
         assertEquals(errorMessage, e.getMessage());
     }
-
 }
