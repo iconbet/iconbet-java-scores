@@ -4,7 +4,13 @@ import static java.math.BigInteger.ONE;
 import static java.math.BigInteger.TWO;
 import static java.math.BigInteger.ZERO;
 
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
+import com.eclipsesource.json.Json;
+import scorex.util.ArrayList;
+
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 import score.Address;
@@ -17,6 +23,8 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import score.annotation.Payable;
+
+import javax.xml.namespace.QName;
 
 public class RewardDistribution {
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
@@ -39,6 +47,7 @@ public class RewardDistribution {
 	private static final String _DIST_COMPLETE = "dist_complete";
 
 	private static final String _GAME_SCORE = "game_score";
+	private static final String TAP_DISTRIBUTION_ENABLED = "tap_distribution_enabled";
 	private static final String _TOKEN_SCORE = "token_score";
 	private static final String _DIVIDENDS_SCORE = "dividends_score";
 	private static final String _BATCH_SIZE = "batch_size";
@@ -55,33 +64,37 @@ public class RewardDistribution {
 	public void TokenTransfer(Address recipient, BigInteger amount) {}
 
 	//TODO: review this py dept = 2 data structure and possible null pointer ex.
-	private BranchDB<BigInteger, DictDB<String, BigInteger>> _wagers = Context.newBranchDB(_WAGERS, BigInteger.class);
-	private VarDB<BigInteger> _day_index = Context.newVarDB(_DAY, BigInteger.class);
-	private ArrayDB<String> _even_day_addresses = Context.newArrayDB(_EVEN_DAY, String.class);
-	private ArrayDB<String> _odd_day_addresses = Context.newArrayDB(_ODD_DAY, String.class);
+	private final BranchDB<BigInteger, DictDB<String, BigInteger>> _wagers = Context.newBranchDB(_WAGERS, BigInteger.class);
+	private final VarDB<BigInteger> _day_index = Context.newVarDB(_DAY, BigInteger.class);
+	private final ArrayDB<String> _even_day_addresses = Context.newArrayDB(_EVEN_DAY, String.class);
+	private final ArrayDB<String> _odd_day_addresses = Context.newArrayDB(_ODD_DAY, String.class);
 	@SuppressWarnings("unchecked")
-	private ArrayDB<String>[] _addresses = new ArrayDB[] {this._even_day_addresses, this._odd_day_addresses};
-	private VarDB<BigInteger> _even_day_total = Context.newVarDB(_EVEN_DAY_TOTAL, BigInteger.class);
-	private VarDB<BigInteger> _odd_day_total = Context.newVarDB(_ODD_DAY_TOTAL, BigInteger.class);
+	private final
+	ArrayDB<String>[] _addresses = new ArrayDB[] {this._even_day_addresses, this._odd_day_addresses};
+	private final
+	VarDB<BigInteger> _even_day_total = Context.newVarDB(_EVEN_DAY_TOTAL, BigInteger.class);
+	private final
+	VarDB<BigInteger> _odd_day_total = Context.newVarDB(_ODD_DAY_TOTAL, BigInteger.class);
 	@SuppressWarnings("unchecked")
-	private VarDB<BigInteger>[] _daily_totals = new VarDB[] {this._even_day_total, this._odd_day_total};
-	private VarDB<BigInteger> _wager_total = Context.newVarDB(_WAGER_TOTAL, BigInteger.class);
-	private VarDB<BigInteger> _daily_dist = Context.newVarDB(_DAILY_DIST, BigInteger.class);
-	private VarDB<BigInteger> _dist_index = Context.newVarDB(_DIST_INDEX, BigInteger.class);
-	private VarDB<Boolean> _dist_complete = Context.newVarDB(_DIST_COMPLETE, Boolean.class);
+	private final VarDB<BigInteger>[] _daily_totals = new VarDB[] {this._even_day_total, this._odd_day_total};
+	private final VarDB<BigInteger> _wager_total = Context.newVarDB(_WAGER_TOTAL, BigInteger.class);
+	private final VarDB<BigInteger> _daily_dist = Context.newVarDB(_DAILY_DIST, BigInteger.class);
+	private final VarDB<BigInteger> _dist_index = Context.newVarDB(_DIST_INDEX, BigInteger.class);
+	private final VarDB<Boolean> _dist_complete = Context.newVarDB(_DIST_COMPLETE, Boolean.class);
 
-	private VarDB<Address> _game_score = Context.newVarDB(_GAME_SCORE, Address.class);
-	private VarDB<Address> _token_score = Context.newVarDB(_TOKEN_SCORE, Address.class);
-	private VarDB<Address> _dividends_score = Context.newVarDB(_DIVIDENDS_SCORE, Address.class);
-	private VarDB<BigInteger> _batch_size = Context.newVarDB(_BATCH_SIZE, BigInteger.class);
+	private final VarDB<Address> _game_score = Context.newVarDB(_GAME_SCORE, Address.class);
+	private final VarDB<Boolean> tapDistributionEnabled = Context.newVarDB(TAP_DISTRIBUTION_ENABLED, Boolean.class);
+	private final VarDB<Address> _token_score = Context.newVarDB(_TOKEN_SCORE, Address.class);
+	private final VarDB<Address> _dividends_score = Context.newVarDB(_DIVIDENDS_SCORE, Address.class);
+	private final VarDB<BigInteger> _batch_size = Context.newVarDB(_BATCH_SIZE, BigInteger.class);
 
 	// rewards gone variable checks if the 500M tap token held for distribution is completed
-	private VarDB<Boolean> _rewards_gone = Context.newVarDB(_REWARDS_GONE, Boolean.class);
-	private VarDB<BigInteger> _yesterdays_tap_distribution = Context.newVarDB(_YESTERDAYS_TAP_DISTRIBUTION, BigInteger.class);
+	private final VarDB<Boolean> _rewards_gone = Context.newVarDB(_REWARDS_GONE, Boolean.class);
+	private final VarDB<BigInteger> _yesterdays_tap_distribution = Context.newVarDB(_YESTERDAYS_TAP_DISTRIBUTION, BigInteger.class);
 
 	private final DictDB<Address, Integer> evenDayAddressesIndex = Context.newDictDB(_EVEN_DAY + "_index", Integer.class);
 	private final DictDB<Address, Integer> oddDayAddressesIndex = Context.newDictDB(_ODD_DAY + "_index", Integer.class);
-	private DictDB<Address, Integer>[] addressesIndex = new DictDB[] {this.evenDayAddressesIndex, this.oddDayAddressesIndex};
+	private final DictDB<Address, Integer>[] addressesIndex = new DictDB[] {this.evenDayAddressesIndex, this.oddDayAddressesIndex};
 
 	private final VarDB<Boolean> linearityComplexityMigrationStart = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_start", Boolean.class);
 	private final VarDB<Boolean> linearityComplexityMigrationComplete = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_complete", Boolean.class);
@@ -109,6 +122,14 @@ public class RewardDistribution {
 		Context.println("calling on update. "+TAG);
 	}
 
+	private boolean validateOwner(){
+		return Context.getCaller().equals(Context.getOwner());
+	}
+
+	private void validateOwnerScore(Address score){
+		Context.require(validateOwner(), TAG + ": Only owner can call this score");
+		Context.require(score.isContract(), TAG + ": The address is not a contract address");
+	}
 	/*
     Sets the tap token score address
     :param _score: Address of the token score
@@ -117,9 +138,9 @@ public class RewardDistribution {
 	 */
 	@External
 	public void set_token_score(Address _score) {
-		if (Context.getCaller().equals(Context.getOwner())) {
-			this._token_score.set(_score);
-		}
+		validateOwnerScore(_score);
+		this._token_score.set(_score);
+
 	}
 
 	/*
@@ -140,9 +161,8 @@ public class RewardDistribution {
 	 */
 	@External
 	public void set_dividends_score(Address _score) {
-		if (Context.getCaller().equals(Context.getOwner())) {
-			this._dividends_score.set(_score);
-		}
+		validateOwnerScore(_score);
+		this._dividends_score.set(_score);
 	}
 
 	/*
@@ -163,10 +183,8 @@ public class RewardDistribution {
 	 */
 	@External
 	public void set_game_score(Address _score) {
-
-		if (Context.getCaller().equals(Context.getOwner())) {
-			this._game_score.set(_score);
-		}
+		validateOwnerScore(_score);
+		this._game_score.set(_score);
 	}
 
 	/*
@@ -177,6 +195,17 @@ public class RewardDistribution {
 	@External(readonly=true)
 	public Address get_game_score() {
 		return this._game_score.getOrDefault(ZERO_ADDRESS);
+	}
+
+	@External
+	public void toggleTapDistributionEnabled(){
+		Context.require(validateOwner(), TAG + ": Only owner can call this method.");
+		this.tapDistributionEnabled.set(!this.tapDistributionEnabled.getOrDefault(Boolean.FALSE));
+	}
+
+	@External(readonly = true)
+	public boolean getTapDistributionEnabled(){
+		return this.tapDistributionEnabled.getOrDefault(Boolean.FALSE);
 	}
 
 	/*
@@ -279,33 +308,37 @@ public class RewardDistribution {
 		Context.println(Context.getCaller() +" is getting daily wagers. "+ TAG);
 		BigInteger index = this._day_index.get();
 
-		Map.Entry<String, BigInteger>[] today = new Map.Entry[this._addresses[index.intValue()].size()];
+		List<JsonObject> today = new ArrayList<>();
 		int j = 0;
 
 		for(int i =0 ; i < this._addresses[index.intValue()].size(); i++){
 			String address = this._addresses[index.intValue()].get(i);
 			BigInteger amount = this._wagers.at(index).get(address);
-			today[j] = Map.entry(address, amount);
+			JsonObject todayEntry = new JsonObject();
+			todayEntry.add(address, amount.toString());
+			today.add(todayEntry);
 			j++;
 			Context.println("Wager amount of "+ amount+" being added. "+ TAG);
 		}
 
 		index = this._day_index.get().add(ONE).mod(TWO);
 
-		Map.Entry<String, BigInteger>[] yesterday = new Map.Entry[this._addresses[index.intValue()].size()];
+		List<JsonObject> yesterday = new ArrayList<>();
 		j = 0;
 		for(int i =0 ; i < this._addresses[index.intValue()].size(); i++){
 			String address = this._addresses[index.intValue()].get(i);
 			BigInteger amount = this._wagers.at(index).get(address);
-			yesterday[j] = Map.entry(address, amount);
+			JsonObject yesterdayEntry = new JsonObject();
+			yesterdayEntry.add(address, amount.toString());
+			yesterday.add(yesterdayEntry);
 			j++;
 			Context.println("Wager amount of "+ amount+" being added. "+ TAG);
 		}
-		Map<String, Map<String, BigInteger>> dailyWagers = Map.of(
-				"today", Map.ofEntries(today),
-				"yesterday", Map.ofEntries(yesterday)
-				);
-		String json = mapToJsonString(dailyWagers);
+		JsonObject dailyWagers = new JsonObject();
+		dailyWagers.add("today", today.toString());
+		dailyWagers.add("yesterday", yesterday.toString());
+
+		String json = dailyWagers.toString();
 		Context.println("Wager totals " + json + " "+ TAG);
 		return json;
 	}
@@ -346,7 +379,8 @@ public class RewardDistribution {
 			}
 
 			if ( !this._rewards_gone.get()) {
-				BigInteger remainingTokens = Context.call(BigInteger.class, this._token_score.get(),  "balanceOf", Context.getAddress());
+				BigInteger remainingTokens = callScore(BigInteger.class, this._token_score.get(),  "balanceOf", Context.getAddress());
+				Context.println("remaining tokens here: " + remainingTokens);
 				if (remainingTokens.equals(ZERO)) {
 					this._rewards_gone.set(true);
 				}else {
@@ -365,7 +399,7 @@ public class RewardDistribution {
 		this._daily_totals[day_index.intValue()].set(this._daily_totals[day_index.intValue()].get().add(wager));
 		Context.println("Total wagers = " + this._daily_totals[day_index.intValue()].get() + ". "+ TAG);
 
-		if (linearityComplexityMigrationComplete.get()) {
+		if (linearityComplexityMigrationComplete.getOrDefault(Boolean.FALSE)) {
 			if (this.addressesIndex[day_index.intValue()].getOrDefault(Address.fromString(player), 0) > 0){
 				Context.println("Adding wager to " + player + " in _addresses[" + day_index.intValue() + " ]. " + TAG);
 				this._wagers.at(day_index).set(player, this._wagers.at(day_index).get(player).add(wager));
@@ -385,13 +419,13 @@ public class RewardDistribution {
 				this._wagers.at(day_index).set(player, wager);
 			}
 		}
-		Boolean distribute = Context.call(Boolean.class, this._dividends_score.get(), "distribute");
-		if (distribute != null && distribute) {
+		Boolean distribute = callScore(Boolean.class, this._dividends_score.get(), "distribute");
+		if (distribute != null && distribute && this.tapDistributionEnabled.getOrDefault(Boolean.FALSE)) {
 			this._distribute();
 		}
 		Context.println("Done in accumulate_wagers.  self._day_index = " +this._day_index.get() + ". "+ TAG);
 
-		if (this.linearityComplexityMigrationStart.get() && !this.linearityComplexityMigrationComplete.get()){
+		if (this.linearityComplexityMigrationStart.getOrDefault(Boolean.FALSE) && !this.linearityComplexityMigrationComplete.getOrDefault(Boolean.FALSE)){
 			this.migrateFromLinearComplexity();
 		}
 	}
@@ -401,7 +435,7 @@ public class RewardDistribution {
     :return:
 	 */
 	public void _set_batch_size() {
-		BigInteger size = Context.call(BigInteger.class, this._game_score.get(), "get_batch_size", 
+		BigInteger size = callScore(BigInteger.class, this._game_score.get(), "get_batch_size",
 				BigInteger.valueOf(
 						this._addresses[this._day_index.get().intValue()]
 								.size()));
@@ -448,7 +482,7 @@ public class RewardDistribution {
 			try {
 				Context.println("Trying to send to (" + addresses.get(i) +"): " +rewardsDue +". "+ TAG);
 				Address fullAddress = Address.fromString(addresses.get(i));
-				Context.call(this._token_score.get(),  "transfer", fullAddress, rewardsDue);
+				callScore(this._token_score.get(),  "transfer", fullAddress, rewardsDue);
 				this.TokenTransfer(fullAddress, rewardsDue);
 				Context.println("Sent player (" + addresses.get(i) +") " + rewardsDue +". "+ TAG);
 			} catch(Exception e) {
@@ -473,7 +507,8 @@ public class RewardDistribution {
 	 */
 	private void _set_daily_dist(BigInteger remaining_tokens) {
 		if (remaining_tokens.equals( BigInteger.valueOf(264000000).multiply(TAP) )) {
-			this._daily_dist.set( TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
+			Context.println("daily dist: " + TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
+			this._daily_dist.set(TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
 			this._yesterdays_tap_distribution.set(DAILY_TOKEN_DISTRIBUTION);
 		}else if (remaining_tokens.compareTo(BigInteger.valueOf(251000000).multiply(TAP) ) >= 0 ) {
 			this._daily_dist.set(DAILY_TOKEN_DISTRIBUTION.add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
@@ -481,7 +516,7 @@ public class RewardDistribution {
 		}else {
 			BigInteger dailyDist = BigInteger.valueOf(200_000).multiply(TAP)
 					.max(
-							this._yesterdays_tap_distribution.get()
+							this._yesterdays_tap_distribution.getOrDefault(ZERO)
 							.multiply(BigInteger.valueOf(995))
 							.divide(BigInteger.valueOf(1000))
 							);
@@ -529,36 +564,7 @@ public class RewardDistribution {
 		}
 		return found;
 	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <K,V> String mapToJsonString(Map<K, V > map) {
-		if( map.isEmpty()) {
-			return null;
-		}
-
-		StringBuilder sb = new StringBuilder("{");
-		for (Map.Entry<K, V> entry : map.entrySet()) {
-			if(entry.getValue() instanceof Map) {
-				String subEntry = mapToJsonString((Map)entry.getValue());
-				if(subEntry != null) {
-					sb.append("\""+entry.getKey()+"\":\""+ subEntry+"\",");	
-				}else {
-					sb.append("\""+entry.getKey()+"\":null ,");
-				}
-			}else {
-				sb.append("\""+entry.getKey()+"\":\""+entry.getValue()+"\",");
-			}
-		}
-		char c = sb.charAt(sb.length()-1);
-		if(c == ',') {
-			sb.deleteCharAt(sb.length()-1);
-		}
-		sb.append("}");
-		String json = sb.toString();
-		Context.println(json);
-		return json;
-	}
-
+	
 	@External(readonly = true)
 	public boolean getLinearityComplexityMigrationStart(){
 		return this.linearityComplexityMigrationStart.get();
@@ -579,7 +585,7 @@ public class RewardDistribution {
 		int index = this._day_index.get().add(ONE).intValue() % 2;
 		int count = this._batch_size.get().intValue();
 		int addressLength = this._addresses[index].size();
-		int start = this.linearityComplexityMigrationIndex.get();
+		int start = this.linearityComplexityMigrationIndex.getOrDefault(0);
 		int remainingAddresses = addressLength - start;
 
 		if (count > remainingAddresses){
@@ -599,6 +605,21 @@ public class RewardDistribution {
 		else{
 			this.linearityComplexityMigrationIndex.set(start + count);
 		}
+	}
+
+	/*
+	For Context.call methods
+	 */
+	public <T> T callScore(Class<T> t, Address address, String method, Object... params) {
+		return Context.call(t, address, method, params);
+	}
+
+	public void callScore(Address address, String method, Object... params) {
+		Context.call(address, method, params);
+	}
+
+	public void callScore(BigInteger amount, Address address, String method, Object... params) {
+		Context.call(amount, address, method, params);
 	}
 
 }
