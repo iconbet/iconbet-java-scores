@@ -947,7 +947,7 @@ public class ProposalsSubmission {
     @External
     public void setNextBlock(BigInteger nextBlock){
         validateOwner();
-        this.nextBlock.set(BigInteger.valueOf(Context.getBlockTimestamp()));
+        this.nextBlock.set(BigInteger.valueOf(Context.getBlockTimestamp()).add(nextBlock));
     }
 
     @External
