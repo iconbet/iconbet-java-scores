@@ -1,14 +1,15 @@
 version = '0.1.0'
 
 dependencies {
-    compileOnly 'foundation.icon:javaee-api:0.9.0'
+    compileOnly 'foundation.icon:javaee-api:0.9.1'
     //needed to check why this lib is needed
-    implementation 'com.github.sink772:javaee-tokens:0.6.0'
+    implementation 'com.github.sink772:javaee-tokens:0.6.2'
 
-    testImplementation 'foundation.icon:javaee-unittest:0.9.1'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-    testImplementation 'foundation.icon:icon-sdk:2.0.0'
+    testImplementation('org.mockito:mockito-inline:4.6.1')
+    testImplementation 'foundation.icon:javaee-unittest:0.9.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'foundation.icon:icon-sdk:2.1.0'
 	testImplementation project(':testinteg')
 }
 
@@ -28,14 +29,14 @@ deployJar {
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
             nid = 0x7
-            to = 'cx759ed3fa7d932447939ee19e0ff3490ba1c65ab0'
+            to = 'cx5557f72007f148c185d8efcd5cc92295ff9a99df'
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
 	parameters {
-		arg('_initialSupply', '100')
-		arg('_decimals', '6')
+		arg('_initialSupply', '625000000')
+		arg('_decimals', '18')
 	}
 }
 
