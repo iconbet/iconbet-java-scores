@@ -12,10 +12,10 @@ public class consts {
     public static final double MAJORITY = 0.67;
 
     //# Period Interval Time
-    public static final int DAY_COUNT = 15;
+    public static final int DAY_COUNT = 1;
 
     //# Total Blocks in 1 day
-    public static final int BLOCKS_DAY_COUNT = 20;
+    public static final int BLOCKS_DAY_COUNT = 150;
 
     //# User Defined Db
     //    PROPOSAL_DB_PREFIX = b'iconbetProposal'
