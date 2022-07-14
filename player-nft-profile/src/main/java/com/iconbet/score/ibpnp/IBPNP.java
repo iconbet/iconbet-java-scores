@@ -25,7 +25,7 @@ import static com.iconbet.score.ibpnp.utils.Constants.*;
 
 public class IBPNP extends IRC3Basic {
     public static final String TAG = "IconBet Player NFT Profile";
-    public static final BigInteger REQUEST_WITHDRAW_BLOCK_HEIGHT = new BigInteger("90");
+    public static final BigInteger REQUEST_WITHDRAW_BLOCK_HEIGHT = new BigInteger("10");
     public static final BigInteger decimal = new BigInteger("1000000000000000000");
     private static final String userDBPrefix = "user_data";
     private static final String walletDBPrefix = "wallet_data";
@@ -123,7 +123,27 @@ public class IBPNP extends IRC3Basic {
         Context.revert(TAG + ": Transfer is not allowed.");
     }
 
-    private void _set_username(Address address, String username) {
+    @Override
+    @External(readonly = true)
+    public BigInteger tokenOfOwnerByIndex(Address _owner, int _index) {
+        Context.revert(TAG + ": Method not found.");
+        return BigInteger.ZERO;
+    }
+
+    @Override
+    @External(readonly = true)
+    public BigInteger tokenByIndex(int _index) {
+        Context.revert(TAG + ": Method not found.");
+        return BigInteger.ZERO;
+    }
+
+    @Override
+    @External
+    public void approve(Address _to, BigInteger _tokenId) {
+        Context.revert(TAG + "Approvals is disabled.");
+    }
+
+        private void _set_username(Address address, String username) {
         _check_username_validity(username);
         String usernameWithoutSpace = username.replace(" ", "");
         String lowercase_name = usernameWithoutSpace.toLowerCase();
@@ -138,16 +158,7 @@ public class IBPNP extends IRC3Basic {
     }
 
     private boolean _checkIfUsernamePresent(String username) {
-        if (this.username_list.size() == 0) {
-            return false;
-        } else {
-            for (int i = 0; i < this.username_list.size(); i++) {
-                if (username.equals(this.username_list.get(i))) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        return this.username_index.getOrDefault(username, 0) > 0;
     }
 
     private String userDBPrefix(Address userAddress) {
@@ -233,20 +244,15 @@ public class IBPNP extends IRC3Basic {
     @External(readonly = true)
     public Map<String, Object> getUserData(Address address) {
         Map<String, Object> userData = get_user_data(address);
-        BigInteger dailyEarning = callScore(BigInteger.class, rewardsScore.get(), "get_expected_rewards", address.toString());
-        userData.put("daily_earning", dailyEarning);
+//        BigInteger dailyEarning = callScore(BigInteger.class, rewardsScore.get(), "get_expected_rewards", address.toString());
+//        userData.put("daily_earning", dailyEarning);
         return userData;
     }
 
     @External(readonly = true)
-    public Map<String, Object> getTokenDataOfLinkedAccounts(Address linkedAccount) {
-        Context.require(this.linked_wallets.getOrDefault(Context.getCaller(), "").equals(linkedAccount.toString()), TAG + ": The wallet " + linkedAccount + " is not linked to sender wallet.");
+    public Map<String, Object> getTokenDataOfLinkedAccounts(Address address) {
+        Address linkedAccount = Address.fromString(get_alternate_wallet_address(address));
         return get_user_data(linkedAccount);
-    }
-
-    @External(readonly = true)
-    public String get_token_owner_by_username(String userName) {
-        return this.username.getOrDefault(userName, "");
     }
 
     @External(readonly = true)
@@ -283,8 +289,8 @@ public class IBPNP extends IRC3Basic {
         WalletLinkData walletLinkData = new WalletLinkData();
         boolean canRequest = false;
         List<String> statusList = List.of("reject", "_unlinked", "");
-        int hasReachedRequestingBlockheight = BigInteger.valueOf(Context.getBlockTimestamp()).subtract(walletLinkData.getRequested_block(walletPrefix)).compareTo(REQUEST_WITHDRAW_BLOCK_HEIGHT);
-        if (walletLinkData.getRequest_status(walletPrefix).equals("_pending") && hasReachedRequestingBlockheight > 0) {
+        int hasReachedRequestingBlockheight = walletLinkData.getRequested_block(walletPrefix).add(REQUEST_WITHDRAW_BLOCK_HEIGHT).compareTo(BigInteger.valueOf(Context.getBlockHeight()));
+        if (walletLinkData.getRequest_status(walletPrefix).equals("_pending") && hasReachedRequestingBlockheight < 0) {
             canRequest = true;
         } else if (containsInList(walletLinkData.getRequest_status(walletPrefix), statusList)) {
             canRequest = true;
@@ -296,7 +302,7 @@ public class IBPNP extends IRC3Basic {
         WalletLinkData walletLinkData = new WalletLinkData();
         String walletPrefix = walletDBPrefix(requesting_address);
         walletLinkData.setRequested_wallet(walletPrefix, requested_address.toString());
-        walletLinkData.setRequested_block(walletPrefix, BigInteger.valueOf(Context.getBlockTimestamp()));
+        walletLinkData.setRequested_block(walletPrefix, BigInteger.valueOf(Context.getBlockHeight()));
         walletLinkData.setRequest_status(walletPrefix, response);
         walletLinkData.setWallet_type(walletPrefix, walletType);
     }
@@ -305,13 +311,15 @@ public class IBPNP extends IRC3Basic {
     public void requestLinkingWallet(Address _wallet, String _walletType) {
         Address sender = Context.getCaller();
         Context.require(!sender.equals(_wallet), "Can not request own account for linking.");
-        Context.require(_checkIfWalletPresent(sender) && _checkIfWalletPresent(_wallet), "Both requesting and requested wallet should hae an IBPNP profile. " + TAG);
+        Context.require(_checkIfWalletPresent(sender) && _checkIfWalletPresent(_wallet), "Both requesting and requested wallet should have an IBPNP profile. " + TAG);
         Context.require(containsInList(_walletType, walletType), TAG + ": The wallet type should be either " + ICONex + " or " + Ledger + " wallet");
         String senderPrefix = walletDBPrefix(sender);
         String requestedWalletPrefix = walletDBPrefix(_wallet);
         WalletLinkData walletLinkData = new WalletLinkData();
         Context.require(!walletLinkData.getRequest_status(senderPrefix).equals("_approve"), "The requesting wallet is already linked to another wallet.");
-        if (walletLinkData.getRequest_status(requestedWalletPrefix).equals("_pending") && BigInteger.valueOf(Context.getBlockTimestamp()).subtract(walletLinkData.getRequested_block(requestedWalletPrefix)).compareTo(REQUEST_WITHDRAW_BLOCK_HEIGHT) < 0) {
+        Context.require(!walletLinkData.getRequest_status(requestedWalletPrefix).equals("_approve"), "The requesting wallet is already linked to another wallet.");
+
+        if (walletLinkData.getRequest_status(senderPrefix).equals("_pending") && !can_request_to_another_wallet(sender)) {
             Context.revert(TAG + ": Cannot request the requested wallet before one day of requesting it.");
         }
         if (!walletLinkData.getRequested_wallet(senderPrefix).equals("")) {
@@ -319,7 +327,7 @@ public class IBPNP extends IRC3Basic {
                 _add_data_to_wallet_link_data(sender, _wallet, "_pending", "");
                 _add_data_to_wallet_link_data(_wallet, sender, "_pending", _walletType);
                 this.requested_to_requesting.set(_wallet, sender.toString());
-            } else if (walletLinkData.getRequest_status(senderPrefix).equals("_pending") && BigInteger.valueOf(Context.getBlockTimestamp()).subtract(walletLinkData.getRequested_block(requestedWalletPrefix)).compareTo(REQUEST_WITHDRAW_BLOCK_HEIGHT) > 0) {
+            } else if (walletLinkData.getRequest_status(senderPrefix).equals("_pending")) {
                 _add_data_to_wallet_link_data(sender, _wallet, "_pending", "");
                 _add_data_to_wallet_link_data(_wallet, sender, "_pending", _walletType);
                 this.requested_to_requesting.set(_wallet, sender.toString());
