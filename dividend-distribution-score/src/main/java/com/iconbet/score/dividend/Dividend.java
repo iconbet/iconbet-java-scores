@@ -81,7 +81,7 @@ public class Dividend extends Utils {
             onUpdate();
             return;
         }
-        this._total_divs.set(ZERO);
+//        this._total_divs.set(ZERO);
 
     }
 
@@ -106,6 +106,10 @@ public class Dividend extends Utils {
     public void InhouseGames(Address address, String note) {
     }
 
+    private void governanceOnly() {
+        Context.require(Context.getCaller().equals(get_game_auth_score()), TAG + ": Only Governance score can call this method.");
+    }
+
     /*
     Sets the percentage for distribution to tap holders, game developers, promotion and platform. The sum of the
     percentage must be 100.
@@ -127,9 +131,7 @@ public class Dividend extends Utils {
         Context.require(_promo != null);
         Context.require(_platform != null);
 
-        if (!Context.getCaller().equals(Context.getOwner())) {
-            Context.revert(TAG + ": Only the owner of the score can call the method");
-        }
+        governanceOnly();
 
         if (!(
                 inBetween(ZERO, _tap, _100)
@@ -517,6 +519,7 @@ public class Dividend extends Utils {
                 this._platform_divs.set(this._platform_divs.getOrDefault(ZERO).add(amount));
             } else {
                 BigInteger amount = this._games_excess.getOrDefault(game.toString(), ZERO).multiply(this._dividend_percentage.get(1)).divide(_100);
+                Context.println("amount: " + amount);
                 Address address = this._revshare_wallet_address.get(game.toString());
                 if (amount.compareTo(ZERO) > 0) {
                     try {
@@ -617,10 +620,10 @@ public class Dividend extends Utils {
 
                 Address addressKey = Address.fromString(address);
                 String value = tapDividendsTax.tapDividendsClaimablePerDay.getOrDefault(addressKey, "");
-                if (value.equals("")){
-                    tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, ZERO.add(amount) + ",");
+                if (value.equals("")) {
+                    tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, amount + ",");
                 } else {
-                    tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, new BigInteger(value).add(amount) + ",");
+                    tapDividendsTax.tapDividendsClaimablePerDay.set(addressKey, value + amount + ",");
                 }
                 BigInteger claimableDividends = tapDividendsTax.tapDividendsClaimable.getOrDefault(addressKey, ZERO);
                 tapDividendsTax.tapDividendsClaimable.set(addressKey, claimableDividends.add(amount));
@@ -658,20 +661,20 @@ public class Dividend extends Utils {
      */
     @External
     public void remove_from_blacklist(String _address) {
-        if (Context.getCaller().equals(Context.getOwner())) {
-            if (!containsInArrayDb(_address, this._blacklist_address)) {
-                Context.revert(TAG + ": " + _address + " not in blacklist address");
-            }
-            this.BlacklistAddress(_address, "Removed from blacklist");
-            String top = this._blacklist_address.pop();
-            if (!top.equals(_address)) {
-                for (int i = 0; i < this._blacklist_address.size(); i++) {
-                    if (this._blacklist_address.get(i) == _address) {
-                        this._blacklist_address.set(i, top);
-                    }
+        governanceOnly();
+        if (!containsInArrayDb(_address, this._blacklist_address)) {
+            Context.revert(TAG + ": " + _address + " not in blacklist address");
+        }
+        this.BlacklistAddress(_address, "Removed from blacklist");
+        String top = this._blacklist_address.pop();
+        if (!top.equals(_address)) {
+            for (int i = 0; i < this._blacklist_address.size(); i++) {
+                if (this._blacklist_address.get(i) == _address) {
+                    this._blacklist_address.set(i, top);
                 }
             }
         }
+
     }
 
     /*
@@ -683,13 +686,13 @@ public class Dividend extends Utils {
      */
     @External
     public void set_blacklist_address(String _address) {
-        if (Context.getCaller().equals(Context.getOwner())) {
-            this.BlacklistAddress(_address, "Added to Blacklist");
-            if (!containsInArrayDb(_address, this._blacklist_address)) {
-                this._blacklist_address.add(_address);
-            }
+        governanceOnly();
+        this.BlacklistAddress(_address, "Added to Blacklist");
+        if (!containsInArrayDb(_address, this._blacklist_address)) {
+            this._blacklist_address.add(_address);
         }
     }
+
 
     /*
     Sets the inhouse games list. The dividend for game developers for these games will be sent to the
@@ -700,15 +703,15 @@ public class Dividend extends Utils {
      */
     @External
     public void set_inhouse_games(Address _score) {
+        governanceOnly();
         if (!_score.isContract()) {
             Context.revert(TAG + ": " + _score + "  should be a contract address");
         }
-        if (Context.getCaller().equals(Context.getOwner())) {
-            this.InhouseGames(_score, "Added as inhouse games");
-            if (!containsInArrayDb(_score, this._inhouse_games)) {
-                this._inhouse_games.add(_score);
-            }
+        this.InhouseGames(_score, "Added as inhouse games");
+        if (!containsInArrayDb(_score, this._inhouse_games)) {
+            this._inhouse_games.add(_score);
         }
+
     }
 
     /*
@@ -731,23 +734,23 @@ public class Dividend extends Utils {
      */
     @External
     public void remove_from_inhouse_games(Address _score) {
+        governanceOnly();
         if (!_score.isContract()) {
             Context.revert(TAG + " : " + _score + " is not a valid contract address");
         }
-        if (Context.getCaller().equals(Context.getOwner())) {
-            if (!containsInArrayDb(_score, this._inhouse_games)) {
-                Context.revert(TAG + ": " + _score + " is not in inhouse games list");
-            }
-            this.InhouseGames(_score, "Removed from inhouse games list");
-            Address top = this._inhouse_games.pop();
-            if (!top.equals(_score)) {
-                for (int i = 0; i < this._inhouse_games.size(); i++) {
-                    if (this._inhouse_games.get(i).equals(_score)) {
-                        this._inhouse_games.set(i, top);
-                    }
+        if (!containsInArrayDb(_score, this._inhouse_games)) {
+            Context.revert(TAG + ": " + _score + " is not in inhouse games list");
+        }
+        this.InhouseGames(_score, "Removed from inhouse games list");
+        Address top = this._inhouse_games.pop();
+        if (!top.equals(_score)) {
+            for (int i = 0; i < this._inhouse_games.size(); i++) {
+                if (this._inhouse_games.get(i).equals(_score)) {
+                    this._inhouse_games.set(i, top);
                 }
             }
         }
+
     }
 
     /*
@@ -971,9 +974,7 @@ public class Dividend extends Utils {
 
     @External
     public void add_exception_address(Address _address) {
-        if (!Context.getCaller().equals(Context.getOwner())) {
-            Context.revert(TAG + ":  Only owner can add an exception address");
-        }
+        governanceOnly();
         String str_address = _address.toString();
         if (!containsInArrayDb(str_address, this._exception_address)) {
             this._exception_address.add(str_address);
@@ -982,10 +983,7 @@ public class Dividend extends Utils {
 
     @External
     public void remove_exception_address(Address _address) {
-        if (!Context.getCaller().equals(Context.getOwner())) {
-            Context.revert(TAG + ":  Only owner can remove an exception address");
-        }
-
+        governanceOnly();
         String str_address = _address.toString();
         if (!containsInArrayDb(str_address, this._exception_address)) {
             Context.revert(TAG + ":  Address to remove not found in exception address list.");
@@ -1008,7 +1006,6 @@ public class Dividend extends Utils {
 
     public void _set_tap_of_exception_address() {
         ScoreAddresses scoreAddresses = new ScoreAddresses();
-        System.out.println("exception size: " + this._exception_address.size());
         for (int idx = 0; idx < this._exception_address.size(); idx++) {
             String address = this._exception_address.get(idx);
             if (this._stake_holders_index.getOrDefault(address, ZERO).equals(ZERO)) {
@@ -1026,11 +1023,15 @@ public class Dividend extends Utils {
 
     @Payable
     public void fallback() {
+        Context.println("reached in fallback");
         ScoreAddresses scoreAddresses = new ScoreAddresses();
         if (Context.getCaller().equals(scoreAddresses._game_score.get())) {
+            Context.println("Reached in if dividends fallback");
             // Set the status of all divisions as False
             this._dividends_received.set(ONE);
-            this.DivsReceived(this._total_divs.get(), this._batch_size.get());
+            Context.println("Reached in if dividends fallback 2");
+
+            this.DivsReceived(this._total_divs.getOrDefault(ZERO), this._batch_size.getOrDefault(ZERO));
         } else {
             Context.revert(TAG + ": Funds can only be accepted from the game contract.");
         }
@@ -1054,8 +1055,8 @@ public class Dividend extends Utils {
 
     @External
     public void setTaxPercentage(int percentage) {
+        governanceOnly();
         TapDividendsTax tapDividendsTax = new TapDividendsTax();
-        Context.require(Context.getCaller() == Context.getOwner(), TAG + ": This method is only available for the owner.");
         Context.require(0 <= percentage && percentage <= 100, TAG + ": Percentage must be between 0 and 100.");
         tapDividendsTax.tapDividendsTaxPercentage.set(BigInteger.valueOf(percentage));
     }
@@ -1069,7 +1070,7 @@ public class Dividend extends Utils {
 
     @External
     public void setNonTaxPeriod(int period) {
-        Context.require(Context.getCaller() == Context.getOwner(), TAG + ": This method is only available for the owner.");
+        governanceOnly();
         TapDividendsTax tapDividendsTax = new TapDividendsTax();
         Context.require(period > 0, TAG + ": Percentage must be greater than 0.");
         tapDividendsTax.tapDividendsNonTaxPeriod.set(period);
@@ -1083,9 +1084,9 @@ public class Dividend extends Utils {
 
     private BigInteger getActualClaimableAmount(Address owner) {
         TapDividendsTax tapDividendsTax = new TapDividendsTax();
-        BigInteger claimableAmount = tapDividendsTax.tapDividendsClaimable.get(owner);
-        BigInteger taxableAmount = tapDividendsTax.tapDividendsTaxable.get(owner);
-        BigInteger tax = taxableAmount.multiply(tapDividendsTax.tapDividendsTaxPercentage.get());
+        BigInteger claimableAmount = tapDividendsTax.tapDividendsClaimable.getOrDefault(owner, ZERO);
+        BigInteger taxableAmount = tapDividendsTax.tapDividendsTaxable.getOrDefault(owner, ZERO);
+        BigInteger tax = taxableAmount.multiply(tapDividendsTax.tapDividendsTaxPercentage.getOrDefault(ZERO)).divide(BigInteger.valueOf(100));
 
         return claimableAmount.subtract(tax);
     }
@@ -1110,8 +1111,8 @@ public class Dividend extends Utils {
     @External(readonly = true)
     public Map<?, ?> getClaimableAmount(Address address) {
         TapDividendsTax tapDividendsTax = new TapDividendsTax();
-        return Map.of("total", tapDividendsTax.tapDividendsClaimable.get(address),
-                "taxable", tapDividendsTax.tapDividendsTaxable.get(address),
+        return Map.of("total", tapDividendsTax.tapDividendsClaimable.getOrDefault(address, ZERO),
+                "taxable", tapDividendsTax.tapDividendsTaxable.getOrDefault(address, ZERO),
                 "actual_claimable", getActualClaimableAmount(address));
     }
 
@@ -1124,33 +1125,37 @@ public class Dividend extends Utils {
         TapDividendsTax tapDividendsTax = new TapDividendsTax();
         BigInteger claimableAmount = tapDividendsTax.tapDividendsClaimable.get(caller);
         BigInteger taxableAmount = getTaxableAmount(caller);
-        BigInteger tax = taxableAmount.multiply(tapDividendsTax.tapDividendsTaxPercentage.get());
+        BigInteger tax = taxableAmount.multiply(tapDividendsTax.tapDividendsTaxPercentage.get()).divide(BigInteger.valueOf(100));
         BigInteger actualClaimableAmount = claimableAmount.subtract(tax);
 
         tapDividendsTax.tapDividendsClaimablePerDay.set(caller, "");
         tapDividendsTax.tapDividendsClaimable.set(caller, ZERO);
         tapDividendsTax.tapDividendsTaxable.set(caller, ZERO);
 
-        Address alternateAddress = callScore(Address.class, scoreAddresses.ibpnpScore.get(), "get_alternate_wallet_address", caller);
+        if (callScore(Boolean.class, scoreAddresses.ibpnpScore.get(), "has_alternate_wallet", caller)) {
+            Address alternateAddress = callScore(Address.class, scoreAddresses.ibpnpScore.get(), "get_alternate_wallet_address", caller);
 
-        BigInteger alternateClaimableAmount = tapDividendsTax.tapDividendsClaimable.get(alternateAddress);
-        BigInteger alternateTaxableAmount = getTaxableAmount(alternateAddress);
-        BigInteger alternateTax = alternateTaxableAmount.multiply(tapDividendsTax.tapDividendsTaxPercentage.get());
-        BigInteger alternateActualClaimableAmount = alternateClaimableAmount.subtract(tax);
+            BigInteger alternateClaimableAmount = tapDividendsTax.tapDividendsClaimable.get(alternateAddress);
+            BigInteger alternateTaxableAmount = getTaxableAmount(alternateAddress);
+            BigInteger alternateTax = alternateTaxableAmount.multiply(tapDividendsTax.tapDividendsTaxPercentage.get()).divide(BigInteger.valueOf(100));
+            BigInteger alternateActualClaimableAmount = alternateClaimableAmount.subtract(tax);
 
-        tax = tax.add(alternateTax);
-        actualClaimableAmount = actualClaimableAmount.add(alternateActualClaimableAmount);
+            tax = tax.add(alternateTax);
+            actualClaimableAmount = actualClaimableAmount.add(alternateActualClaimableAmount);
 
-        tapDividendsTax.tapDividendsClaimablePerDay.set(alternateAddress, "");
-        tapDividendsTax.tapDividendsClaimable.set(alternateAddress, ZERO);
-        tapDividendsTax.tapDividendsTaxable.set(alternateAddress, ZERO);
+            tapDividendsTax.tapDividendsClaimablePerDay.set(alternateAddress, "");
+            tapDividendsTax.tapDividendsClaimable.set(alternateAddress, ZERO);
+            tapDividendsTax.tapDividendsTaxable.set(alternateAddress, ZERO);
+        }
 
         if (actualClaimableAmount.compareTo(ZERO) > 0) {
             if (tax.compareTo(ZERO) > 0) {
                 Address targetAddress = scoreAddresses._daofund_score.get();
+                Context.println("Tax is: " + tax);
                 Context.transfer(targetAddress, tax);
                 FundTransfer(String.valueOf(targetAddress), tax, "Dividends distribution to DAOFund as tax for late claim.");
             }
+            Context.println("Actual claimable amount: " + actualClaimableAmount);
             Context.transfer(caller, actualClaimableAmount);
             FundTransfer(String.valueOf(caller), actualClaimableAmount, "Dividends distribution to tap holder");
         }
@@ -1173,24 +1178,29 @@ public class Dividend extends Utils {
      */
 
     @External(readonly = true)
-    public BigInteger getEligibleStakedTapToken(){
+    public BigInteger getEligibleStakedTapToken() {
         return _total_eligible_staked_tap_tokens.get();
     }
 
     @External(readonly = true)
-    public BigInteger batchSize(){
+    public BigInteger batchSize() {
         return this._batch_size.getOrDefault(ZERO);
     }
 
     @External(readonly = true)
-    public BigInteger dividendsReceived(){
+    public BigInteger dividendsReceived() {
         return this._dividends_received.get();
     }
 
     @External
-    public void set_divs_dist_complete(boolean status){
+    public void set_divs_dist_complete(boolean status) {
         Context.require(Context.getCaller().equals(Context.getOwner()), TAG + "Only owner can call this method.");
         this._divs_dist_complete.set(status);
+    }
+
+    @External(readonly = true)
+    public BigInteger get_daofund_divs(){
+        return this._daofund_divs.get();
     }
 
 }
