@@ -22,7 +22,7 @@ public class Utils {
         Context.call(amount, address, method, params);
     }
 
-    public <T> boolean containsInArrayDb(T value, ArrayDB<T> arraydb) {
+    public static <T> boolean containsInArrayDb(T value, ArrayDB<T> arraydb) {
         boolean found = false;
         if (arraydb == null || value == null) {
             return found;
@@ -38,7 +38,7 @@ public class Utils {
         return found;
     }
 
-    public <T> List<T> arrayDBtoList(ArrayDB<T> arraydb, T[] list) {
+    public static <T> List<T> arrayDBtoList(ArrayDB<T> arraydb, T[] list) {
 
         for (int i = 0; i < arraydb.size(); i++) {
             list[i] = arraydb.get(i);
@@ -46,7 +46,7 @@ public class Utils {
         return List.of(list);
     }
 
-    public List<String> splitString(String toBeSplitted){
+    public static List<String> splitString(String toBeSplitted){
         List<String> splitList = new ArrayList<>();
         String splitString = "";
         for (int i = 0; i < toBeSplitted.length(); i++){
