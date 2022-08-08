@@ -241,7 +241,8 @@ public class ProposalsSubmission {
         }
         int count = this.proposalsStatus.get(_status).size();
 
-        if (_start_index < 0 || _start_index > count) {
+        Context.require(_start_index < count, TAG + ": Start index is greater than number of proposals. Total Proposals: " + count);
+        if (_start_index < 0) {
             _start_index = 0;
         }
 
@@ -280,7 +281,7 @@ public class ProposalsSubmission {
                     }
                     Map<String, ?> proposalsDetails = Map.of(
                             PROJECT_TITLE, proposalDetails.get(PROJECT_TITLE),
-                            IPFS_HASH, proposalDetails.get(proposalKey),
+                            IPFS_HASH, proposalKey,
                             NEW_PROGRESS_REPORT, proposalData.getSubmitProgressReport(proposalPrefix),
                             LAST_PROGRESS_REPORT, lastProgressReport
                     );
@@ -370,6 +371,16 @@ public class ProposalsSubmission {
         return proposers;
     }
 
+    @External(readonly = true)
+    public List<String> getProposalsKeys(){
+        List<String> keys = new ArrayList<>();
+
+        for (int i = 0; i < this.proposalsKeyList.size(); i++) {
+            keys.add(this.proposalsKeyList.get(i));
+        }
+        return keys;
+    }
+
     @External
     public void voteProposal(String _ipfs_key, String _vote, String _vote_reason) {
         updatePeriod();
@@ -410,6 +421,7 @@ public class ProposalsSubmission {
     @External
     public void submitProgressReport(ProgressReportAttributes _progress) {
         updatePeriod();
+        Context.require(this.progressKeyListIndex.getOrDefault(_progress.reportHash, 0) == 0, TAG + ": The progress report hash already exists");
         Context.require(this.periodName.getOrDefault("None").equals(APPLICATION_PERIOD),
                 TAG + ": Progress Reports can only be submitted on application period.");
         Context.require(!Context.getCaller().isContract(), TAG + " Contract addresses are not supported.");
@@ -583,7 +595,7 @@ public class ProposalsSubmission {
                 int update_period_index = this.updatePeriodIndex.get();
                 if (update_period_index == 0) {
                     this.periodName.set(TRANSITION_PERIOD);
-                    this.previousPeriodName.set(APPLICATION_PERIOD);
+                    this.previousPeriodName.set(VOTING_PERIOD);
                     this.updatePeriodIndex.set(1);
                     updateProposalsResult();
                     PeriodUpdate(
@@ -655,11 +667,12 @@ public class ProposalsSubmission {
             int period_count = (int) proposal_details.get(PROJECT_DURATION);
 
 
-            if (proposal_details.get(TOTAL_VOTES).equals("0")) {
+            if (total_votes.equals(BigInteger.ZERO)) {
                 updateProposalStatus(pendingProposal, REJECTED);
+                removeProposer(proposer_address);
             } else if (approved_votes.divide(total_votes).doubleValue() > MAJORITY) {
                 updateProposalStatus(pendingProposal, ACTIVE);
-                callScore(this.daoFundScore.get(), "allocateFundsToProposals", pendingProposal, period_count, proposer_address, total_budget);
+                callScore(this.daoFundScore.get(), "transfer_proposal_fund_to_proposals_fund", pendingProposal, period_count, proposer_address, total_budget);
             } else {
                 updateProposalStatus(pendingProposal, REJECTED);
                 removeProposer(proposer_address);
@@ -690,7 +703,7 @@ public class ProposalsSubmission {
                     updateProposalStatus(ipfs_hash, PAUSED);
                 } else if (proposalStatus.equals(PAUSED)) {
                     updateProposalStatus(ipfs_hash, DISQUALIFIED);
-                    callScore(this.daoFundScore.get(), "disqualify_project", ipfs_hash);
+                    callScore(this.proposalsFundScore.get(), "disqualify_project", ipfs_hash);
                     removeProposer(proposerAddress);
                 }
             }
@@ -735,14 +748,14 @@ public class ProposalsSubmission {
                     updateProposalStatus(ipfs_hash, ACTIVE);
                 }
                 proposalData.setApprovedReports(proposalPrefix, approvedReportsCount);
-                callScore(this.daoFundScore.get(), "send_installment_to_proposer", ipfs_hash);
+                callScore(this.proposalsFundScore.get(), "send_installment_to_proposer", ipfs_hash);
             } else {
                 updateProgressReportStatus(waiting_reports, PROGRESS_REPORT_REJECTED);
                 if (proposalStatus.equals(ACTIVE)) {
                     updateProposalStatus(ipfs_hash, PAUSED);
                 } else if (proposalStatus.equals(PAUSED)) {
                     updateProposalStatus(ipfs_hash, DISQUALIFIED);
-                    Context.call(this.daoFundScore.get(), "disqualify_project", ipfs_hash);
+                    Context.call(this.proposalsFundScore.get(), "disqualify_project", ipfs_hash);
                     removeProposer(proposerAddress);
                 }
             }
@@ -931,9 +944,10 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public Address getProposer(String prefix){
+    public Address getProposer(String ipfsHash){
         ProposalData proposalData = new ProposalData();
-        return proposalData.getProposerAddress(prefix);
+        String proposalPrefix = proposalPrefix(ipfsHash);
+        return proposalData.getProposerAddress(proposalPrefix);
     }
 
     /*
@@ -947,7 +961,7 @@ public class ProposalsSubmission {
     @External
     public void setNextBlock(BigInteger nextBlock){
         validateOwner();
-        this.nextBlock.set(BigInteger.valueOf(Context.getBlockTimestamp()).add(nextBlock));
+        this.nextBlock.set(BigInteger.valueOf(Context.getBlockHeight()).add(nextBlock));
     }
 
     @External
