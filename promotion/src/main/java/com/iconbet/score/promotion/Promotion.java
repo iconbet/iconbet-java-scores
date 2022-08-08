@@ -4,6 +4,7 @@ import static java.math.BigInteger.ZERO;
 
 import java.math.BigInteger;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -11,6 +12,7 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonObject.Member;
 
+import com.eclipsesource.json.JsonValue;
 import score.Address;
 import score.Context;
 import score.VarDB;
@@ -18,6 +20,8 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import score.annotation.Payable;
+import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
 public class Promotion {
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
@@ -120,28 +124,26 @@ public class Promotion {
 			return;
 		}
 
-		Iterator<Member> it = wagerTotals.get("yesterday").asObject().iterator();
+		List<String> it = splitString(wagerTotals.get("yesterday").asString());
+		Context.println(it.get(0));
 
-		Map.Entry<String, BigInteger>[] wagers = new Map.Entry[wagerTotals.get("yesterday").asObject().size()];
 
-		int j = 0;
-		while(it.hasNext()) {
-			Member t = it.next();
-			wagers[j] = Map.entry(t.getName(), new BigInteger(t.getValue().asString()));
+		Map<String, Object>[] wagers = new Map[it.size()];
+
+		for (int j = 0; j < it.size(); j++) {
+			Context.println("reached in for " + TAG);
+			Map<String, Object> wagerMap = makeMap(it.get(j));
+ 			wagers[j] = wagerMap;
 			Context.println("wager found: " + wagers[j]);
-			j++;
 		}
 
-		Comparator<Map.Entry<String, BigInteger>> c = new Comparator<>() {
-			@Override
-			public int compare(Entry<String, BigInteger> a, Entry<String, BigInteger> b) {
-				return a.getValue().compareTo(b.getValue());
-			}
-		};
+		mergeSort(wagers, 0, it.size() - 1);
 
-		ArrayUtils.quickSort(wagers, 0, wagers.length, c);
+		Context.println("sorted and reached here");
 
-		Map.Entry<String, BigInteger>[] topWagers = (Map.Entry<String, BigInteger>[])ArrayUtils.top(wagers, 10, true);
+		Map<String, Object>[] topWagers = ArrayUtils.top(wagers, 10, false);
+		Context.println("reached in for ......???.....");
+
 
 		int totalPercent = 0;
 		for(int i = topWagers.length-1 ; i >= 0 ; i-- ) {
@@ -151,8 +153,9 @@ public class Promotion {
 		int i = 0;
 		//TODO: test this logic in depth
 		BigInteger totalPrizes = this._total_prizes.get();
-		for (Map.Entry<String, BigInteger> es: topWagers) {
-			String address =  es.getKey();
+		for (Map<String, Object> es: topWagers) {
+			Context.println("reached in for ..............");
+			String address =  (String) es.get("address");
 			BigInteger prize = BigInteger.valueOf(WAGER_WAR_PRIZE[i]).multiply(totalPrizes).divide(BigInteger.valueOf(totalPercent));
 			totalPercent -= WAGER_WAR_PRIZE[i];
 			totalPrizes = totalPrizes.subtract(prize);
@@ -178,4 +181,96 @@ public class Promotion {
 		}
 	}
 
+	public List<String> splitString(String toBeSplitted){
+		List<String> splitList = new ArrayList<>();
+		String splitString = "";
+
+		for (int i = 0 ; i < toBeSplitted.length(); i++){
+			char charAtIndex = toBeSplitted.charAt(i);
+			if (charAtIndex != ',' && charAtIndex != ' ' && charAtIndex != ']' && charAtIndex != '['){
+				splitString += String.valueOf(charAtIndex);
+			}
+			else if (charAtIndex == ','){
+				splitList.add(splitString);
+				splitString = "";
+			}
+		}
+		splitList.add(splitString);
+		return splitList;
+	}
+
+	public Map<String, Object> makeMap(String stringToBeMapped){
+		String splitString = "";
+		String address = "";
+		HashMap<String, Object> mapToReturn =  new HashMap<>();
+		for (int i = 0; i < stringToBeMapped.length(); i++){
+			char charAtIndex = stringToBeMapped.charAt(i);
+			if (charAtIndex == ':'){
+				address = splitString;
+				splitString = "";
+			}
+			else if (charAtIndex != '{' && charAtIndex != '"' && charAtIndex != '}'){
+				splitString += String.valueOf(charAtIndex);
+			}
+		}
+
+		mapToReturn.put("address", address);
+		mapToReturn.put("value", new BigInteger(splitString));
+		Context.println("returned from make map: " + address + " " + splitString);
+		return mapToReturn;
+	}
+
+	void mergeSort(Map<String, Object> array[], int left, int right) {
+		if (left < right) {
+
+			int mid = (left + right) / 2;
+
+			mergeSort(array, left, mid);
+			mergeSort(array, mid + 1, right);
+
+			merge(array, left, mid, right);
+		}
+	}
+
+	void merge(Map<String, Object> array[], int p, int q, int r) {
+
+		int n1 = q - p + 1;
+		int n2 = r - q;
+
+		Map<String, Object> L[] = new Map[n1];
+		Map<String, Object> M[] = new Map[n2];
+
+		for (int i = 0; i < n1; i++)
+			L[i] = array[p + i];
+		for (int j = 0; j < n2; j++)
+			M[j] = array[q + 1 + j];
+
+		int i, j, k;
+		i = 0;
+		j = 0;
+		k = p;
+
+		while (i < n1 && j < n2) {
+			if (((BigInteger)L[i].get("value")).compareTo((BigInteger) M[j].get("value")) >= 0) {
+				array[k] = L[i];
+				i++;
+			} else {
+				array[k] = M[j];
+				j++;
+			}
+			k++;
+		}
+
+		while (i < n1) {
+			array[k] = L[i];
+			i++;
+			k++;
+		}
+
+		while (j < n2) {
+			array[k] = M[j];
+			j++;
+			k++;
+		}
+	}
 }
