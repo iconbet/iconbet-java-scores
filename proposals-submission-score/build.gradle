@@ -9,6 +9,7 @@ dependencies {
     testImplementation 'foundation.icon:javaee-unittest:0.9.4'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
 }
 
 optimizedJar {
@@ -31,7 +32,7 @@ deployJar {
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
             nid = 0x7
-            to = 'cx5eec55bb4fc13a526fd93e1d836633f03c2a2b3b'
+            to = 'cx29f8685a5db9fbbb641e91c09cb9aadca82b2ef8'
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
