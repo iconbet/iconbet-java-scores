@@ -1,5 +1,7 @@
 package com.iconbet.score.promotion;
 
+import java.util.Map;
+
 public final class ArrayUtils {
 
 	ArrayUtils(){}
@@ -66,19 +68,22 @@ public final class ArrayUtils {
         }
     }
 
-    public static Object[] top(Object[] arr, int max, boolean startFromEnd) {
+    public static Map<String, Object>[] top(Map<String, Object>[] arr, int max, boolean startFromEnd) {
 
-    	if(arr == null || arr.length < max ) {
+    	if(arr == null) {
     		return arr;
     	}
 
-    	Object[] dest = new Object[max];
+        if (arr.length < max){
+            max = arr.length;
+        }
+
+    	Map<String, Object>[] dest = new Map[max];
     	if(startFromEnd) {
     		System.arraycopy(arr, arr.length-max, dest, 0, max);
     	}else {
     		System.arraycopy(arr, 0, dest, 0, max);	
     	}
-
     	return dest;
     }
 
