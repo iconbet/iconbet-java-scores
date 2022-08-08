@@ -5,13 +5,11 @@ import static java.math.BigInteger.TWO;
 import static java.math.BigInteger.ZERO;
 
 import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.eclipsesource.json.Json;
+
 import scorex.util.ArrayList;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
 
 import score.Address;
 import score.ArrayDB;
@@ -32,7 +30,7 @@ public class RewardDistribution {
 	public static final String TAG = "REWARDS";
 	public static final BigInteger DAILY_TOKEN_DISTRIBUTION = new BigInteger("1000000000000000000000000");
 	public static final boolean DEBUG = false;
-	public static final BigInteger TAP = BigInteger.valueOf(1000000000000000000l);
+	public static final BigInteger TAP = new BigInteger("1000000000000000000");
 
 	private static final String _WAGERS = "wagers";
 	private static final String _DAY = "day";
@@ -55,7 +53,6 @@ public class RewardDistribution {
 	private static String _REWARDS_GONE = "rewards_gone";
 	private static String _YESTERDAYS_TAP_DISTRIBUTION = "yesterdays_tap_distribution";
 	private static final String LINEARITY_COMPLEXITY_MIGRATION = "linearity_complexity_migration";
-	private static final String TAP_DIVIDENDS = "tap_dividends";
 
 	@EventLog(indexed=2)
 	public void FundTransfer(String sweep_to, BigInteger amount, String note) {}
@@ -92,9 +89,9 @@ public class RewardDistribution {
 	private final VarDB<Boolean> _rewards_gone = Context.newVarDB(_REWARDS_GONE, Boolean.class);
 	private final VarDB<BigInteger> _yesterdays_tap_distribution = Context.newVarDB(_YESTERDAYS_TAP_DISTRIBUTION, BigInteger.class);
 
-	private final DictDB<Address, Integer> evenDayAddressesIndex = Context.newDictDB(_EVEN_DAY + "_index", Integer.class);
-	private final DictDB<Address, Integer> oddDayAddressesIndex = Context.newDictDB(_ODD_DAY + "_index", Integer.class);
-	private final DictDB<Address, Integer>[] addressesIndex = new DictDB[] {this.evenDayAddressesIndex, this.oddDayAddressesIndex};
+	private final DictDB<Address, BigInteger> evenDayAddressesIndex = Context.newDictDB(_EVEN_DAY + "_index", BigInteger.class);
+	private final DictDB<Address, BigInteger> oddDayAddressesIndex = Context.newDictDB(_ODD_DAY + "_index", BigInteger.class);
+	private final DictDB<Address, BigInteger>[] addressesIndex = new DictDB[] {this.evenDayAddressesIndex, this.oddDayAddressesIndex};
 
 	private final VarDB<Boolean> linearityComplexityMigrationStart = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_start", Boolean.class);
 	private final VarDB<Boolean> linearityComplexityMigrationComplete = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_complete", Boolean.class);
@@ -264,10 +261,7 @@ public class RewardDistribution {
 	 */
 	@External(readonly=true)
 	public BigInteger get_todays_tap_distribution() {
-
-		Context.println("calling tap-token["+ this._token_score.get() +"].balanceOf for reward address: "+ Context.getAddress().toString());
 		BigInteger remainingTokens = Context.call(BigInteger.class, this._token_score.get(),  "balanceOf", Context.getAddress());
-		Context.println("remain tokens: "+ remainingTokens + " of "+ Context.getAddress());
 		if (remainingTokens.equals(BigInteger.valueOf(264000000).multiply(TAP))) {
 			return TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remainingTokens).mod(DAILY_TOKEN_DISTRIBUTION);
 		}else if (remainingTokens.compareTo( BigInteger.valueOf(251000000).multiply(TAP) ) >= 0) {
@@ -292,7 +286,7 @@ public class RewardDistribution {
 	@External
 	public void untether() {
 		if (! Context.getOrigin().equals(Context.getOwner())) {
-			Context.revert("Only the owner can call the untether method.");
+			Context.revert(TAG + ": Only the owner can call the untether method.");
 		}
 	}
 
@@ -359,7 +353,7 @@ public class RewardDistribution {
 	@External
 	public void accumulate_wagers(String  player, BigInteger  wager, BigInteger  day_index) {
 		if ( !Context.getCaller().equals(this._game_score.get()) ) {
-			Context.revert("This function can only be called from the game score.");
+			Context.revert(TAG + ": This function can only be called from the game score.");
 		}
 		Context.println("In accumulate_wagers, day_index = "+ day_index +". "+ TAG);
 		BigInteger day = this._day_index.get();
@@ -369,15 +363,17 @@ public class RewardDistribution {
 			this._day_index.set(day_index);
 
 			for( int i = 0; i < this._addresses[day_index.intValue()].size(); i++) {
-				String _address = this._addresses[day_index.intValue()].pop();
-				//TODO: review removal logic
-				this._wagers.at(day_index).set(this._addresses[day_index.intValue()].pop(), null);
+				Context.println(TAG + ": exception here???? " + this._addresses[day_index.intValue()].size());
 
-				if (linearityComplexityMigrationComplete.get()){
-					addressesIndex[day_index.intValue()].set(Address.fromString(_address), 0);
+				String _address = this._addresses[day_index.intValue()].pop();
+
+				//TODO: review removal logic
+				this._wagers.at(day_index).set(_address, null);
+
+				if (linearityComplexityMigrationComplete.getOrDefault(Boolean.FALSE)){
+					addressesIndex[day_index.intValue()].set(Address.fromString(_address), ZERO);
 				}
 			}
-
 			if ( !this._rewards_gone.get()) {
 				BigInteger remainingTokens = callScore(BigInteger.class, this._token_score.get(),  "balanceOf", Context.getAddress());
 				Context.println("remaining tokens here: " + remainingTokens);
@@ -400,25 +396,26 @@ public class RewardDistribution {
 		Context.println("Total wagers = " + this._daily_totals[day_index.intValue()].get() + ". "+ TAG);
 
 		if (linearityComplexityMigrationComplete.getOrDefault(Boolean.FALSE)) {
-			if (this.addressesIndex[day_index.intValue()].getOrDefault(Address.fromString(player), 0) > 0){
+			if (this.addressesIndex[day_index.intValue()].getOrDefault(Address.fromString(player), ZERO).compareTo(ZERO) > 0){
 				Context.println("Adding wager to " + player + " in _addresses[" + day_index.intValue() + " ]. " + TAG);
 				this._wagers.at(day_index).set(player, this._wagers.at(day_index).get(player).add(wager));
 			} else {
 				Context.println("Putting " + player + " in _addresses[" + day_index.intValue() + "]. " + TAG);
 				this._addresses[day_index.intValue()].add(player);
-				this.addressesIndex[day_index.intValue()].set(Address.fromString(player), this._addresses[day_index.intValue()].size());
+				this.addressesIndex[day_index.intValue()].set(Address.fromString(player), BigInteger.valueOf(this._addresses[day_index.intValue()].size()));
 				this._wagers.at(day_index).set(player, wager);
 			}
 		}
 		else{
 			if(containsInArrayDb(player, this._addresses[day_index.intValue()])){
-				this._wagers.at(day_index).set(player, this._wagers.at(day_index).get(player).add(wager));
+				this._wagers.at(day_index).set(player, this._wagers.at(day_index).getOrDefault(player, ZERO).add(wager));
 			}
 			else{
 				this._addresses[day_index.intValue()].add(player);
 				this._wagers.at(day_index).set(player, wager);
 			}
 		}
+		Context.println("calling distribute method from rewards");
 		Boolean distribute = callScore(Boolean.class, this._dividends_score.get(), "distribute");
 		if (distribute != null && distribute && this.tapDistributionEnabled.getOrDefault(Boolean.FALSE)) {
 			this._distribute();
@@ -457,7 +454,7 @@ public class RewardDistribution {
 		int count = this._batch_size.getOrDefault(ZERO).intValue();
 		ArrayDB<String> addresses = this._addresses[index];
 		int length = addresses.size();
-		int start = this._dist_index.get().intValue();
+		int start = this._dist_index.getOrDefault(ZERO).intValue();
 		int remainingAddresses = length - start;
 		if (count > remainingAddresses) {
 			count = remainingAddresses;
@@ -595,8 +592,8 @@ public class RewardDistribution {
 		Context.println("Migrating addresses in rewards :: start " + start + " end: "+ end);
 		for (int i = start; i < end; i++){
 			String address = this._addresses[index].get(i);
-			if (this.addressesIndex[index].getOrDefault(Address.fromString(address), 0) == 0){
-				this.addressesIndex[index].set(Address.fromString(address), i + 1);
+			if (this.addressesIndex[index].getOrDefault(Address.fromString(address), ZERO).equals(ZERO)){
+				this.addressesIndex[index].set(Address.fromString(address), BigInteger.valueOf(i + 1));
 			}
 		}
 		if (end == addressLength){
