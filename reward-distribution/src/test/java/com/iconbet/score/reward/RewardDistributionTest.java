@@ -24,6 +24,7 @@ import static org.mockito.Mockito.*;
 
 import score.Context;
 import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.eq;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -217,6 +219,110 @@ class RewardDistributionTest extends TestBase{
 		System.out.println(splitString);
 		splitList.add(splitString);
 		return splitList;
+	}
+
+	public Map<String, Object> makeMap(String stringToBeMapped){
+		String splitString = "";
+		String address = "";
+		HashMap<String, Object> mapToReturn =  new HashMap<>();
+		for (int i = 0; i < stringToBeMapped.length(); i++){
+			char charAtIndex = stringToBeMapped.charAt(i);
+			if (charAtIndex == ':'){
+				address = splitString;
+				splitString = "";
+			}
+			else if (charAtIndex != '{' && charAtIndex != '"' && charAtIndex != '}'){
+				splitString += String.valueOf(charAtIndex);
+			}
+		}
+
+		mapToReturn.put("address", address);
+		mapToReturn.put("value", new BigInteger(splitString));
+		Context.println("returned from make map: " + address + " " + splitString);
+		return mapToReturn;
+	}
+
+	@Test
+	void sortMap(){
+		Map<String, Object>[] listOfMaps = new Map[3];
+		String stringToBeMapped1 = "{\"hx0000000000000000000000000000000000000004\":\"100000000000000000000\"}";
+		String stringToBeMapped2 = "{\"hx0000000000000000000000000000000000000005\":\"200000000000000000000\"}";
+		String stringToBeMapped3 = "{\"hx0000000000000000000000000000000000000005\":\"300000000000000000000\"}";
+		listOfMaps[0] = makeMap(stringToBeMapped1);
+		listOfMaps[1] = makeMap(stringToBeMapped2);
+		listOfMaps[2] = makeMap(stringToBeMapped3);
+		System.out.println(Arrays.toString(listOfMaps));
+		mergeSort(listOfMaps, 0, 2);
+		System.out.println(Arrays.toString(listOfMaps));
+	}
+
+	void mergeSort(Map<String, Object> array[], int left, int right) {
+		if (left < right) {
+
+			// m is the point where the array is divided into two sub arrays
+			int mid = (left + right) / 2;
+
+			// recursive call to each sub arrays
+			mergeSort(array, left, mid);
+			mergeSort(array, mid + 1, right);
+
+			// Merge the sorted sub arrays
+			merge(array, left, mid, right);
+		}
+	}
+
+	void merge(Map<String, Object> array[], int p, int q, int r) {
+
+		int n1 = q - p + 1;
+		int n2 = r - q;
+
+		Map<String, Object> L[] = new Map[n1];
+		Map<String, Object> M[] = new Map[n2];
+
+		// fill the left and right array
+		for (int i = 0; i < n1; i++)
+			L[i] = array[p + i];
+		for (int j = 0; j < n2; j++)
+			M[j] = array[q + 1 + j];
+
+		// Maintain current index of sub-arrays and main array
+		int i, j, k;
+		i = 0;
+		j = 0;
+		k = p;
+
+		// Until we reach either end of either L or M, pick larger among
+		// elements L and M and place them in the correct position at A[p..r]
+		// for sorting in descending
+		// use if(L[i] >= <[j])
+		while (i < n1 && j < n2) {
+			if (((BigInteger)L[i].get("value")).compareTo((BigInteger) M[j].get("value")) >= 0) {
+				array[k] = L[i];
+				i++;
+			} else {
+				array[k] = M[j];
+				j++;
+			}
+			k++;
+		}
+
+		// When we run out of elements in either L or M,
+		// pick up the remaining elements and put in A[p..r]
+		while (i < n1) {
+			array[k] = L[i];
+			i++;
+			k++;
+		}
+
+		while (j < n2) {
+			array[k] = M[j];
+			j++;
+			k++;
+		}
+	}
+	@Test
+	void returnMap(){
+		System.out.println(makeMap(""));
 	}
 
 	@Test
