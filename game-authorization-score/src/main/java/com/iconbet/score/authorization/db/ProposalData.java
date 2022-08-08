@@ -77,6 +77,7 @@ public class ProposalData {
         this.ipfs_hash.at(proposalPrefix).set(proposalAttributes.ipfsHash);
         this.status.at(proposalPrefix).set(ACTIVE);
         this.active.at(proposalPrefix).set(true);
+        this.start_snapshot.at(proposalPrefix).set(proposalAttributes.start);
     }
 
     public void setProposer(String proposalPrefix, Address address) {
@@ -221,7 +222,7 @@ public class ProposalData {
     }
 
     public BigInteger getTotalForVotes(String proposalPrefix) {
-        return total_for_votes.at(proposalPrefix).getOrDefault(BigInteger.ZERO);
+        return this.total_for_votes.at(proposalPrefix).getOrDefault(BigInteger.ZERO);
     }
 
     public int getForVotersCount(String proposalPrefix) {
