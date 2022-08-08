@@ -323,7 +323,7 @@ public class DaoFund {
             depositParameters.add("ipfs_hash", _ipfs_key);
             depositParameters.add("project_duration", _total_installment_count);
             depositParameters.add("proposer_address", _proposer_address.toString());
-            depositParameters.add("total_budget", _total_budget.toString(16));
+            depositParameters.add("total_budget", _total_budget.toString());
 
             int _count = this.withdraw_count.getOrDefault(0);
             int _withdraw_count = _count + 1;
@@ -334,7 +334,7 @@ public class DaoFund {
             this.withdraw_record.at(_withdraw_count).set("withdraw_timestamp", String.valueOf(Context.getBlockTimestamp() / 1_000_000L));
 
 
-            Context.call(_total_budget, proposalsFundScore.get(), "deposit_proposal_fund", depositParameters.toString().getBytes());
+            Context.call(_total_budget, proposalsFundScore.get(), "depositProposalFund", depositParameters.toString().getBytes());
 
             FundTransferred(proposalsFundScore.get(), _total_budget + "transferred to ProposalsFund for Proposal " + _ipfs_key);
             ProposalFundTransferred(_ipfs_key, _total_budget, "Successfully transferred " +
