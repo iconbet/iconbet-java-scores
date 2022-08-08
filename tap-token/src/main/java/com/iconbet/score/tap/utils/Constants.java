@@ -20,6 +20,7 @@ public class Constants {
     public static final String ADDRESS_UPDATE_DB = "address_update_db";
 
     public static final String DIVIDENDS_SCORE = "dividends_score";
+    public static final String GOVERNANCE_SCORE = "governance_score";
     public static final String BLACKLIST_ADDRESS = "blacklist_address";
 
     public static final String STAKED_BALANCES = "staked_balances";
