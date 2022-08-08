@@ -23,6 +23,7 @@ public class UserData {
     private final BranchDB<String, VarDB<BigInteger>> largest_bet = Context.newBranchDB("largest_bet", BigInteger.class);
     private final BranchDB<String, VarDB<Integer>> wager_level = Context.newBranchDB("wager_level", Integer.class);
     private final BranchDB<String, VarDB<String>> linked_wallet = Context.newBranchDB("linked_wallet", String.class);
+    private final BranchDB<String, VarDB<BigInteger>> lastAmountWagered = Context.newBranchDB("last_amount_wagered", BigInteger.class);
 
     public void setUsername(String proposalPrefix, String name) {
         this.username.at(proposalPrefix).set(name);
@@ -72,6 +73,10 @@ public class UserData {
         this.linked_wallet.at(proposalPrefix).set(linkedWallet);
     }
 
+    public void setLastAmountWagered(String proposalPrefix, BigInteger lastAmountWagered){
+        this.lastAmountWagered.at(proposalPrefix).set(lastAmountWagered);
+    }
+
     public String getUsername(String proposalPrefix) {
         return username.at(proposalPrefix).getOrDefault("");
     }
@@ -118,5 +123,9 @@ public class UserData {
 
     public String getLinked_wallet(String proposalPrefix) {
         return linked_wallet.at(proposalPrefix).getOrDefault("");
+    }
+
+    public BigInteger getLastAmountWagered(String proposalPrefix){
+        return lastAmountWagered.at(proposalPrefix).getOrDefault(BigInteger.ZERO);
     }
 }
