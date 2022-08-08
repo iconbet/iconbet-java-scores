@@ -7,6 +7,7 @@ import java.math.BigInteger;
 
 public class VoteActions {
     public static void execute(Authorization auth, String method, JsonObject params){
+//        for tap token score
         switch (method){
             case "set_minimum_stake":
                 auth.setMinimumStake(new BigInteger(params.get("_amount").asString()));
@@ -35,7 +36,7 @@ public class VoteActions {
             case "set_whitelist_address":
                 auth.set_whitelist_address(Address.fromString(params.get("_address").asString()));
                 break;
-
+// For dividend scores
             case "set_dividend_percentage":
                 auth.set_dividend_percentage(params.get("_tap").asInt(), params.get("_gamedev").asInt(), params.get("_promo").asInt(), params.get("platform").asInt());
                 break;
