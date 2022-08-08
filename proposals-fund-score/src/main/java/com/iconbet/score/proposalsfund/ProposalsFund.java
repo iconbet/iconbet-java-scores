@@ -1,5 +1,8 @@
 package com.iconbet.score.proposalsfund;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 import score.*;
 import score.annotation.EventLog;
 import score.annotation.External;
@@ -160,10 +163,17 @@ public class ProposalsFund extends ProposalData {
      ***/
     @External
     @Payable
-    public void depositProposalFund(ProposalAttributes _proposals) {
+    public void depositProposalFund(byte[] _proposals) {
         validateDaoFundScore();
-        addRecord(_proposals);
-        ProposalFundDeposited(_proposals.ipfsHash, _proposals.totalBudget, "Received " + Context.getValue() + " fund from DAOFund");
+        String proposalsJsonString = new String(_proposals);
+        JsonObject depositParameters = Json.parse(proposalsJsonString).asObject();
+        ProposalAttributes proposalAttributes = new ProposalAttributes();
+        proposalAttributes.proposerAddress = Address.fromString(depositParameters.get("proposer_address").asString());
+        proposalAttributes.ipfsHash = depositParameters.get("ipfs_hash").asString();
+        proposalAttributes.projectDuration = depositParameters.get("project_duration").asInt();
+        proposalAttributes.totalBudget = new BigInteger(depositParameters.get("total_budget").asString());
+        addRecord(proposalAttributes);
+        ProposalFundDeposited(proposalAttributes.ipfsHash, proposalAttributes.totalBudget, "Received " + Context.getValue() + " fund from DAOFund");
     }
 
     /***
