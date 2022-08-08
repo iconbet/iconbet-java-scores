@@ -114,4 +114,7 @@ public class Consts {
 
     public static final String OFFICIAL_REVIEW = "official_review";
 
+    public static final BigInteger PER_ONE_HUNDRED = BigInteger.valueOf(100);
+    public static final BigInteger MINIMUM_TAP_TO_VOTE = MULTIPLIER;
+
 }
