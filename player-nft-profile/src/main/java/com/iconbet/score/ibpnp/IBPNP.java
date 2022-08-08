@@ -61,6 +61,7 @@ public class IBPNP extends IRC3Basic {
         public BigInteger game_wager_level;
         public Address wallet_address;
         public String remarks;
+        public BigInteger lastAmountWagered;
     }
 
     public IBPNP(String _name, String _symbol, int update) {
@@ -218,7 +219,7 @@ public class IBPNP extends IRC3Basic {
 
         if (gameData.remarks.equals("wager_payout")) {
             userData.setAmount_won(userPrefix, amount_won.add(gameData.game_amount_won));
-            userData.setAmount_lost(userPrefix, amount_lost.subtract(gameData.game_amount_wagered));
+            userData.setAmount_lost(userPrefix, amount_lost.subtract(userData.getLastAmountWagered(userPrefix)));
             userData.setBets_won(userPrefix, bets_won + gameData.game_bets_won);
             userData.setBets_lost(userPrefix, bets_lost - gameData.game_bets_won);
         }
@@ -236,6 +237,7 @@ public class IBPNP extends IRC3Basic {
             }
             userData.setBets_lost(userPrefix, gameData.game_bets_lost + bets_lost);
             userData.setAmount_lost(userPrefix, gameData.game_amount_lost.add(amount_lost));
+            userData.setLastAmountWagered(userPrefix, gameData.lastAmountWagered);
         }
         AddedGameData("Game data is added to " + Context.getOrigin().toString());
     }
@@ -244,8 +246,8 @@ public class IBPNP extends IRC3Basic {
     @External(readonly = true)
     public Map<String, Object> getUserData(Address address) {
         Map<String, Object> userData = get_user_data(address);
-//        BigInteger dailyEarning = callScore(BigInteger.class, rewardsScore.get(), "get_expected_rewards", address.toString());
-//        userData.put("daily_earning", dailyEarning);
+        BigInteger dailyEarning = callScore(BigInteger.class, rewardsScore.get(), "get_expected_rewards", address.toString());
+        userData.put("daily_earning", dailyEarning);
         return userData;
     }
 
