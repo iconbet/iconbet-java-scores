@@ -233,7 +233,9 @@ public class Authorization {
         validateOwner();
         SettersGetters settersGetters = new SettersGetters();
         settersGetters.super_admin.set(_super_admin);
-        settersGetters.admin_list.add(_super_admin);
+        if (!containsInArrayDb(_super_admin, settersGetters.admin_list)) {
+            settersGetters.admin_list.add(_super_admin);
+        }
     }
 
     /**
@@ -305,12 +307,12 @@ public class Authorization {
 
     public void validateSuperAdmin() {
         SettersGetters settersGetters = new SettersGetters();
-        Context.require(Context.getCaller().equals(settersGetters.super_admin.get()), TAG + "Only super admin can call this method.");
+        Context.require(Context.getCaller().equals(settersGetters.super_admin.get()), TAG + ": Only super admin can call this method.");
     }
 
     public void validateAdmin() {
         SettersGetters settersGetters = new SettersGetters();
-        Context.require(containsInArrayDb(Context.getCaller(), settersGetters.admin_list), TAG + "Only Admins can call this method");
+        Context.require(containsInArrayDb(Context.getCaller(), settersGetters.admin_list), TAG + ": Only Admins can call this method");
     }
 
     public void validateOwnerScore(Address score) {
@@ -350,7 +352,7 @@ public class Authorization {
             List<Address> approved_games_list = get_approved_games();
             for (Address address : approved_games_list) {
                 //TODO: verify if we are removing the value correctly here, should we set to zero?
-                this.todays_games_excess.set(address, null);
+                this.todays_games_excess.set(address, ZERO);
             }
         }
     }
@@ -423,6 +425,7 @@ public class Authorization {
     @Payable
     @External
     public void submit_game_proposal(String _gamedata) {
+//        todo: should we change _gameData to struct instead of json string?
         Address sender = Context.getCaller();
         BigInteger fee = MULTIPLIER.multiply(new BigInteger("50"));
         JsonValue json = Json.parse(_gamedata);
@@ -446,7 +449,7 @@ public class Authorization {
                 Context.revert("50 ICX is required for submitting game proposal");
             }
         }
-        Address scoreOwner = (Address) Context.call(game_address, "get_score_owner");
+        Address scoreOwner = callScore(Address.class, game_address, "get_score_owner");
 
         Context.require(sender.equals(scoreOwner), TAG + "Owner is not matched");
 
@@ -546,8 +549,8 @@ public class Authorization {
             String maxPayoutStr = _metadata.getString("maxPayout", "");
             if (!maxPayoutStr.isEmpty()) {
                 BigInteger maxPayout = new BigInteger(maxPayoutStr);
-                if (maxPayout.compareTo(_1_ICX) == -1) {
-                    Context.revert(maxPayout.toString() + " is less than 0.1 ICX");
+                if (maxPayout.compareTo(_1_ICX) < 0) {
+                    Context.revert("max payout: " + maxPayout + " is less than 0.1 ICX");
                 }
             } else {
                 Context.revert("There is no maxPayout for the game");
@@ -581,12 +584,12 @@ public class Authorization {
         // Check if proper game type is provided
         String gameType = _metadata.getString("gameType", "");
         Context.require(!gameType.isEmpty(), TAG + ": The gameType field is empty");
-        Context.require(GAME_TYPE.contains(gameType), TAG + "Not a valid game type");
+        Context.require(GAME_TYPE.contains(gameType), TAG + ": Not a valid game type");
 
         // Check for revenue share wallet address
         String revwallet = _metadata.get("revShareWalletAddress").asString();
         Address revWalletAddress = Address.fromString(revwallet);
-        Context.require(revWalletAddress.isContract(), TAG + "Not a wallet address");
+        Context.require(!revWalletAddress.isContract(), TAG + ": Not a wallet address");
     }
 
     /***
@@ -1063,7 +1066,7 @@ public class Authorization {
         if (!this.get_admin().contains(sender)) {
             Context.revert("Sender not an admin");
         }
-        boolean old_watch_dog_status = this.apply_watch_dog_method.get();
+        boolean old_watch_dog_status = this.apply_watch_dog_method.getOrDefault(Boolean.FALSE);
         if (!old_watch_dog_status) {
             //# All approved games must have minimum_payouts set before applying watch dog methods.
             for (int i = 0; i < this.proposal_list.size(); i++) {
@@ -1071,13 +1074,13 @@ public class Authorization {
                 String scoreAddressValue = this.status_data.get(scoreAddress);
                 if (scoreAddressValue.equals("gameApproved")) {
                     BigInteger maximum_payouts = this.maximum_payouts.get(scoreAddress);
-                    if (maximum_payouts.compareTo(_1_ICX) == -1) {
+                    if (maximum_payouts.compareTo(_1_ICX) < 0) {
                         Context.revert("maxPayout of " + scoreAddress.toString() + " is less than 0.1 ICX");
                     }
                 }
             }
-            BigInteger maximum_loss = this.maximum_loss.get();
-            if (maximum_loss.compareTo(_1_ICX) == -1) {
+            BigInteger maximum_loss = this.maximum_loss.getOrDefault(ZERO);
+            if (maximum_loss.compareTo(_1_ICX) < 0) {
                 Context.revert("maxLoss is set to a value less than 0.1 ICX");
             }
         }
@@ -1144,12 +1147,12 @@ public class Authorization {
 
     public void set_non_tax_period(BigInteger period) {
         validateAdmin();
-        Context.call(get_dividend_distribution(), "set_non_tax_period", period);
+        Context.call(get_dividend_distribution(), "setNonTaxPeriod", period);
     }
 
     public void set_tax_percentage(int percentage) {
         validateAdmin();
-        Context.call(get_dividend_distribution(), "set_tax_percentage", percentage);
+        Context.call(get_dividend_distribution(), "setTaxPercentage", percentage);
     }
 
     public void remove_from_blacklist_dividend(Address _address) {
@@ -1192,7 +1195,6 @@ public class Authorization {
 
      :param quorum: percentage of the total eligible TAP required for a vote to be valid
      ***/
-    @External
     public void setQuorum(int quorum) {
         Context.require(0 < quorum && quorum < 100, TAG + "Quorum must be between 0 and 100.");
         {
@@ -1230,7 +1232,7 @@ public class Authorization {
 
     @External(readonly = true)
     public BigInteger getDay() {
-        return (BigInteger.valueOf(Context.getBlockTimestamp()).subtract(this._time_offset.get()).divide(U_SECONDS_DAY));
+        return callScore(BigInteger.class, get_tap_token_score(), "getDay");
     }
 
     /***
@@ -1271,9 +1273,9 @@ public class Authorization {
      ***/
     @External
     public void startGovernance(BigInteger vote_duration, int tap_vote_definition_criterion, int max_actions, int quorum) {
-        boolean snapshotEnabled = (Boolean) Context.call(get_tap_token_score(), "get_snapshot_enabled");
+        boolean snapshotEnabled = callScore(Boolean.class, get_tap_token_score(), "getSnapshotEnabled");
         Context.require(snapshotEnabled, TAG + ": Snapshot must be enabled in TAP Token to start governance.");
-        BigInteger time_offset = (BigInteger) Context.call(get_tap_token_score(), "get_time_offset");
+        BigInteger time_offset = callScore(BigInteger.class, get_tap_token_score(), "getTimeOffset");
         this._time_offset.set(time_offset);
 
         setTAPVoteDefinitionCriterion(tap_vote_definition_criterion);
@@ -1316,6 +1318,14 @@ public class Authorization {
      '<action_2>': {<kwargs_for_action_2>},..}
      ***/
 
+    private BigInteger getStakedBalanceOfUser() {
+        return callScore(BigInteger.class, get_tap_token_score(), "staked_balanceOf", Context.getCaller());
+    }
+
+    private BigInteger getTotalStakedBalance(){
+        return callScore(BigInteger.class, get_tap_token_score(), "total_staked_balance");
+    }
+
     public void define_vote(String db_name, String name, String description, BigInteger vote_start, BigInteger snapshot, @Optional String actions, @Optional String ipfs_hash) {
         if (actions == null) {
             actions = "{}";
@@ -1330,29 +1340,19 @@ public class Authorization {
         Context.require(description.length() < 500, TAG + ": Description must be less than or equal to 500 characters.");
         Context.require(vote_start.compareTo(this.getDay()) > 0, TAG + "Vote cannot start at or before the current day.");
         Context.require(snapshot.compareTo(getDay()) >= 0 && snapshot.compareTo(vote_start) < 0, TAG + ":The reference snapshot must be in the range: [current_day (" + getDay() + " startDay - 1 (" + vote_start.subtract(ONE) + ")].");
+        String proposalPrefix = proposalPrefix(db_name, name);
 
-        Context.require(proposalKeysIndex.getOrDefault(name, 0) == 0, TAG + "Poll name " + name + "has already been used.");
+        Context.require(proposalKeysIndex.getOrDefault(proposalPrefix, 0) == 0, TAG + "Poll name " + name + "has already been used.");
 
-//        #Test TAP staking criterion.
-        Address tapTokenScore = get_tap_token_score();
-        Address uTapTokenScore = get_utap_token_score();
-        BigInteger tap_total = (BigInteger) Context.call(tapTokenScore, "totalSupply");
+//        #Test TAP staking criterion
+        BigInteger userStaked = getStakedBalanceOfUser();
+        BigInteger totalStakedBalance = getTotalStakedBalance();
+        Context.require(userStaked.multiply(PER_ONE_HUNDRED).divide(totalStakedBalance).compareTo(BigInteger.valueOf(this._tap_vote_definition_criterion.get())) >= 0, TAG + ": TAP staked by the sender does not meet the minimum tap vote definition criterion which is: " + this._tap_vote_definition_criterion.get());
 
-        BigInteger tap_in_rewards = (BigInteger) Context.call(tapTokenScore, "balanceOf", get_rewards_score());
-        BigInteger total_tap_in_circulation = tap_total.subtract(tap_in_rewards);
-
-        BigInteger user_staked = (BigInteger) Context.call(tapTokenScore, "staked_balanceOf", Context.getCaller());
-        BigInteger uTapTokenTradingContractBalance = (BigInteger) Context.call(uTapTokenScore, "tradingTokenContractbalanceOf");
-        BigInteger uTapTokenBalanceOfSender = (BigInteger) Context.call(uTapTokenScore, "balanceOf", Context.getCaller());
-        BigInteger uTapTotalSupply = (BigInteger) Context.call(tapTokenScore, "totalSupply");
-        user_staked = user_staked.add(uTapTokenTradingContractBalance.multiply(uTapTokenBalanceOfSender).divide(uTapTotalSupply));
-
-        int tap_criterion = this._tap_vote_definition_criterion.get();
-        Context.require(POINTS.multiply(user_staked).divide(total_tap_in_circulation).intValue() > tap_criterion, "User needs at least " + tap_criterion / 100 + "of total cirulating TAP supply staked to define a vote.");
         if (!actions.equals("")) {
             JsonValue json = Json.parse(actions);
             JsonObject jsonObject = json.asObject();
-            Context.require(jsonObject.size() < this._max_actions.get(), TAG + ": Only " + this._max_actions.get() + "actions are allowed");
+            Context.require(jsonObject.size() <= this._max_actions.get(), TAG + ": Only " + this._max_actions.get() + " actions are allowed");
             VoteDefined(name, Context.getCaller());
         }
         ProposalAttributes proposalAttributes = new ProposalAttributes();
@@ -1365,12 +1365,12 @@ public class Authorization {
         proposalAttributes.start = vote_start;
         proposalAttributes.end = vote_start.add(this._vote_duration.get());
         proposalAttributes.actions = actions;
+        proposalAttributes.ipfsHash = ipfs_hash;
 
         ProposalData proposalData = new ProposalData();
-        String proposalPrefix = proposalPrefix(db_name, name);
         proposalData.createProposal(proposalAttributes, proposalPrefix);
-        this.proposalKeys.add(name);
-        this.proposalKeysIndex.set(name, this.proposalKeys.size());
+        this.proposalKeys.add(proposalPrefix);
+        this.proposalKeysIndex.set(proposalPrefix, this.proposalKeys.size());
         proposalData.setProposalCount(db_name, proposalData.getProposalCount(db_name) + 1);
         proposalData.dbProposalKeys.get(db_name).add(name);
     }
@@ -1380,29 +1380,34 @@ public class Authorization {
     }
 
     @External(readonly = true)
-    public BigInteger totalTap(int _day) {
-        return (BigInteger) Context.call(get_tap_token_score(), "totalStakedBalanceOfAt", _day);
+    public BigInteger totalTap(BigInteger _day) {
+        return callScore(BigInteger.class, get_tap_token_score(), "totalStakedBalanceOFAt", _day);
     }
 
     private Map<String, Object> check_vote(String db_name, String name) {
         BigInteger _for;
         BigInteger _against;
-        Context.require(proposalKeysIndex.getOrDefault(name, 0) > 0, TAG + "Proposal not found");
-        Context.require(containsInList(db_name, dbName), TAG + "Invalid DB name.");
         String proposalPrefix = proposalPrefix(db_name, name);
+        Context.require(proposalKeysIndex.getOrDefault(proposalPrefix, 0) > 0, TAG + "Proposal not found");
+        Context.require(containsInList(db_name, dbName), TAG + "Invalid DB name.");
         ProposalData proposalData = new ProposalData();
-        BigInteger total_tap = proposalData.getVote_snapshot(proposalPrefix);
+        Map<String, Object> vote_status = new HashMap<>();
+        BigInteger total_tap = ZERO;
+        if (getDay().compareTo(proposalData.getVote_snapshot(proposalPrefix)) >= 0) {
+            total_tap = totalTap(proposalData.getVote_snapshot(proposalPrefix));
+        }
         if (total_tap.equals(ZERO)) {
             _for = ZERO;
             _against = ZERO;
         } else {
             BigInteger[] totalVoted = new BigInteger[]{proposalData.getTotalForVotes(proposalPrefix), proposalData.getTotalAgainstVotes(proposalPrefix)};
-            _for = EXA.multiply(totalVoted[0].divide(total_tap));
-            _against = EXA.multiply(totalVoted[1].divide(total_tap));
+            _for = EXA.multiply(totalVoted[0]).divide(total_tap);
+            Context.println("for: " + _for);
+            _against = EXA.multiply(totalVoted[1]).divide(total_tap);
         }
 
-        Map<String, Object> vote_status = new HashMap<>();
         vote_status.put("name", proposalData.getName(proposalPrefix));
+        vote_status.put("ipfs_hash", proposalData.getIpfs_hash(proposalPrefix));
         vote_status.put("proposer", proposalData.getProposer(proposalPrefix));
         vote_status.put("description", proposalData.getDescription(proposalPrefix));
         vote_status.put("majority", proposalData.getMajority(proposalPrefix));
@@ -1465,7 +1470,7 @@ public class Authorization {
     public void cancel_vote(String db_name, String name) {
         String proposalPrefix = proposalPrefix(db_name, name);
         ProposalData proposalData = new ProposalData();
-        Context.require(this.proposalKeysIndex.getOrDefault(name, 0) > 0, TAG + "There is no proposal with the name: " + name);
+        Context.require(this.proposalKeysIndex.getOrDefault(proposalPrefix, 0) > 0, TAG + "There is no proposal with the name: " + name);
 
         Address[] eligible_addresses = new Address[]{proposalData.getProposer(proposalPrefix), Context.getOwner()};
 
@@ -1489,9 +1494,14 @@ public class Authorization {
         Context.require(containsInList(db_name, dbName), TAG + ": Invalid DB name");
         ProposalData proposalData = new ProposalData();
         List<Map<String, Object>> proposal_list = new ArrayList<>();
-        int start = Math.max(1, offset);
+        int count = this.get_proposal_count(db_name);
+        int start = 0;
+        if (count > 1) {
+            start = Math.max(1, offset);
+        }
         int end = Math.min(start + batch_size, this.get_proposal_count(db_name));
-        for (int i = start; i < end + 1; i++) {
+        // for debugging
+        for (int i = start; i < end ; i++) {
             String proposalName = proposalData.dbProposalKeys.get(db_name).get(i);
             Map<String, Object> proposal = check_vote(db_name, proposalName);
             proposal_list.add(proposal);
@@ -1518,15 +1528,13 @@ public class Authorization {
         ProposalData proposalData = new ProposalData();
         BigInteger start_snap = proposalData.getStart_snapshot(proposalPrefix);
         BigInteger end_snap = proposalData.getEnd_snapshot(proposalPrefix);
-        if (this.proposalKeysIndex.getOrDefault(name, 0) <= 0 || start_snap.compareTo(getDay()) > 0 || getDay().compareTo(end_snap) > 0 || !proposalData.getActive(proposalPrefix)) {
+        if (this.proposalKeysIndex.getOrDefault(proposalPrefix, 0) <= 0 || start_snap.compareTo(getDay()) > 0 || getDay().compareTo(end_snap) > 0 || !proposalData.getActive(proposalPrefix)) {
             Context.revert(TAG + "That is not an active poll.");
         }
         Address sender = Context.getCaller();
         BigInteger snapshot = proposalData.getVote_snapshot(proposalPrefix);
 
-        Address uTapTokenScore = get_utap_token_score();
-        BigInteger total_vote = (BigInteger) Context.call(get_tap_token_score(), "stakedBalanceOfAt", sender, snapshot);
-        total_vote = total_vote.add(((BigInteger) Context.call(uTapTokenScore, "tradingTokenContractbalanceOf")).multiply((BigInteger) Context.call(uTapTokenScore, "balanceOf", sender)).divide((BigInteger) Context.call(uTapTokenScore, "totalSupply")));
+        BigInteger total_vote = callScore(BigInteger.class, get_tap_token_score(), "stakedBalanceOfAt", sender, snapshot);
 
         Context.require(total_vote.compareTo(ZERO) > 0, TAG + ": TAP tokens need to be staked");
         BigInteger[] prior_vote = new BigInteger[]{proposalData.getForVotesOfUser(proposalPrefix, sender), proposalData.getAgainstVotesOfUser(proposalPrefix, sender)};
@@ -1746,13 +1754,13 @@ public class Authorization {
     public void evaluateGovernanceVote(String name) {
         String proposalPrefix = proposalPrefix(GOVERNANCE, name);
 
-        Context.require(this.proposalKeysIndex.getOrDefault(name, 0) > 0, TAG + "" + ": Proposal with the name '" + name + "' is not found.");
+        Context.require(this.proposalKeysIndex.getOrDefault(proposalPrefix, 0) > 0, TAG + "" + ": Proposal with the name '" + name + "' is not found.");
         ProposalData proposalData = new ProposalData();
         BigInteger end_snap = proposalData.getEnd_snapshot(proposalPrefix);
         String actions = proposalData.getActions(proposalPrefix);
         BigInteger majority = proposalData.getMajority(proposalPrefix);
 
-        Context.require(getDay().compareTo(end_snap) > 0, TAG + "Balanced Governance: Voting period has not ended.");
+        Context.require(getDay().compareTo(end_snap) >= 0, TAG + "Balanced Governance: Voting period has not ended.");
         Context.require(proposalData.getActive(proposalPrefix), TAG + "This proposal is not active.");
 
         Map<String, Object> result = checkGovernanceVote(name);
@@ -1763,6 +1771,7 @@ public class Authorization {
                         executeVoteActions(actions);
                         proposalData.setStatus(proposalPrefix, EXECUTED);
                     } catch (Exception e) {
+                        Context.println(e.toString());
                         proposalData.setStatus(proposalPrefix, FAILED_EXECUTION);
                     }
                 } else {
@@ -1878,5 +1887,41 @@ public class Authorization {
 
     public void callScore(BigInteger amount, Address address, String method, Object... params) {
         Context.call(amount, address, method, params);
+    }
+
+    /*
+    To be removed during production
+     */
+    @External(readonly = true)
+    public Map<String, BigInteger> getTotalVotesByUser(Address sender, String proposal){
+        ProposalData proposalData = new ProposalData();
+        String gameConceptPrefix = proposalPrefix(NEW_GAME, proposal);
+        Map<String, BigInteger> voteData = Map.of(
+                "totalForVotes", proposalData.getTotalForVotes(gameConceptPrefix),
+                "totalAgainstVotes", proposalData.getTotalAgainstVotes(gameConceptPrefix),
+                "totalForVotesOfUser", proposalData.getForVotesOfUser(gameConceptPrefix, sender),
+                "totalAgainstVotesOfUser", proposalData.getAgainstVotesOfUser(gameConceptPrefix, sender)
+                );
+        return voteData;
+    }
+
+    @External
+    public void setVoteDuration(){
+        validateOwner();
+        this._vote_duration.set(ONE);
+    }
+
+    @External
+    public void setVoteDurationOfProposals(String name, BigInteger duration){
+        validateOwner();
+        ProposalData proposalData = new ProposalData();
+        proposalData.setEndSnapshot(proposalPrefix(NEW_GAME, name), duration);
+    }
+
+    @External
+    public void makeProposalActive(String name){
+        validateOwner();
+        ProposalData proposalData = new ProposalData();
+        proposalData.setActive(proposalPrefix(GOVERNANCE, name), true);
     }
 }
