@@ -169,7 +169,7 @@ public class DaoletteGame {
 		if ( !Context.getCaller().equals(Context.getOwner())){ 
 			Context.revert("Only the owner can call the game_on method");
 		}
-		if (!this._game_on.get() && this._treasury_score.get() != null){
+		if (!this._game_on.getOrDefault(Boolean.FALSE) && this._treasury_score.get() != null){
 			Context.println("setting tresury game as on");
 			this._game_on.set(true);
 		}
