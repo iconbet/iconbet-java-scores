@@ -13,6 +13,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import score.annotation.Payable;
+import score.annotation.Keep;
 
 public class Daolette{
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
@@ -84,15 +85,26 @@ public class Daolette{
 	private static final String IBPNP_SCORE = "ibpnp_score";
 
 	public static class GameData {
+		@Keep
 		public BigInteger game_amount_wagered;
+		@Keep
 		public BigInteger game_amount_won;
+		@Keep
 		public BigInteger game_amount_lost;
+		@Keep
 		public int game_bets_won;
+		@Keep
 		public int game_bets_lost;
+		@Keep
 		public BigInteger game_largest_bet;
+		@Keep
 		public BigInteger game_wager_level;
+		@Keep
 		public Address wallet_address;
+		@Keep
 		public String remarks;
+		@Keep
+		public BigInteger lastAmountWagered;
 	}
 
 	private VarDB<BigInteger> _excess = Context.newVarDB(_EXCESS, BigInteger.class);
@@ -139,22 +151,22 @@ public class Daolette{
 		Context.println("In __init__. "+ TAG);
 		Context.println("owner is "+Context.getOwner()+". "+TAG);
 
-		this._excess.set(BigInteger.ZERO);
-		this._total_distributed.set(BigInteger.ZERO);
-		this._game_on.set(false);
-		this._bet_type.set(BET_TYPES[0]);
-		this._treasury_min.set(TREASURY_MINIMUM);
-		this._set_bet_limit();
-		this._day.set(BigInteger.valueOf(Context.getTransactionTimestamp()).divide(U_SECONDS_DAY));
-		this._skipped_days.set(BigInteger.ZERO);
-		this._total_bet_count.set(BigInteger.ZERO);
-		this._daily_bet_count.set(BigInteger.ZERO);
-		this._yesterdays_bet_count.set(BigInteger.ZERO);
-		this._yes_votes.set(BigInteger.ZERO);
-		this._no_votes.set(BigInteger.ZERO);
-		this._open_treasury.set(false);
-		this._game_auth_score.set(ZERO_ADDRESS);
-		this._excess_smoothing_live.set(false);
+//		this._excess.set(BigInteger.ZERO);
+//		this._total_distributed.set(BigInteger.ZERO);
+//		this._game_on.set(false);
+//		this._bet_type.set(BET_TYPES[0]);
+//		this._treasury_min.set(TREASURY_MINIMUM);
+//		this._set_bet_limit();
+//		this._day.set(BigInteger.valueOf(Context.getTransactionTimestamp()).divide(U_SECONDS_DAY));
+//		this._skipped_days.set(BigInteger.ZERO);
+//		this._total_bet_count.set(BigInteger.ZERO);
+//		this._daily_bet_count.set(BigInteger.ZERO);
+//		this._yesterdays_bet_count.set(BigInteger.ZERO);
+//		this._yes_votes.set(BigInteger.ZERO);
+//		this._no_votes.set(BigInteger.ZERO);
+//		this._open_treasury.set(false);
+//		this._game_auth_score.set(ZERO_ADDRESS);
+//		this._excess_smoothing_live.set(false);
 
 	}
 
@@ -353,6 +365,11 @@ public class Daolette{
 		this._open_treasury.set(false);
 		this.FundReceived(Context.getCaller(), Context.getValue(), "Treasury minimum increased by " + Context.getValue());
 		Context.println(Context.getValue() + " was added to the treasury from address "+ Context.getCaller() + " "+ TAG);
+	}
+
+	@External(readonly = true)
+	public BigInteger getTreasuryBalance(){
+		return Context.getBalance(Context.getAddress());
 	}
 
 	/*
@@ -585,31 +602,29 @@ public class Daolette{
 		if (_amount.compareTo(BigInteger.ZERO) <= 0) {
 			Context.revert("Invalid bet amount "+_amount);
 		}
-
+		Context.println("Game address: " + _game_address + " Auth score: " + this._game_auth_score.get());
 		String gameStatus = Context.call(String.class, this._game_auth_score.get(),  "get_game_status", _game_address);
-
+		Context.println("gameStatus: " + gameStatus);
 		if ( !gameStatus.equals("gameApproved")){
 			Context.revert("Bet only accepted through approved games.");
 		}
-
 		Address userSender = Context.getOrigin();
 		boolean hasIBPNPProfile = (boolean) Context.call(ibpnpScore.get(), "hasIBPNPProfile", userSender);
 		Context.require(hasIBPNPProfile, TAG + ": The sender " + userSender + " doesnot have an IBPNP profile.");
 
 		if (this.__day_advanced()) {
+			Context.println("Day advanced is true");
 			this.__check_for_dividends();
 		}
-		this._daily_bet_count.set(this._daily_bet_count.get().add(BigInteger.ONE));
 
+		this._daily_bet_count.set(this._daily_bet_count.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE));
 		Context.call(this._game_auth_score.get(),  "accumulate_daily_wagers", _game_address, _amount);
-
 		Context.println("Sending wager data to rewards score."+ TAG);
 
-		BigInteger days = this._day.get().subtract(this._skipped_days.get()).mod(BigInteger.TWO);
+		BigInteger days = this._day.get().subtract(this._skipped_days.getOrDefault(BigInteger.ZERO)).mod(BigInteger.TWO);
 		Context.call(this._rewards_score.get(),  "accumulate_wagers", Context.getOrigin().toString(), _amount, days);
 
 		this._treasury_balance.set(Context.getBalance(Context.getAddress()));
-
 		GameData gameData = new GameData();
 		BigInteger value = Context.getValue();
 		gameData.game_amount_lost = value;
@@ -621,6 +636,7 @@ public class Daolette{
 		gameData.game_largest_bet = value;
 		gameData.remarks = "take_wager";
 		gameData.wallet_address = userSender;
+		gameData.lastAmountWagered = value;
 		addGameDataToIBPNP(gameData);
 	}
 
@@ -648,6 +664,7 @@ public class Daolette{
 		if (! gameStatus.equals("gameApproved")) {
 			Context.revert("Payouts can only be invoked by approved games.");
 		}
+		Context.println("Reach here???");
 		Context.call(this._game_auth_score.get(), "accumulate_daily_payouts", Context.getCaller(), _payout);
 
 		this._treasury_balance.set(Context.getBalance(Context.getAddress()));
@@ -699,6 +716,7 @@ public class Daolette{
 
 			GameData gameData = new GameData();
 			BigInteger value = Context.getValue();
+			Context.println("wagered value: " + value);
 			Address userSender = Context.getOrigin();
 			gameData.game_amount_lost = BigInteger.ZERO;
 			gameData.game_amount_wagered = value;
@@ -709,6 +727,7 @@ public class Daolette{
 			gameData.game_largest_bet = BigInteger.ZERO;
 			gameData.remarks = "wager_payout";
 			gameData.wallet_address = userSender;
+			gameData.lastAmountWagered = BigInteger.ZERO;
 			addGameDataToIBPNP(gameData);
 		}
 	}
@@ -1103,7 +1122,7 @@ public class Daolette{
 
 		if ( Context.getBalance(Context.getAddress()).compareTo(payout) < 0) {
 			Context.println("Not enough in treasury to make the play. "+ TAG);
-			Context.revert("Not enough in treasury to make the play.");
+			Context.revert(TAG + ": Not enough in treasury to make the play.");
 		}
 
 		double spin = this.get_random(user_seed);
@@ -1137,7 +1156,6 @@ public class Daolette{
 
 	@Payable
 	public void fallback() {
-
 		String gameStatus = Context.call(String.class, this._game_auth_score.get(),  "get_game_status", Context.getCaller());
 		if ( !gameStatus.equals("gameApproved")) {
 			Context.revert(
@@ -1241,4 +1259,34 @@ public class Daolette{
         }
         return result;
     }
+
+	@External
+	public void sendICX(){
+		Context.require(Context.getOwner().equals(Context.getCaller()));
+		Context.transfer(Address.fromString("cx0424f5459615a14a2ec6c5e354f632983611e9dc"), BigInteger.TEN.multiply(BET_MIN));
+	}
+
+	@External
+	public void advanceDayManually(){
+		Context.require(Context.getCaller().equals(Context.getOwner()), TAG + "Only owner can call this method");
+		this._day.set(this._day.getOrDefault(BigInteger.ZERO).subtract(BigInteger.ONE));
+	}
+
+	@External
+	public void set_day_debug(){
+		Context.require(Context.getCaller().equals(Context.getOwner()), TAG + "Only owner can call this method");
+		BigInteger currentDay = BigInteger.valueOf(Context.getBlockTimestamp()).divide(U_SECONDS_DAY);
+		this._day.set(currentDay);
+	}
+
+	@External(readonly = true)
+	public BigInteger get_day(){
+		return this._day.get();
+	}
+
+	@External(readonly = true)
+	public BigInteger getCurrentDay(){
+		return BigInteger.valueOf(Context.getBlockTimestamp()).divide(U_SECONDS_DAY);
+
+	}
 }
