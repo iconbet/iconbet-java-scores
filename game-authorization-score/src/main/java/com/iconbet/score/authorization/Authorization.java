@@ -107,6 +107,11 @@ public class Authorization {
     public void GameSuspended(Address scoreAddress, String note) {
     }
 
+    @External(readonly = true)
+    public Address getOwner(){
+        return Context.getOwner();
+    }
+
     @External
     public void set_roulette_score(Address _scoreAddress) {
         //TODO: should we call address isContract()?? contract means score?
@@ -1096,17 +1101,17 @@ public class Authorization {
     //    governance methods on TAP
     public void setMinimumStake(BigInteger amount) {
         validateAdmin();
-        Context.call(get_tap_token_score(), "set_minimum_stake", amount);
+        callScore(get_tap_token_score(), "set_minimum_stake", amount);
     }
 
     public void setUnstakingPeriod(BigInteger time) {
         validateAdmin();
-        Context.call(get_tap_token_score(), "set_unstaking_period", time);
+        callScore(get_tap_token_score(), "set_unstaking_period", time);
     }
 
     public void setMaxLoop(@Optional int loops) {
         validateAdmin();
-        Context.call(get_tap_token_score(), "set_max_loop", loops);
+        callScore(get_tap_token_score(), "set_max_loop", loops);
     }
 
     public void remove_from_blacklist_tap(Address _address) {
@@ -1476,7 +1481,9 @@ public class Authorization {
 
         Context.require(containsInArray(Context.getCaller(), eligible_addresses), TAG + ": Only owner or proposer may call this method.");
 
-        Context.require(proposalData.getStart_snapshot(proposalPrefix).compareTo(getDay()) >= 0 && Context.getCaller().equals(Context.getOwner()), TAG + "Only owner can cancel a vote that has started.");
+        if(proposalData.getStart_snapshot(proposalPrefix).compareTo(getDay()) <= 0 && !Context.getCaller().equals(Context.getOwner())){
+            Context.revert(TAG + "Only owner can cancel a vote that has started.");
+        }
 
         Context.require(proposalData.getStatus(proposalPrefix).equals(ACTIVE), TAG + ": Proposal can be cancelled only from active status.");
 
@@ -1487,7 +1494,7 @@ public class Authorization {
     private int get_proposal_count(String db_name) {
         ProposalData proposalData = new ProposalData();
         Context.require(containsInList(db_name, dbName), TAG + ": Invalid DB name.");
-        return proposalData.getProposalCount(db_name);
+        return proposalData.dbProposalKeys.get(db_name).size();
     }
 
     private List<Map<String, Object>> get_proposals(String db_name, @Optional int batch_size, @Optional int offset) {
@@ -1497,7 +1504,7 @@ public class Authorization {
         int count = this.get_proposal_count(db_name);
         int start = 0;
         if (count > 1) {
-            start = Math.max(1, offset);
+            start = Math.max(0, offset);
         }
         int end = Math.min(start + batch_size, this.get_proposal_count(db_name));
         // for debugging
@@ -1528,6 +1535,7 @@ public class Authorization {
         ProposalData proposalData = new ProposalData();
         BigInteger start_snap = proposalData.getStart_snapshot(proposalPrefix);
         BigInteger end_snap = proposalData.getEnd_snapshot(proposalPrefix);
+        Context.println("index: " + this.proposalKeysIndex.getOrDefault(proposalPrefix, 0));
         if (this.proposalKeysIndex.getOrDefault(proposalPrefix, 0) <= 0 || start_snap.compareTo(getDay()) > 0 || getDay().compareTo(end_snap) > 0 || !proposalData.getActive(proposalPrefix)) {
             Context.revert(TAG + "That is not an active poll.");
         }
@@ -1698,9 +1706,6 @@ public class Authorization {
         if (batch_size == 0) {
             batch_size = 20;
         }
-        if (offset == 0) {
-            offset = 1;
-        }
 
         return get_proposals(GOVERNANCE, batch_size, offset);
     }
@@ -1710,9 +1715,6 @@ public class Authorization {
         if (batch_size == 0) {
             batch_size = 20;
         }
-        if (offset == 0) {
-            offset = 1;
-        }
 
         return get_proposals(NEW_GAME, batch_size, offset);
     }
@@ -1721,9 +1723,6 @@ public class Authorization {
     public List<Map<String, Object>> getGameApprovalProposals(@Optional int batch_size, @Optional int offset) {
         if (batch_size == 0) {
             batch_size = 20;
-        }
-        if (offset == 0) {
-            offset = 1;
         }
 
         return get_proposals(GAME_APPROVAL, batch_size, offset);
@@ -1753,7 +1752,7 @@ public class Authorization {
     @External
     public void evaluateGovernanceVote(String name) {
         String proposalPrefix = proposalPrefix(GOVERNANCE, name);
-
+        Context.println("index " + this.proposalKeysIndex.getOrDefault(proposalPrefix, 0));
         Context.require(this.proposalKeysIndex.getOrDefault(proposalPrefix, 0) > 0, TAG + "" + ": Proposal with the name '" + name + "' is not found.");
         ProposalData proposalData = new ProposalData();
         BigInteger end_snap = proposalData.getEnd_snapshot(proposalPrefix);
@@ -1764,7 +1763,7 @@ public class Authorization {
         Context.require(proposalData.getActive(proposalPrefix), TAG + "This proposal is not active.");
 
         Map<String, Object> result = checkGovernanceVote(name);
-        if (((BigInteger) result.get("for")).add((BigInteger) result.get("against")).compareTo((BigInteger) result.get("quorum")) > 0) {
+        if (((BigInteger) result.get("for")).add((BigInteger) result.get("against")).compareTo((BigInteger) result.get("quorum")) >= 0) {
             if (EXA.subtract(majority).multiply((BigInteger) result.get("for")).compareTo(majority.multiply((BigInteger) result.get("against"))) > 0) {
                 if (!actions.equals("")) {
                     try {
