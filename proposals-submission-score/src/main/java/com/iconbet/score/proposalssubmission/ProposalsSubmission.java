@@ -814,6 +814,9 @@ public class ProposalsSubmission {
     @External(readonly = true)
     public Map<String, ?> getPeriodStatus() {
         BigInteger remainingTime = (this.nextBlock.get().subtract(BigInteger.valueOf(Context.getBlockHeight()))).multiply(BigInteger.TWO);
+        if (remainingTime.compareTo(BigInteger.ZERO) < 0){
+            remainingTime = BigInteger.ZERO;
+        }
         return Map.of(
                 PERIOD_NAME, this.periodName.getOrDefault("None"),
                 NEXTBLOCK, this.nextBlock.get(),
@@ -895,6 +898,11 @@ public class ProposalsSubmission {
             }
         }
         return false;
+    }
+
+    @External(readonly = true)
+    public boolean alreadyVotedOnProposal(Address address, String ipfs_hash){
+        return isInProposalVotersList(address, ipfs_hash);
     }
 
     private boolean isInProgressReportVotersList(Address address, String report_hash) {
