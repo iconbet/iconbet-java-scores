@@ -5,6 +5,7 @@ import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -34,7 +35,6 @@ public class DaoFundTest extends TestBase {
     private static final Address proposalsSubmission = Address.fromString("cx0000000000000000000000000000000000000001");
     private static final Address proposalsFund = Address.fromString("cx0000000000000000000000000000000000000002");
 
-    private final MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
     public static final String TAG = "ICONbet DAOfund";
 
     private static final BigInteger X_6 = new BigInteger("1000000"); // 10 ** 6
@@ -51,6 +51,7 @@ public class DaoFundTest extends TestBase {
     private final SecureRandom secureRandom = new SecureRandom();
 
     DaoFund scoreSpy;
+    private static MockedStatic<Context> contextMock;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -60,6 +61,11 @@ public class DaoFundTest extends TestBase {
         DAOFundScore.setInstance(scoreSpy);
     }
 
+    @BeforeAll
+    public static void init(){
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+    }
+
     @Test
     void name() {
         assertEquals(TAG, DAOFundScore.call("name"));
@@ -67,6 +73,7 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void addAdmin(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "add_admin", testingAccount.getAddress());
         @SuppressWarnings("unchecked")
         List<Address> admins = (List<Address>) DAOFundScore.call("get_admins");
@@ -75,6 +82,7 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void addAdminNotOwner(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable addAdminNotOwner = () -> DAOFundScore.invoke(testingAccount, "add_admin", testingAccount.getAddress());
         expectErrorMessage(addAdminNotOwner, "Reverted(0): " + TAG + ": Only owners can set new admins.");
     }
@@ -88,6 +96,7 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void removeAdmin(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "add_admin", testingAccount.getAddress());
         @SuppressWarnings("unchecked")
         List<Address> admins = (List<Address>) DAOFundScore.call("get_admins");
@@ -101,15 +110,18 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void removeAdminNotOwner(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "add_admin", testingAccount.getAddress());
         List<Address> admins = (List<Address>) DAOFundScore.call("get_admins");
         assertEquals(testingAccount.getAddress(), admins.get(0));
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable removeAdminNotOwner = () -> DAOFundScore.invoke(testingAccount, "remove_admin", testingAccount.getAddress());
         expectErrorMessage(removeAdminNotOwner, "Reverted(0): " + TAG + ": Only admins can remove admins.");
     }
 
     @Test
     void removeOwnerAsAdmin(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "add_admin", owner.getAddress());
         List<Address> admins = (List<Address>) DAOFundScore.call("get_admins");
         assertEquals(owner.getAddress(), admins.get(0));
@@ -119,6 +131,7 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void removeAdminNotInAdminList(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "add_admin", owner.getAddress());
         List<Address> admins = (List<Address>) DAOFundScore.call("get_admins");
         assertEquals(owner.getAddress(), admins.get(0));
@@ -143,6 +156,7 @@ public class DaoFundTest extends TestBase {
     }
 
     private void withdrawFundMethod(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "add_admin", owner.getAddress());
         contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(1000));
         contextMock.when(() -> Context.transfer(any(), any())).thenAnswer((Answer<Void>) invocation -> null);
@@ -191,6 +205,7 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void setScores(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "set_proposals_submission_score", proposalsSubmission);
         DAOFundScore.invoke(owner, "set_proposals_fund_score", proposalsFund);
         assertEquals(proposalsSubmission, DAOFundScore.call("get_proposals_submission_score"));
@@ -198,12 +213,14 @@ public class DaoFundTest extends TestBase {
     }
 
     private void setScoresMethod(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         DAOFundScore.invoke(owner, "set_proposals_submission_score", proposalsSubmission);
         DAOFundScore.invoke(owner, "set_proposals_fund_score", proposalsFund);
     }
 
     @Test
     void setScoresNotOwner(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable proposalsSubmissionScore = () -> DAOFundScore.invoke(testingAccount, "set_proposals_submission_score", proposalsSubmission);
         expectErrorMessage(proposalsSubmissionScore, "Reverted(0): " + TAG + ": Only owner can call this method.");
 
@@ -213,6 +230,7 @@ public class DaoFundTest extends TestBase {
 
     @Test
     void setScoresNotScoreAddress(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         Executable proposalsSubmissionScore = () -> DAOFundScore.invoke(owner, "set_proposals_submission_score", testingAccount.getAddress());
         expectErrorMessage(proposalsSubmissionScore, "Reverted(0): " + TAG + ": Target " + testingAccount.getAddress() + " is not a SCORE");
 
@@ -237,11 +255,11 @@ public class DaoFundTest extends TestBase {
         depositParameters.add("ipfs_hash", "Proposal 1");
         depositParameters.add("project_duration", 3);
         depositParameters.add("proposer_address", testingAccount.getAddress().toString());
-        depositParameters.add("total_budget", BigInteger.TEN.toString(16));
+        depositParameters.add("total_budget", BigInteger.TEN.toString());
 
         contextMock.when(() -> Context.getCaller()).thenReturn(proposalsSubmission);
         contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(1000));
-        contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("deposit_proposal_fund"), eq(depositParameters.toString().getBytes()))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("depositProposalFund"), eq(depositParameters.toString().getBytes()))).thenAnswer((Answer<Void>) invocation -> null);
         DAOFundScore.invoke(owner, "transfer_proposal_fund_to_proposals_fund", "Proposal 1", 3, testingAccount.getAddress(), BigInteger.TEN);
 
     }
@@ -260,11 +278,11 @@ public class DaoFundTest extends TestBase {
         depositParameters.add("ipfs_hash", "Proposal 1");
         depositParameters.add("project_duration", 3);
         depositParameters.add("proposer_address", testingAccount.getAddress().toString());
-        depositParameters.add("total_budget", BigInteger.TEN.toString(16));
+        depositParameters.add("total_budget", BigInteger.TEN.toString());
 
         contextMock.when(() -> Context.getCaller()).thenReturn(proposalsSubmission);
         contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(1000));
-        contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("deposit_proposal_fund"), eq(depositParameters.toString().getBytes()))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("depositProposalFund"), eq(depositParameters.toString().getBytes()))).thenAnswer((Answer<Void>) invocation -> null);
         DAOFundScore.invoke(owner, "transfer_proposal_fund_to_proposals_fund", "Proposal 1", 3, testingAccount.getAddress(), BigInteger.TEN);
 
         contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("update_proposal_fund"), eq("Proposal 1"), eq(BigInteger.TEN), eq(2))).thenAnswer((Answer<Void>) invocation -> null);
@@ -279,10 +297,10 @@ public class DaoFundTest extends TestBase {
         depositParameters.add("ipfs_hash", "Proposal 1");
         depositParameters.add("project_duration", 3);
         depositParameters.add("proposer_address", testingAccount.getAddress().toString());
-        depositParameters.add("total_budget", BigInteger.TEN.toString(16));
+        depositParameters.add("total_budget", BigInteger.TEN.toString());
         contextMock.when(() -> Context.getCaller()).thenReturn(proposalsSubmission);
         contextMock.when(() -> Context.getBalance(any())).thenReturn(BigInteger.valueOf(1000));
-        contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("deposit_proposal_fund"), eq(depositParameters.toString().getBytes()))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(eq(BigInteger.TEN), eq(proposalsFund), eq("depositProposalFund"), eq(depositParameters.toString().getBytes()))).thenAnswer((Answer<Void>) invocation -> null);
         DAOFundScore.invoke(owner, "transfer_proposal_fund_to_proposals_fund", "Proposal 1", 3, testingAccount.getAddress(), BigInteger.TEN);
 
         contextMock.when(() -> Context.getCaller()).thenReturn(proposalsFund);
