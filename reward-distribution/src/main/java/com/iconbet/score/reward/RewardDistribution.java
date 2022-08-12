@@ -546,6 +546,12 @@ public class RewardDistribution {
 		Context.println(_value + " TAP tokens received from "+ _from + ". " + TAG);
 	}
 
+	@External
+	public void toggleRewardsGone(){
+		Context.require(validateOwner(), TAG + "Only owner can call this method.");
+		this._rewards_gone.set(!this._rewards_gone.get());
+	}
+
 	private <T> boolean containsInArrayDb(T value, ArrayDB<T> arraydb) {
 		boolean found = false;
 		if(arraydb == null || value == null) {
