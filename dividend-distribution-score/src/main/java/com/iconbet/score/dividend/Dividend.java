@@ -910,7 +910,7 @@ public class Dividend extends Utils {
                 }
             }
         }
-
+// This gives all the ICX sent on the previous day to game developers when the overall platform is in negative excess.
         BigInteger game_developers_amount = third_party_excess.multiply(_20).divide(_100);
         BigInteger daofund_amount = inhouse_excess.multiply(_20).divide(_100);
         BigInteger tap_holders_amount = Context.getBalance(Context.getAddress()).subtract(game_developers_amount).subtract(daofund_amount);
