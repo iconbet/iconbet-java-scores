@@ -26,6 +26,9 @@ import static com.iconbet.score.tap.TapToken.StakedTAPTokenSnapshots;
 import static com.iconbet.score.tap.TapToken.TotalStakedTAPTokenSnapshots;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+
 
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -46,6 +49,16 @@ class TapTokenTest extends TestBase {
 	private static final Account testingAccount1 = sm.createAccount();
 	private static final Account testingAccount2 = sm.createAccount();
 	private static final Account testingAccount3 = sm.createAccount();
+	private static final Address daoFund = Address.fromString("cx0000000000000000000000000000000000000001");
+	private static final Address gameScore = Address.fromString("cx0000000000000000000000000000000000000002");
+	private static final Address gameAuth = Address.fromString("cx0000000000000000000000000000000000000004");
+	private static final Address dividends = Address.fromString("cx0000000000000000000000000000000000000005");
+	private static final Address utap = Address.fromString("cx0000000000000000000000000000000000000006");
+	private static final Address rewards = Address.fromString("cx0000000000000000000000000000000000000006");
+
+	private static final Address dice = Address.fromString("cx0000000000000000000000000000000000000007");
+	private static final Address roulette = Address.fromString("cx0000000000000000000000000000000000000008");
+	private static final Address blackjack = Address.fromString("cx0000000000000000000000000000000000000009");
 	private static final String symbol = "TAP";
 	private static Score tapToken;
 	private final SecureRandom secureRandom = new SecureRandom();
@@ -92,6 +105,20 @@ class TapTokenTest extends TestBase {
 	void balanceOf() {
 		assertEquals(owner.getBalance(symbol),
 				tapToken.call("balanceOf", tapToken.getOwner().getAddress()));
+	}
+
+	@Test
+	void setScores(){
+		tapToken.invoke(owner, "set_dividends_score", dividends);
+		tapToken.invoke(owner, "set_authorization_score", gameAuth);
+
+		assertEquals(dividends, tapToken.call("get_dividends_score"));
+		assertEquals(gameAuth, tapToken.call("get_authorization_score"));
+	}
+
+	private void setScoresMethod(){
+		tapToken.invoke(owner, "set_dividends_score", dividends);
+		tapToken.invoke(owner, "set_authorization_score", gameAuth);
 	}
 
 	@Test
@@ -153,6 +180,8 @@ class TapTokenTest extends TestBase {
 
 	@Test
 	void testWhitelist() {
+		setScoresMethod();
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
 		Account alice = sm.createAccount();
 		tapToken.invoke(owner, "set_whitelist_address", alice.getAddress());
 
@@ -174,8 +203,11 @@ class TapTokenTest extends TestBase {
 
 	@Test
 	void testLockList() {
+		setScoresMethod();
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		Account alice = sm.createAccount();
 		tapToken.invoke(owner, "toggle_staking_enabled");
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
 		tapToken.invoke(owner, "set_locklist_address", alice.getAddress());
 
 		@SuppressWarnings("unchecked")
@@ -185,28 +217,7 @@ class TapTokenTest extends TestBase {
 		assertEquals(1, addresses.size());
 		assertEquals(alice.getAddress(), addresses.get(0));
 	}
-
-	@Test
-	void testTransferFailByLockList() {
-		Account alice = sm.createAccount();
-		Address a = alice.getAddress();
-		Boolean paused = (Boolean)tapToken.call("getPaused");
-		if(paused) {
-			tapToken.invoke(owner, "togglePaused");
-		}
-
-		tapToken.invoke(owner, "toggle_staking_enabled");
-		tapToken.invoke(owner, "set_locklist_address", a);
-
-		BigInteger value = TEN.pow(decimals.intValue());
-		byte[] data = "to alice".getBytes();
-		AssertionError e = Assertions.assertThrows(AssertionError.class, () -> {
-			tapToken.invoke(alice, "transfer", a, value, data);
-		});
-
-		assertEquals("Reverted(0): Transfer of TAP has been locked for this address.", e.getMessage());
-	}
-
+	
 	@Test
 	void testTransferNegative() {
 		Account alice = sm.createAccount();

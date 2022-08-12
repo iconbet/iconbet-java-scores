@@ -1,5 +1,6 @@
 package com.iconbet.score.proposalsfund;
 
+import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
@@ -72,6 +73,7 @@ public class ProposalsFundTest extends TestBase{
 
     @Test
     void setScores(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         ProposalsFundScore.invoke(owner, "setProposalSubmissionScore", proposalsSubmission);
         ProposalsFundScore.invoke(owner, "setDaofundScore", daoFund);
         assertEquals(proposalsSubmission, ProposalsFundScore.call("getProposalSubmissionScore"));
@@ -79,6 +81,7 @@ public class ProposalsFundTest extends TestBase{
     }
 
     private void setScoreMethod(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         ProposalsFundScore.invoke(owner, "setProposalSubmissionScore", proposalsSubmission);
         ProposalsFundScore.invoke(owner, "setDaofundScore", daoFund);
     }
@@ -86,13 +89,13 @@ public class ProposalsFundTest extends TestBase{
     @Test
     void depositProposalFund(){
         setScoreMethod();
-        ProposalAttributes proposalAttributes = new ProposalAttributes();
-        proposalAttributes.ipfsHash = "Proposal 1";
-        proposalAttributes.proposerAddress = testingAccount.getAddress();
-        proposalAttributes.projectDuration = 3;
-        proposalAttributes.totalBudget = BigInteger.valueOf(30);
+        JsonObject depostiParameters = new JsonObject();
+        depostiParameters.add("ipfs_hash", "Proposal 1");
+        depostiParameters.add("proposer_address", testingAccount.getAddress().toString());
+        depostiParameters.add("project_duration", 3);
+        depostiParameters.add("total_budget", BigInteger.valueOf(30).toString());
         contextMock.when(() -> Context.getCaller()).thenReturn(daoFund);
-        ProposalsFundScore.invoke(owner, "depositProposalFund", proposalAttributes);
+        ProposalsFundScore.invoke(owner, "depositProposalFund", depostiParameters.toString().getBytes());
 
         Map<String, ?> proposerProjectedFundDetail = (Map<String, ?>) ProposalsFundScore.call("get_proposer_projected_fund", testingAccount.getAddress());
         List<Map<String, ?>> proposerProjectedFundData = (List<Map<String, ?>>) proposerProjectedFundDetail.get("data");
@@ -108,13 +111,13 @@ public class ProposalsFundTest extends TestBase{
 
     private void depositProposalFundMethod(){
         setScoreMethod();
-        ProposalAttributes proposalAttributes = new ProposalAttributes();
-        proposalAttributes.ipfsHash = "Proposal 1";
-        proposalAttributes.proposerAddress = testingAccount.getAddress();
-        proposalAttributes.projectDuration = 3;
-        proposalAttributes.totalBudget = BigInteger.valueOf(30);
+        JsonObject depostiParameters = new JsonObject();
+        depostiParameters.add("ipfs_hash", "Proposal 1");
+        depostiParameters.add("proposer_address", testingAccount.getAddress().toString());
+        depostiParameters.add("project_duration", 3);
+        depostiParameters.add("total_budget", BigInteger.valueOf(30).toString());
         contextMock.when(() -> Context.getCaller()).thenReturn(daoFund);
-        ProposalsFundScore.invoke(owner, "depositProposalFund", proposalAttributes);
+        ProposalsFundScore.invoke(owner, "depositProposalFund", depostiParameters.toString().getBytes());
     }
 
     @Test

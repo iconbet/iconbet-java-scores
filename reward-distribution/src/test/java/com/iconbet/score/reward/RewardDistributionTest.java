@@ -320,10 +320,6 @@ class RewardDistributionTest extends TestBase{
 			k++;
 		}
 	}
-	@Test
-	void returnMap(){
-		System.out.println(makeMap(""));
-	}
 
 	@Test
 	void accumulateWagersDistributionIsTrue(){

@@ -386,7 +386,7 @@ public class ProposalsSubmissionTest extends TestBase{
     @Test
     void updatePeriodUpdatePeriodIndexZero(){
         voteProposalApprove();
-        contextMock.when(() -> Context.call(any(), eq("allocateFundsToProposals"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(any(), eq("transfer_proposal_fund_to_proposals_fund"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
         ProposalsSubmissionScore.invoke(owner, "change_period");
 
         sm.getBlock().increase((BLOCKS_DAY_COUNT * DAY_COUNT) + 1);
@@ -405,7 +405,7 @@ public class ProposalsSubmissionTest extends TestBase{
     void updatePeriodProgressReportAccepted(){
         voteProposalApprove();
 
-        contextMock.when(() -> Context.call(any(), eq("allocateFundsToProposals"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(any(), eq("transfer_proposal_fund_to_proposals_fund"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
 
         ProposalsSubmissionScore.invoke(owner, "change_period");
 
@@ -458,7 +458,7 @@ public class ProposalsSubmissionTest extends TestBase{
     @Test
     void updatePeriodNotSubmitProgressReport(){
         submitProposalMethod();
-        contextMock.when(() -> Context.call(any(), eq("allocateFundsToProposals"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(any(), eq("transfer_proposal_fund_to_proposals_fund"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
         sm.getBlock().increase((BLOCKS_DAY_COUNT * DAY_COUNT) + 1);
         ProposalsSubmissionScore.invoke(owner, "updatePeriod");
 
@@ -499,7 +499,7 @@ public class ProposalsSubmissionTest extends TestBase{
     @Test
     void updatePeriodProgressReportRejected(){
         submitProposalMethod();
-        contextMock.when(() -> Context.call(any(), eq("allocateFundsToProposals"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
+        contextMock.when(() -> Context.call(any(), eq("transfer_proposal_fund_to_proposals_fund"), eq("Proposal 1"), eq(3), eq(owner.getAddress()), eq(BigInteger.valueOf(100).multiply(decimal)))).thenAnswer((Answer<Void>) invocation -> null);
         sm.getBlock().increase((BLOCKS_DAY_COUNT * DAY_COUNT) + 1);
         ProposalsSubmissionScore.invoke(owner, "updatePeriod");
 
