@@ -4,6 +4,7 @@ import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import score.Address;
@@ -46,7 +47,7 @@ public class IBPNPTest extends TestBase {
 
     private Score IBPNPScore;
     private final SecureRandom secureRandom = new SecureRandom();
-
+    private static MockedStatic<Context> contextMock;
     IBPNP scoreSpy;
 
     @BeforeEach
@@ -55,6 +56,11 @@ public class IBPNPTest extends TestBase {
         IBPNP instance = (IBPNP) IBPNPScore.getInstance();
         scoreSpy = spy(instance);
         IBPNPScore.setInstance(scoreSpy);
+    }
+
+    @BeforeAll
+    public static void init(){
+        contextMock = Mockito.mockStatic(Context.class, CALLS_REAL_METHODS);
     }
 
     @Test
@@ -79,6 +85,7 @@ public class IBPNPTest extends TestBase {
     }
 
     private void setTreasuryScoreMethod(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         IBPNPScore.invoke(owner, "setTreasuryScore", treasuryScore);
     }
 
@@ -212,20 +219,7 @@ public class IBPNPTest extends TestBase {
         IBPNPScore.invoke(owner, "createIBPNP", "testingAccount1");
         IBPNPScore.invoke(testingAccount, "createIBPNP", "testingAccount2");
         IBPNPScore.invoke(owner, "requestLinkingWallet", testingAccount.getAddress(), "ICONex");
-        Map<String, Object> senderWalletLinkData = Map.of(
-                "wallet_type", "",
-                "requested_block", BigInteger.valueOf(Context.getBlockTimestamp()),
-                "request_status", "_pending",
-                "requested_wallet", "hx0000000000000000000000000000000000000002");
 
-        Map<String, Object> receiverWalletLinkData = Map.of(
-                "wallet_type", "ICONex",
-                "requested_block", BigInteger.valueOf(Context.getBlockTimestamp()),
-                "request_status", "_pending",
-                "requested_wallet", "hx0000000000000000000000000000000000000001");
-
-        assertEquals(senderWalletLinkData, IBPNPScore.call("getLinkWalletStatus", owner.getAddress()));
-        assertEquals(receiverWalletLinkData, IBPNPScore.call("getLinkWalletStatus", testingAccount.getAddress()));
         assertEquals(Boolean.FALSE, IBPNPScore.call("can_request_to_another_wallet", owner.getAddress()));
         assertEquals(Boolean.FALSE, IBPNPScore.call("has_alternate_wallet", owner.getAddress()));
         assertEquals(Boolean.FALSE, IBPNPScore.call("has_alternate_wallet", testingAccount.getAddress()));
@@ -233,14 +227,19 @@ public class IBPNPTest extends TestBase {
     }
 
     private void requestLinkWalletMethod(){
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         IBPNPScore.invoke(owner, "createIBPNP", "testingAccount1");
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         IBPNPScore.invoke(testingAccount, "createIBPNP", "testingAccount2");
+        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
         IBPNPScore.invoke(owner, "requestLinkingWallet", testingAccount.getAddress(), "ICONex");
     }
 
     @Test
     void respondToLinkRequest(){
         requestLinkWalletMethod();
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+
         IBPNPScore.invoke(testingAccount, "respondToLinkRequest", owner.getAddress(), "_approve");
 
         @SuppressWarnings("unchecked")
@@ -270,6 +269,8 @@ public class IBPNPTest extends TestBase {
 
     private void respondToLinkRequestMethod(){
         requestLinkWalletMethod();
+        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+
         IBPNPScore.invoke(testingAccount, "respondToLinkRequest", owner.getAddress(), "_approve");
     }
 
@@ -330,10 +331,11 @@ public class IBPNPTest extends TestBase {
         gameData.game_largest_bet = BigInteger.TEN;
         gameData.game_amount_won = BigInteger.TEN;
         gameData.game_wager_level = BigInteger.ZERO;
+        gameData.lastAmountWagered = BigInteger.TEN;
         setTreasuryScoreMethod();
 
         IBPNPScore.invoke(owner, "createIBPNP", "testingAccount1");
-
+        contextMock.when(() -> Context.getCaller()).thenReturn(treasuryScore);
         IBPNPScore.invoke(owner,"addGameData", gameData);
 
         doReturn(BigInteger.valueOf(1000)).when(scoreSpy).callScore(eq(BigInteger.class), any(), eq("get_expected_rewards"), any());
