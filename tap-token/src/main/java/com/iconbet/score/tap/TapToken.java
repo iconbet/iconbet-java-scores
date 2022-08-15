@@ -115,13 +115,13 @@ public class TapToken implements IRC2 {
             Context.revert("Decimals cannot be less than zero");
         }
 
-//		BigInteger totalSupply = _initialSupply.multiply( pow( TEN , _decimals.intValue()) );
-//		Context.println(TAG+" : total_supply "+ totalSupply );
-//
-//		this.totalSupply.set(totalSupply);
-//		this.decimals.set(_decimals);
-//		this.balances.set(Context.getOwner(), totalSupply);
-//		this.addresses.add(Context.getOwner());
+		BigInteger totalSupply = _initialSupply.multiply( pow( TEN , _decimals.intValue()) );
+		Context.println(TAG+" : total_supply "+ totalSupply );
+
+		this.totalSupply.set(totalSupply);
+		this.decimals.set(_decimals);
+		this.balances.set(Context.getOwner(), totalSupply);
+		this.addresses.add(Context.getOwner());
 
     }
 
@@ -328,7 +328,6 @@ public class TapToken implements IRC2 {
 
     @External
     public void stake(BigInteger _value) {
-        Context.println("0");
         this.stakingEnabledOnly();
 
 
@@ -349,37 +348,27 @@ public class TapToken implements IRC2 {
                 && _value.compareTo(ZERO) != 0) {
             Context.revert("Staked TAP must be greater than the minimum stake amount and non zero");
         }
-        Context.println("1");
         this.checkFirstTime(from);
-        Context.println("2");
         // Check if the unstaking period has already been reached.
         this.makeAvailable(from);
-        Context.println("3");
 
         if (containsInArrayDb(from, locklist)) {
             Context.revert("Locked address not permitted to stake.");
         }
-        Context.println("here 1");
 
         DictDB<Integer, BigInteger> sb = this.stakedBalances.at(from);
         BigInteger oldStake = sb.getOrDefault(Status.STAKED, ZERO).add(sb.getOrDefault(Status.UNSTAKING, ZERO));
         //big integer is immutable, not need this next line
         BigInteger newStake = _value;
-        Context.println("here 2");
 
         BigInteger stakeIncrement = _value.subtract(sb.getOrDefault(Status.STAKED, ZERO));
         BigInteger unstakeAmount = ZERO;
-        Context.println("here 3");
         if (newStake.compareTo(oldStake) > 0) {
             BigInteger offset = newStake.subtract(oldStake);
             sb.set(Status.AVAILABLE, sb.getOrDefault(Status.AVAILABLE, ZERO).subtract(offset));
-            Context.println("here 4");
         } else {
-            Context.println("here 5");
             unstakeAmount = oldStake.subtract(newStake);
-            Context.println("here 6");
         }
-        Context.println("4");
 
         sb.set(Status.STAKED, _value);
         sb.set(Status.UNSTAKING, unstakeAmount);
@@ -391,14 +380,12 @@ public class TapToken implements IRC2 {
         stakeAddressChanges.add(from);
 
         checkMigration();
-        Context.println("5");
 
         Snapshot snapshot = new Snapshot();
         if (snapshot._enable_snapshots.getOrDefault(Boolean.FALSE)) {
             updateSnapshotForAddress(Context.getCaller(), _value);
             updateTotalStakedSnapshot(this.totalStakedBalance.getOrDefault(ZERO));
         }
-        Context.println("6");
         TapStaked(Context.getCaller(), _value, _value + " TAP token is staked by " + Context.getCaller());
     }
 
@@ -1109,13 +1096,9 @@ public class TapToken implements IRC2 {
         if (totalSnapshotsTaken > 0 && snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO).equals(ZERO)) {
             snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
         } else {
-            Context.println("reached in else");
             snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(IDS, current_id);
-            Context.println("10");
             snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(AMOUNT, _amount);
-            Context.println("11");
             snapshot._total_snapshots.set(_account, totalSnapshotsTaken + 1);
-            Context.println("12");
         }
     }
 
@@ -1124,24 +1107,15 @@ public class TapToken implements IRC2 {
         if (snapshot._time_offset.get().equals(ZERO)) {
             setTimeOffset();
         }
-        Context.println("13");
         BigInteger current_id = getDay();
-        Context.println("14");
         int totalSnapshotsTaken = snapshot._total_staked_snapshot_count.getOrDefault(0);
-        Context.println("15: " + totalSnapshotsTaken);
 
         if (totalSnapshotsTaken > 0 && (snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).equals(current_id)) {
-            Context.println("16");
             snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
-            Context.println("17");
         } else {
-            Context.println("18");
             snapshot._total_staked_snapshot.at(totalSnapshotsTaken).set(IDS, current_id);
-            Context.println("19");
-            snapshot._total_staked_snapshot.at(totalSnapshotsTaken).set(IDS, _amount);
-            Context.println("20");
+            snapshot._total_staked_snapshot.at(totalSnapshotsTaken).set(AMOUNT, _amount);
             snapshot._total_staked_snapshot_count.set(totalSnapshotsTaken + 1);
-            Context.println("21");
         }
     }
 
@@ -1154,20 +1128,16 @@ public class TapToken implements IRC2 {
         Snapshot snapshot = new Snapshot();
         int totalSnapshotsTaken = snapshot._total_snapshots.getOrDefault(_account, 0);
         if (totalSnapshotsTaken == 0) {
-            Context.println("1");
             return ZERO;
         }
 
         if ((snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0) {
-            Context.println("2");
             return (BigInteger) snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
         }
 
         if ((snapshot._stake_snapshots.at(_account).at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0) {
-            Context.println("3");
             return ZERO;
         }
-        Context.println("4");
         int low = 0;
         int high = totalSnapshotsTaken - 1;
         while (high > low) {
@@ -1193,17 +1163,13 @@ public class TapToken implements IRC2 {
         Snapshot snapshot = new Snapshot();
         int totalSnapshotsTaken = snapshot._total_staked_snapshot_count.getOrDefault(0);
         if (totalSnapshotsTaken == 0) {
-            Context.println("01");
             return ZERO;
         }
-
         if ((snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO)).compareTo(_day) <= 0) {
-            Context.println("02");
             return snapshot._total_staked_snapshot.at(totalSnapshotsTaken - 1).getOrDefault(AMOUNT, ZERO);
         }
 
         if ((snapshot._total_staked_snapshot.at(0).getOrDefault(IDS, ZERO)).compareTo(_day) > 0) {
-            Context.println("03");
             return ZERO;
         }
 
