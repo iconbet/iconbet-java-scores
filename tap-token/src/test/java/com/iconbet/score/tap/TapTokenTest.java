@@ -39,11 +39,11 @@ class TapTokenTest extends TestBase {
 
 	private static final ServiceManager sm = getServiceManager();
 	private static final Account owner = sm.createAccount();
-	private static final BigInteger initialSupply = BigInteger.valueOf(5);
-	private static final BigInteger decimals = BigInteger.valueOf(10);
+	private static final BigInteger initialSupply = BigInteger.valueOf(625000000);
+	private static final BigInteger decimals = BigInteger.valueOf(18);
 	private static final BigInteger MULTIPLIER = new BigInteger("1000000000000000000");
 
-	private static final BigInteger totalSupply = BigInteger.valueOf(50000000000L);
+	private static final BigInteger totalSupply = new BigInteger("625000000000000000000000000");
 
 	private static final Account testingAccount = sm.createAccount();
 	private static final Account testingAccount1 = sm.createAccount();
@@ -93,7 +93,7 @@ class TapTokenTest extends TestBase {
 
 	@Test
 	void decimals() {
-		assertEquals(decimals.intValue(), tapToken.call("decimals"));
+		assertEquals(decimals, tapToken.call("decimals"));
 	}
 
 	@Test
@@ -109,6 +109,7 @@ class TapTokenTest extends TestBase {
 
 	@Test
 	void setScores(){
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "set_dividends_score", dividends);
 		tapToken.invoke(owner, "set_authorization_score", gameAuth);
 
@@ -117,66 +118,21 @@ class TapTokenTest extends TestBase {
 	}
 
 	private void setScoresMethod(){
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "set_dividends_score", dividends);
 		tapToken.invoke(owner, "set_authorization_score", gameAuth);
 	}
 
-	@Test
-	void testTransfer() {
-
-		Account alice = sm.createAccount();
-		BigInteger value = TEN.pow(decimals.intValue());
-
-		Boolean paused = (Boolean)tapToken.call("getPaused");
-		if(paused) {
-			tapToken.invoke(owner, "togglePaused");
-		}
-
-		tapToken.invoke(owner, "transfer", alice.getAddress(), value, "to alice".getBytes());
-		owner.subtractBalance(symbol, value);
-
-		assertEquals(owner.getBalance(symbol),
-				tapToken.call("balanceOf", tapToken.getOwner().getAddress()));
-		assertEquals(value,
-				tapToken.call("balanceOf", alice.getAddress()));
-
-		// transfer self
-		tapToken.invoke(alice, "transfer", alice.getAddress(), value, "self transfer".getBytes());
-		assertEquals(value, tapToken.call("balanceOf", alice.getAddress()));
-	}
 
 	@Test
 	void togglePaused() {
 		Boolean paused = (Boolean)tapToken.call("getPaused");
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "togglePaused");
 		Boolean pausedAfter = (Boolean)tapToken.call("getPaused");
 		assertEquals(pausedAfter, !paused);
 	}
 
-	@Test
-	void transferPaused() {
-		Account alice = sm.createAccount();
-		BigInteger value = TEN.pow(decimals.intValue());
-
-		Boolean paused = (Boolean)tapToken.call("getPaused");
-		System.out.println(paused);
-		if(!paused) {
-			tapToken.invoke(owner, "togglePaused");
-		}
-		paused = (Boolean)tapToken.call("getPaused");
-		System.out.println(paused);
-
-		Address a = alice.getAddress();
-		byte[] data = "to alice".getBytes();
-		tapToken.invoke(owner, "set_whitelist_address", owner.getAddress());
-
-		AssertionError e = Assertions.assertThrows(AssertionError.class, () -> {
-			tapToken.invoke(owner, "transfer", a, value, data);
-		});
-
-		assertEquals("Reverted(0): TAP token transfers are paused", e.getMessage());
-
-	}
 
 	@Test
 	void testWhitelist() {
@@ -195,7 +151,7 @@ class TapTokenTest extends TestBase {
 
 	@Test
 	void testToggleStakingToEnable() {
-
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "toggle_staking_enabled");
 		Boolean enabled = (Boolean)tapToken.call("staking_enabled");
 		assertTrue(enabled);
@@ -237,24 +193,6 @@ class TapTokenTest extends TestBase {
 		assertEquals("Reverted(0): Transferring value cannot be less than zero", e.getMessage());
 	}
 
-	@Test
-	void testTransferOutOfBalance() {
-		Account alice = sm.createAccount();
-		Address a = alice.getAddress();
-
-		Boolean paused = (Boolean)tapToken.call("getPaused");
-		if(paused) {
-			tapToken.invoke(owner, "togglePaused");
-		}
-
-		BigInteger value = TEN.pow(decimals.intValue());
-		byte[] data = "to alice".getBytes();
-		AssertionError e = Assertions.assertThrows(AssertionError.class, () -> {
-			tapToken.invoke(alice, "transfer", a, value, data);
-		});
-
-		assertEquals("Reverted(0): Out of balance", e.getMessage());
-	}
 
 	@Test
 	void testStakedBalance() {
@@ -325,7 +263,7 @@ class TapTokenTest extends TestBase {
 		stakedTAPTokenSnapshotsArray[0] = stakedTAPTokenSnapshots1;
 		stakedTAPTokenSnapshotsArray[1] = stakedTAPTokenSnapshots2;
 		stakedTAPTokenSnapshotsArray[2] = stakedTAPTokenSnapshots3;
-
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "toggleEnableSnapshot");
 		doReturn(BigInteger.ONE).when(scoreSpy).getDay();
 		tapToken.invoke(owner, "loadTAPStakeSnapshot", (Object) stakedTAPTokenSnapshotsArray);
@@ -345,11 +283,42 @@ class TapTokenTest extends TestBase {
 		totalStakedTAPTokenSnapshots1.day = BigInteger.ZERO;
 
 		totalStakedTAPTokenSnapshots[0] = totalStakedTAPTokenSnapshots1;
-
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "toggleEnableSnapshot");
 		doReturn(BigInteger.ONE).when(scoreSpy).getDay();
 		tapToken.invoke(owner, "loadTotalStakeSnapshot", (Object) totalStakedTAPTokenSnapshots);
 
 		assertEquals(BigInteger.valueOf(100).multiply(MULTIPLIER), tapToken.call("totalStakedBalanceOFAt", BigInteger.ZERO));
+	}
+
+	@Test
+	void stake(){
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+		tapToken.invoke(owner, "toggle_staking_enabled");
+		tapToken.invoke(owner, "toggleEnableSnapshot");
+		System.out.println(tapToken.call("balanceOf", owner.getAddress()));
+		tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
+		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("staked_balanceOf", owner.getAddress()));
+		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("total_staked_balance"));
+		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("stakedBalanceOfAt", owner.getAddress(), BigInteger.ZERO));
+		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("totalStakedBalanceOFAt", BigInteger.ZERO));
+	}
+
+	@Test
+	void getStakeUpdates(){
+		setScoresMethod();
+		tapToken.invoke(owner, "toggle_staking_enabled");
+		tapToken.invoke(owner, "toggleEnableSnapshot");
+		tapToken.invoke(owner, "toggle_switch_divs_to_staked_tap_enabled");
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+		tapToken.invoke(owner, "set_max_loop", 10);
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+		System.out.println(tapToken.call("balanceOf", owner.getAddress()));
+		tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
+		contextMock.when(() -> Context.getCaller()).thenReturn(dividends);
+
+		tapToken.invoke(owner, "get_stake_updates");
 	}
 }
