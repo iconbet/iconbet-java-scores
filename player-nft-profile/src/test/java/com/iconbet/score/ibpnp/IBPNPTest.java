@@ -389,4 +389,8 @@ public class IBPNPTest extends TestBase {
         assertEquals(expectedSenderUserData, senderUserData);
     }
 
+    @Test
+    void check(){
+        assertEquals(1,1);
+    }
 }

@@ -1,0 +1,17 @@
+name: push-main
+
+on:
+  push:
+    branches:
+      - main
+      - feature-add-and-migration
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build optimized jar
+        run: ./gradlew clean build optimizedJar
