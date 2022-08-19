@@ -244,16 +244,49 @@ class RewardDistributionTest extends TestBase{
 
 	@Test
 	void sortMap(){
-		Map<String, Object>[] listOfMaps = new Map[3];
+		Map<String, Object>[] listOfMaps = new Map[17];
 		String stringToBeMapped1 = "{\"hx0000000000000000000000000000000000000004\":\"100000000000000000000\"}";
 		String stringToBeMapped2 = "{\"hx0000000000000000000000000000000000000005\":\"200000000000000000000\"}";
-		String stringToBeMapped3 = "{\"hx0000000000000000000000000000000000000005\":\"300000000000000000000\"}";
+		String stringToBeMapped3 = "{\"hx0000000000000000000000000000000000000006\":\"300000000000000000000\"}";
+		String stringToBeMapped4 = "{\"hx0000000000000000000000000000000000000007\":\"400000000000000000000\"}";
+		String stringToBeMapped5 = "{\"hx0000000000000000000000000000000000000008\":\"500000000000000000000\"}";
+		String stringToBeMapped6 = "{\"hx0000000000000000000000000000000000000009\":\"600000000000000000000\"}";
+		String stringToBeMapped7 = "{\"hx0000000000000000000000000000000000000001\":\"700000000000000000000\"}";
+		String stringToBeMapped8 = "{\"hx0000000000000000000000000000000000000002\":\"800000000000000000000\"}";
+		String stringToBeMapped9 = "{\"hx0000000000000000000000000000000000000003\":\"900000000000000000000\"}";
+		String stringToBeMapped10 = "{\"hx0000000000000000000000000000000000000015\":\"1300000000000000000000\"}";
+		String stringToBeMapped11 = "{\"hx0000000000000000000000000000000000000025\":\"2300000000000000000000\"}";
+		String stringToBeMapped12 = "{\"hx0000000000000000000000000000000000000035\":\"3300000000000000000000\"}";
+		String stringToBeMapped13 = "{\"hx0000000000000000000000000000000000000045\":\"3400000000000000000000\"}";
+		String stringToBeMapped14 = "{\"hx0000000000000000000000000000000000000055\":\"350000000000000000000\"}";
+		String stringToBeMapped15 = "{\"hx0000000000000000000000000000000000000065\":\"360000000000000000000\"}";
+		String stringToBeMapped16 = "{\"hx0000000000000000000000000000000000000075\":\"370000000000000000000\"}";
+		String stringToBeMapped17 = "{\"hx0000000000000000000000000000000000000085\":\"380000000000000000000\"}";
+
 		listOfMaps[0] = makeMap(stringToBeMapped1);
 		listOfMaps[1] = makeMap(stringToBeMapped2);
-		listOfMaps[2] = makeMap(stringToBeMapped3);
+		listOfMaps[2] = makeMap(stringToBeMapped17);
+		listOfMaps[3] = makeMap(stringToBeMapped3);
+		listOfMaps[4] = makeMap(stringToBeMapped4);
+		listOfMaps[5] = makeMap(stringToBeMapped5);
+		listOfMaps[6] = makeMap(stringToBeMapped6);
+		listOfMaps[7] = makeMap(stringToBeMapped7);
+		listOfMaps[8] = makeMap(stringToBeMapped8);
+		listOfMaps[9] = makeMap(stringToBeMapped9);
+		listOfMaps[10] = makeMap(stringToBeMapped10);
+		listOfMaps[11] = makeMap(stringToBeMapped11);
+		listOfMaps[12] = makeMap(stringToBeMapped12);
+		listOfMaps[13] = makeMap(stringToBeMapped13);
+		listOfMaps[14] = makeMap(stringToBeMapped14);
+		listOfMaps[15] = makeMap(stringToBeMapped15);
+		listOfMaps[16] = makeMap(stringToBeMapped16);
+
+
 		System.out.println(Arrays.toString(listOfMaps));
-		mergeSort(listOfMaps, 0, 2);
+		mergeSort(listOfMaps, 0, 16);
 		System.out.println(Arrays.toString(listOfMaps));
+
+		System.out.println(Arrays.toString(top(listOfMaps, 10, false)));
 	}
 
 	void mergeSort(Map<String, Object> array[], int left, int right) {
@@ -319,6 +352,25 @@ class RewardDistributionTest extends TestBase{
 			j++;
 			k++;
 		}
+	}
+
+	public static Map<String, Object>[] top(Map<String, Object>[] arr, int max, boolean startFromEnd) {
+
+		if(arr == null) {
+			return arr;
+		}
+
+		if (arr.length < max){
+			max = arr.length;
+		}
+
+		Map<String, Object>[] dest = new Map[max];
+		if(startFromEnd) {
+			System.arraycopy(arr, arr.length-max, dest, 0, max);
+		}else {
+			System.arraycopy(arr, 0, dest, 0, max);
+		}
+		return dest;
 	}
 
 	@Test
