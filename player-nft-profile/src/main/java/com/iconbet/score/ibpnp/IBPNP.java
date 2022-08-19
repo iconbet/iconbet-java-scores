@@ -290,7 +290,7 @@ public class IBPNP extends IRC3Basic {
         String walletPrefix = walletDBPrefix(_wallet);
         WalletLinkData walletLinkData = new WalletLinkData();
         boolean canRequest = false;
-        List<String> statusList = List.of("reject", "_unlinked", "");
+        List<String> statusList = List.of("_reject", "_unlinked", "");
         int hasReachedRequestingBlockheight = walletLinkData.getRequested_block(walletPrefix).add(REQUEST_WITHDRAW_BLOCK_HEIGHT).compareTo(BigInteger.valueOf(Context.getBlockHeight()));
         if (walletLinkData.getRequest_status(walletPrefix).equals("_pending") && hasReachedRequestingBlockheight < 0) {
             canRequest = true;
