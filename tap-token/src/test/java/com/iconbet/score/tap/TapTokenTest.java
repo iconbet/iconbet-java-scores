@@ -321,4 +321,24 @@ class TapTokenTest extends TestBase {
 
 		tapToken.invoke(owner, "get_stake_updates");
 	}
+
+	@Test
+	void clearYesterdaysStakeChanges(){
+		setScoresMethod();
+		tapToken.invoke(owner, "toggle_staking_enabled");
+		tapToken.invoke(owner, "toggleEnableSnapshot");
+		tapToken.invoke(owner, "toggle_switch_divs_to_staked_tap_enabled");
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+		tapToken.invoke(owner, "set_max_loop", 10);
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+		System.out.println(tapToken.call("balanceOf", owner.getAddress()));
+		tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
+		contextMock.when(() -> Context.getCaller()).thenReturn(dividends);
+
+		tapToken.invoke(owner, "get_stake_updates");
+
+		tapToken.invoke(owner, "clear_yesterdays_stake_changes");
+	}
 }
