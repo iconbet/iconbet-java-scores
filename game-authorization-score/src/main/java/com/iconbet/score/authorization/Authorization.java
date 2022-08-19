@@ -710,7 +710,7 @@ public class Authorization {
         this.payouts.at(day).set(game, payout);
         Context.println("new payout:" + payout + "at day " + day + " ." + TAG);
 
-        if (this.new_div_changing_time.getOrDefault(ZERO).compareTo(ZERO) != 0 && day.compareTo(this.new_div_changing_time.get()) >= 1) {
+        if (this.new_div_changing_time.getOrDefault(ZERO).compareTo(ZERO) != 0 && now.compareTo(this.new_div_changing_time.get()) >= 0) {
             BigInteger accumulate = this.todays_games_excess.getOrDefault(game, ZERO);
             this.todays_games_excess.set(game, accumulate.subtract(payout));
         }
@@ -966,7 +966,7 @@ public class Authorization {
 
         for (int i = 0; i < this.get_approved_games().size(); i++) {
             Address game = this.get_approved_games().get(i);
-            games_excess[i] = Map.entry(game.toString(), String.valueOf(this.todays_games_excess.get(game)));
+            games_excess[i] = Map.entry(game.toString(), String.valueOf(this.todays_games_excess.getOrDefault(game, ZERO)));
         }
 
         return Map.ofEntries(games_excess);
@@ -998,7 +998,7 @@ public class Authorization {
         Map.Entry<String, String>[] games_excess = new Map.Entry[this.get_approved_games().size()];
         for (int i = 0; i < this.get_approved_games().size(); i++) {
             Address game = this.get_approved_games().get(i);
-            games_excess[i] = Map.entry(game.toString(), String.valueOf(this.games_excess_history.at(day).get(game)));
+            games_excess[i] = Map.entry(game.toString(), String.valueOf(this.games_excess_history.at(day).getOrDefault(game, ZERO)));
         }
         return Map.ofEntries(games_excess);
     }
@@ -1730,7 +1730,8 @@ public class Authorization {
 
     @External(readonly = true)
     public String getGameAddress(String name) {
-        Context.require(containsInArrayDb(name, this.proposalKeys), TAG + ": Game address of the game with the " + "name '" + name + "' not found");
+        String gameAddress = this._game_addresses.getOrDefault(name, "");
+        Context.require(!gameAddress.equals(""), TAG + ": Game address of the game with the " + "name '" + name + "' not found");
         return this._game_addresses.get(name);
     }
 
