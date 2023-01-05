@@ -444,7 +444,7 @@ public class Authorization {
         String name = jsonObject.get("name").asString();
         Address game_address = Address.fromString(jsonObject.get("scoreAddress").asString());
 
-        if (this._governance_enabled.get()) {
+        if (this._governance_enabled.getOrDefault(Boolean.FALSE)) {
             verify_concept_voting_success(name);
             verify_concept_voting_proposer(name, sender);
             this._game_addresses.set(name, game_address.toString());
@@ -470,7 +470,7 @@ public class Authorization {
         this.status_data.set(game_address, "waiting");
         this.proposal_data.set(game_address, _gamedata);
 
-        if (this.apply_watch_dog_method.get()) {
+        if (this.apply_watch_dog_method.getOrDefault(Boolean.FALSE)) {
             BigInteger maxPayout = new BigInteger(jsonObject.get("maxPayout").asString());
             this.maximum_payouts.set(game_address, maxPayout);
         }
@@ -584,7 +584,7 @@ public class Authorization {
         String minBetStr = _metadata.getString("minBet", "");
         Context.require(!minBetStr.isEmpty(), TAG + ": The minbet field is empty");
         BigInteger minBet = new BigInteger(minBetStr);
-        Context.require(minBet.compareTo(_1_ICX) > 0, minBet + " is less than 0.1 ICX");
+        Context.require(minBet.compareTo(_1_ICX) >= 0, minBet + " is less than 0.1 ICX");
 
         // Check if proper game type is provided
         String gameType = _metadata.getString("gameType", "");
@@ -935,7 +935,7 @@ public class Authorization {
                 Context.println("warn - no address defined for index " + i);
                 continue;
             }
-            BigInteger game_excess = this.todays_games_excess.get(game);
+            BigInteger game_excess = this.todays_games_excess.getOrDefault(game, ZERO);
             this.games_excess_history.at(day.subtract(BigInteger.ONE)).set(game, game_excess);
             if (game_excess != null && game_excess.compareTo(BigInteger.ZERO) >= 0) {
                 positive_excess = positive_excess.add(game_excess);

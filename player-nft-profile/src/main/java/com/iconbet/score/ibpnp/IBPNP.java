@@ -189,7 +189,7 @@ public class IBPNP extends IRC3Basic {
 
     @External
     public void createIBPNP(String userName) {
-        BigInteger tokenId = this.total_supply.get().add(BigInteger.ONE);
+        BigInteger tokenId = this.total_supply.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE);
         this.total_supply.set(tokenId);
         Address owner = Context.getCaller();
         if (_checkIfWalletPresent(owner)) {

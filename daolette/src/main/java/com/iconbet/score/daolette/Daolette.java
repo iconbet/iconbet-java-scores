@@ -206,7 +206,7 @@ public class Daolette{
 		if ( !Context.getCaller().equals(Context.getOwner())) {
 			Context.revert("This method can only be invoked by the score owner. You are trying for unauthorized access");
 		}
-		this._excess_smoothing_live.set(!this._excess_smoothing_live.get());
+		this._excess_smoothing_live.set(!this._excess_smoothing_live.getOrDefault(Boolean.FALSE));
 	}
 
 	@External(readonly=true)
@@ -392,7 +392,7 @@ public class Daolette{
 			Context.revert("Only the game owner can turn it on.");
 		}
 
-		if (!this._game_on.get()) {
+		if (!this._game_on.getOrDefault(Boolean.FALSE)) {
 			this._game_on.set(true);
 			this._day.set(BigInteger.valueOf(Context.getBlockTimestamp()).divide(U_SECONDS_DAY));
 		}
@@ -407,7 +407,7 @@ public class Daolette{
 		if ( !Context.getCaller().equals(Context.getOwner())) {
 			Context.revert("Only the score owner can turn it off");
 		}
-		if (this._game_on.get()) {
+		if (this._game_on.getOrDefault(Boolean.FALSE)) {
 			this._game_on.set(false);
 		}
 	}
@@ -975,8 +975,8 @@ public class Daolette{
 					div = " Dividends dist is not complete";
 				}
 				this._day.set(currentDay);
-				this._skipped_days.set(this._skipped_days.get().add(advance));
-				this.DayAdvance(this._day.get(), this._skipped_days.get(), BigInteger.valueOf(Context.getBlockTimestamp()),
+				this._skipped_days.set(this._skipped_days.getOrDefault(BigInteger.ZERO).add(advance));
+				this.DayAdvance(this._day.get(), this._skipped_days.getOrDefault(BigInteger.ZERO), BigInteger.valueOf(Context.getBlockTimestamp()),
 						"Skipping a day since "+rew+ " " +div);
 				return false;
 			}
@@ -1011,14 +1011,14 @@ public class Daolette{
 			}
 
 			if (advance.compareTo(BigInteger.ONE) > 0) {
-				this._skipped_days.set(this._skipped_days.get().add(advance).subtract(BigInteger.ONE));
+				this._skipped_days.set(this._skipped_days.getOrDefault(BigInteger.ZERO).add(advance).subtract(BigInteger.ONE));
 			}
 
 			this._day.set(currentDay);
-			this._total_bet_count.set(this._total_bet_count.get().add(this._daily_bet_count.get()));
-			this._yesterdays_bet_count.set(this._daily_bet_count.get());
+			this._total_bet_count.set(this._total_bet_count.getOrDefault(BigInteger.ZERO).add(this._daily_bet_count.getOrDefault(BigInteger.ZERO)));
+			this._yesterdays_bet_count.set(this._daily_bet_count.getOrDefault(BigInteger.ZERO));
 			this._daily_bet_count.set(BigInteger.ZERO);
-			this.DayAdvance(this._day.get(), this._skipped_days.get(), BigInteger.valueOf(Context.getBlockTimestamp()), "Day advanced. Counts reset.");
+			this.DayAdvance(this._day.get(), this._skipped_days.getOrDefault(BigInteger.ZERO), BigInteger.valueOf(Context.getBlockTimestamp()), "Day advanced. Counts reset.");
 			return true;
 		}
 	}
@@ -1038,7 +1038,7 @@ public class Daolette{
 				Context.transfer(this._dividends_score.get(), excess);
 				this.FundTransfer(this._dividends_score.get(), excess, "Excess made by games");
 				Context.println("Sent div score ("+this._dividends_score.get()+") "+excess +". "+ TAG);
-				this._total_distributed.set(this._total_distributed.get().add(excess));
+				this._total_distributed.set(this._total_distributed.getOrDefault(BigInteger.ZERO).add(excess));
 				this._excess_to_distribute.set(BigInteger.ZERO);
 			}catch (Exception e) {
 				Context.println("Send failed. Exception: "+e.getMessage()+ " "+ TAG);
