@@ -1245,7 +1245,7 @@ public class Authorization {
      :param max_actions: maximum no of actions
      ***/
     public void setMaxActions(int max_actions) {
-        Context.require(0 < max_actions && max_actions < 10, TAG + "Max Actions must be between 0 and 10.");
+        Context.require(0 < max_actions && max_actions <= 10, TAG + "Max Actions must be between 0 and 10.");
         validateAdmin();
         this._max_actions.set(max_actions);
     }
@@ -1895,7 +1895,7 @@ public class Authorization {
     @External(readonly = true)
     public Map<String, BigInteger> getTotalVotesByUser(Address sender, String proposal){
         ProposalData proposalData = new ProposalData();
-        String gameConceptPrefix = proposalPrefix(NEW_GAME, proposal);
+        String gameConceptPrefix = proposalPrefix(GOVERNANCE, proposal);
         Map<String, BigInteger> voteData = Map.of(
                 "totalForVotes", proposalData.getTotalForVotes(gameConceptPrefix),
                 "totalAgainstVotes", proposalData.getTotalAgainstVotes(gameConceptPrefix),
@@ -1923,5 +1923,6 @@ public class Authorization {
         validateOwner();
         ProposalData proposalData = new ProposalData();
         proposalData.setActive(proposalPrefix(GOVERNANCE, name), true);
+//        proposalData.setStatus(proposalPrefix(GOVERNANCE, name), ACTIVE);
     }
 }
