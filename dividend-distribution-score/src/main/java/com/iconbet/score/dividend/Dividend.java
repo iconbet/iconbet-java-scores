@@ -660,16 +660,17 @@ public class Dividend extends Utils {
     :return:
      */
     @External
-    public void remove_from_blacklist(String _address) {
+    public void remove_from_blacklist(Address _address) {
         governanceOnly();
-        if (!containsInArrayDb(_address, this._blacklist_address)) {
-            Context.revert(TAG + ": " + _address + " not in blacklist address");
+        String address = _address.toString();
+        if (!containsInArrayDb(address, this._blacklist_address)) {
+            Context.revert(TAG + ": " + address + " not in blacklist address");
         }
-        this.BlacklistAddress(_address, "Removed from blacklist");
+        this.BlacklistAddress(address, "Removed from blacklist");
         String top = this._blacklist_address.pop();
-        if (!top.equals(_address)) {
+        if (!top.equals(address)) {
             for (int i = 0; i < this._blacklist_address.size(); i++) {
-                if (this._blacklist_address.get(i) == _address) {
+                if (this._blacklist_address.get(i).equals(address)) {
                     this._blacklist_address.set(i, top);
                 }
             }
@@ -685,11 +686,12 @@ public class Dividend extends Utils {
     :return:
      */
     @External
-    public void set_blacklist_address(String _address) {
+    public void set_blacklist_address(Address _address) {
         governanceOnly();
-        this.BlacklistAddress(_address, "Added to Blacklist");
-        if (!containsInArrayDb(_address, this._blacklist_address)) {
-            this._blacklist_address.add(_address);
+        String address = _address.toString();
+        this.BlacklistAddress(address, "Added to Blacklist");
+        if (!containsInArrayDb(address, this._blacklist_address)) {
+            this._blacklist_address.add(address);
         }
     }
 
@@ -991,7 +993,7 @@ public class Dividend extends Utils {
 
         this._stake_balances.set(str_address, ZERO);
         if (this._exception_address.size() > 0) {
-            String _out = this._exception_address.get(this._exception_address.size() - 2);
+            String _out = this._exception_address.get(this._exception_address.size() - 1);
             if (_out.equals(str_address)) {
                 this._exception_address.pop();
             }
