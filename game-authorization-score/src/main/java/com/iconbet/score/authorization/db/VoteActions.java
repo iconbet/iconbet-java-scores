@@ -2,6 +2,7 @@ package com.iconbet.score.authorization.db;
 import com.eclipsesource.json.JsonObject;
 import com.iconbet.score.authorization.Authorization;
 import score.Address;
+import score.Context;
 
 import java.math.BigInteger;
 
@@ -21,7 +22,7 @@ public class VoteActions {
             case "remove_from_blacklist_tap":
                 auth.remove_from_blacklist_tap(Address.fromString(params.get("_address").asString()));
                 break;
-            case "set_blacklist_address":
+            case "set_blacklist_address_tap":
                 auth.set_blacklist_address_tap(Address.fromString(params.get("_address").asString()));
                 break;
             case "remove_from_locklist":
@@ -38,7 +39,7 @@ public class VoteActions {
                 break;
 // For dividend scores
             case "set_dividend_percentage":
-                auth.set_dividend_percentage(params.get("_tap").asInt(), params.get("_gamedev").asInt(), params.get("_promo").asInt(), params.get("platform").asInt());
+                auth.set_dividend_percentage(params.get("tap").asInt(), params.get("gamedev").asInt(), params.get("promo").asInt(), params.get("platform").asInt());
                 break;
             case "set_non_tax_period":
                 auth.set_non_tax_period(new BigInteger(params.get("period").asString()));
@@ -76,6 +77,8 @@ public class VoteActions {
             case "setTAPVoteDefinitionCriterion":
                 auth.setTAPVoteDefinitionCriterion(params.get("percentage").asInt());
                 break;
+            default:
+                Context.revert("Method not found");
         }
     }
 }
