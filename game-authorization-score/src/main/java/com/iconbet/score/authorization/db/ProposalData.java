@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.iconbet.score.authorization.utils.Consts.*;
-import static com.iconbet.score.authorization.utils.Consts.PROPOSAL_COUNT;
 import static com.iconbet.score.authorization.utils.ArrayDBUtils.*;
 
 public class ProposalData {
@@ -24,7 +23,6 @@ public class ProposalData {
         public String actions;
     }
 
-    public static final String PENDING = "pending";
     public static final String ACTIVE = "active";
     public static final String CANCELLED = "cancelled";
     public static final String DEFEATED = "defeated";
@@ -33,7 +31,6 @@ public class ProposalData {
     public static final String EXECUTED = "executed";
     public static final String FAILED_EXECUTION = "failed_execution";
     private static final String Prefix = "proposal_data";
-    private final BranchDB<String, DictDB<String, Integer>> id = Context.newBranchDB(Prefix + "_id", Integer.class);
     private final BranchDB<String, VarDB<Address>> proposer = Context.newBranchDB(Prefix + "_proposer",Address.class);
     private final BranchDB<String, VarDB<BigInteger>> quorum = Context.newBranchDB(Prefix + "_quorum", BigInteger.class);
     private final BranchDB<String, VarDB<BigInteger>> majority = Context.newBranchDB(Prefix + "_majority", BigInteger.class);
@@ -152,19 +149,6 @@ public class ProposalData {
         this.status.at(proposalPrefix).set(status);
     }
 
-
-    public void setGovernanceProposalKeys(String proposalKeys) {
-        this.governanceProposalKeys.add(proposalKeys);
-    }
-
-    public void setNewGameProposalKeys(String proposalKeys) {
-        this.newGameProposalKeys.add(proposalKeys);
-    }
-
-    public void setGameApprovalProposalKeys(String proposalKeys) {
-        this.gameApprovalProposalKeys.add(proposalKeys);
-    }
-
     public void setProposalCount(String dbName, int count) {
         this.proposalCount.set(dbName, count);
     }
@@ -239,18 +223,6 @@ public class ProposalData {
 
     public String getStatus(String proposalPrefix) {
         return status.at(proposalPrefix).getOrDefault("");
-    }
-
-    public List<String> getGovernanceProposalKeys() {
-        return arrayDBToList(governanceProposalKeys);
-    }
-
-    public List<String> getNewGameProposalKeys() {
-        return arrayDBToList(newGameProposalKeys);
-    }
-
-    public List<String> getGameApprovalProposalKeys() {
-        return arrayDBToList(gameApprovalProposalKeys);
     }
 
     public int getProposalCount(String dbName) {

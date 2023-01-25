@@ -12,10 +12,10 @@ public class consts {
     public static final double MAJORITY = 0.67;
 
     //# Period Interval Time
-    public static final int DAY_COUNT = 1;
+    public static final int DAY_COUNT = 15;
 
     //# Total Blocks in 1 day
-    public static final int BLOCKS_DAY_COUNT = 150;
+    public static final int BLOCKS_DAY_COUNT = 43200;
 
     //# User Defined Db
     //    PROPOSAL_DB_PREFIX = b'iconbetProposal'
@@ -52,6 +52,7 @@ public class consts {
     public static final String PROGRESS_KEY_LIST = "progress_key_list";
     public static final String PROGRESS_KEY_LIST_INDEX = "progress_key_list_index";
     public static final String PROPOSERS = "proposers";
+    public static final String PROPOSERS_PROJECTS = "proposers_projects";
     public static final String BUDGET_APPROVALS_LIST = "budget_approvals_list";
     public static final String TOTAL_BUDGET = "total_budget";
     public static final String ACTIVE_PROPOSALS = "active_proposals";

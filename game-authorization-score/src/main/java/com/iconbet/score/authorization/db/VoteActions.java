@@ -20,50 +20,50 @@ public class VoteActions {
                 auth.setMaxLoop(params.getInt("_loops", 0));
                 break;
             case "remove_from_blacklist_tap":
-                auth.remove_from_blacklist_tap(Address.fromString(params.get("_address").asString()));
+                auth.removeFromBlacklistTap(Address.fromString(params.get("_address").asString()));
                 break;
             case "set_blacklist_address_tap":
-                auth.set_blacklist_address_tap(Address.fromString(params.get("_address").asString()));
+                auth.setBlacklistAddressTap(Address.fromString(params.get("_address").asString()));
                 break;
             case "remove_from_locklist":
                 auth.remove_from_locklist(Address.fromString(params.get("_address").asString()));
                 break;
             case "set_locklist_address":
-                auth.set_locklist_address(Address.fromString(params.get("_address").asString()));
+                auth.setLocklistAddress(Address.fromString(params.get("_address").asString()));
                 break;
             case "remove_from_whitelist":
-                auth.remove_from_whitelist(Address.fromString(params.get("_address").asString()));
+                auth.removeFromWhitelist(Address.fromString(params.get("_address").asString()));
                 break;
             case "set_whitelist_address":
-                auth.set_whitelist_address(Address.fromString(params.get("_address").asString()));
+                auth.setWhitelistAddress(Address.fromString(params.get("_address").asString()));
                 break;
 // For dividend scores
             case "set_dividend_percentage":
-                auth.set_dividend_percentage(params.get("tap").asInt(), params.get("gamedev").asInt(), params.get("promo").asInt(), params.get("platform").asInt());
+                auth.setDividendPercentage(params.get("tap").asInt(), params.get("gamedev").asInt(), params.get("promo").asInt(), params.get("platform").asInt());
                 break;
             case "set_non_tax_period":
-                auth.set_non_tax_period(new BigInteger(params.get("period").asString()));
+                auth.setNonTaxPeriod(new BigInteger(params.get("period").asString()));
                 break;
             case "set_tax_percentage":
-                auth.set_tax_percentage(params.get("percentage").asInt());
+                auth.setTaxPercentage(params.get("percentage").asInt());
                 break;
             case "remove_from_blacklist_dividend":
-                auth.remove_from_blacklist_dividend(Address.fromString(params.get("_address").asString()));
+                auth.removeFromBlacklistDividend(Address.fromString(params.get("_address").asString()));
                 break;
             case "set_blacklist_address_dividend":
-                auth.set_blacklist_address_dividend(Address.fromString(params.get("_address").asString()));
+                auth.setBlacklistAddressDividend(Address.fromString(params.get("_address").asString()));
                 break;
             case "set_inhouse_games":
-                auth.set_inhouse_games(Address.fromString(params.get("_score").asString()));
+                auth.setInhouseGames(Address.fromString(params.get("_score").asString()));
                 break;
             case "remove_from_inhouse_games":
-                auth.remove_from_inhouse_games(Address.fromString(params.get("_score").asString()));
+                auth.removeFromInhouseGames(Address.fromString(params.get("_score").asString()));
                 break;
             case "add_exception_address":
-                auth.add_exception_address(Address.fromString(params.get("_address").asString()));
+                auth.addExceptionAddress(Address.fromString(params.get("_address").asString()));
                 break;
             case "remove_exception_address":
-                auth.remove_exception_address(Address.fromString(params.get("_address").asString()));
+                auth.removeExceptionAddress(Address.fromString(params.get("_address").asString()));
                 break;
             case "setQuorum":
                 auth.setQuorum(params.get("quorum").asInt());
@@ -75,7 +75,7 @@ public class VoteActions {
                 auth.setMaxActions(params.get("max_actions").asInt());
                 break;
             case "setTAPVoteDefinitionCriterion":
-                auth.setTAPVoteDefinitionCriterion(params.get("percentage").asInt());
+                auth.setTAPVoteDefinitionCriterion(new BigInteger(params.get("percentage").asString()));
                 break;
             default:
                 Context.revert("Method not found");

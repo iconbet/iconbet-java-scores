@@ -326,15 +326,17 @@ public class TapToken implements IRC2 {
         this.paused.set(!this.paused.getOrDefault(false));
     }
 
+    private void notContract(Address address){
+        Context.require(!address.isContract(), TAG + ": Cannot call this method by a contract");
+    }
+
     @External
     public void stake(BigInteger _value) {
         this.stakingEnabledOnly();
 
-
         Address from = Context.getCaller();
-        if (_value == null) {
-            Context.revert("Staked TAP value can't be less than zero");
-        }
+        notContract(from);
+
         if (_value.compareTo(ZERO) < 0) {
             Context.revert("Staked TAP value can't be less than zero");
         }

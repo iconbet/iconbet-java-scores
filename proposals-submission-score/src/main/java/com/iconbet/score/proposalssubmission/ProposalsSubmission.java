@@ -3,12 +3,10 @@ package com.iconbet.score.proposalssubmission;
 import com.iconbet.score.proposalssubmission.db.ProgressReportData;
 import com.iconbet.score.proposalssubmission.db.ProposalData;
 import com.iconbet.score.proposalssubmission.utils.ArrayDBUtils;
+
 import static com.iconbet.score.proposalssubmission.utils.consts.*;
-import score.Address;
-import score.VarDB;
-import score.ArrayDB;
-import score.DictDB;
-import score.Context;
+
+import score.*;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -22,6 +20,7 @@ import scorex.util.ArrayList;
 
 import com.iconbet.score.proposalssubmission.db.ProposalData.*;
 import com.iconbet.score.proposalssubmission.db.ProgressReportData.*;
+
 import static com.iconbet.score.proposalssubmission.db.ProposalData.proposalPrefix;
 import static com.iconbet.score.proposalssubmission.db.ProgressReportData.progressReportPrefix;
 
@@ -58,6 +57,7 @@ public class ProposalsSubmission {
     private final ArrayDB<String> activeProposals = Context.newArrayDB(ACTIVE_PROPOSALS, String.class);
 
     private final ArrayDB<Address> proposers = Context.newArrayDB(PROPOSERS, Address.class);
+    private final BranchDB<Address, ArrayDB<String>> proposersProject = Context.newBranchDB(PROPOSERS_PROJECTS, String.class);
     private final ArrayDB<Address> admins = Context.newArrayDB(ADMINS, Address.class);
 
 
@@ -154,22 +154,23 @@ public class ProposalsSubmission {
     }
 
     @External
-    public void setProposalsFundScore(Address _score){
+    public void setProposalsFundScore(Address _score) {
         validateAdmins(Context.getCaller());
         Context.require(_score.isContract(), "The given address is not a contract address");
         this.proposalsFundScore.set(_score);
     }
 
     @External(readonly = true)
-    public Address getProposalsFundScore(){
+    public Address getProposalsFundScore() {
         return this.proposalsFundScore.get();
     }
 
-    private void removeProposer(Address _address) {
+    private void removeProposer(Address _address, String ipfsHash) {
         Context.require(ArrayDBUtils.containsInArrayDb(_address, this.proposers),
                 "The provided address could not be removed from proposer list. " +
                         "Check if the address is in proposer list.");
         ArrayDBUtils.removeArrayItem(this.proposers, _address);
+        ArrayDBUtils.removeArrayItem(this.proposersProject.at(_address), ipfsHash);
     }
 
 
@@ -185,21 +186,24 @@ public class ProposalsSubmission {
             Context.revert("Proposals cannot be submitted in voting period. " + TAG);
         }
 
-        Context.require(!Context.getCaller().isContract(), "Contracts cannot send proposal. " + TAG);
+        Address sender = Context.getCaller();
+        Context.require(!sender.isContract(), "Contracts cannot send proposal. " + TAG);
         Context.require(!(_proposals.projectDuration > MAX_PROJECT_PERIOD), "Maximum Project Duration is " + MAX_PROJECT_PERIOD + " " + TAG);
         BigInteger remaining_fund = getRemainingFund();
         if (_proposals.totalBudget.compareTo(remaining_fund) > 0) {
             Context.revert(TAG + "Budget Exceeds than Daofund Treasury Amount. remaining_fund: " + remaining_fund.toString() + ", total_budget: " + _proposals.totalBudget.toString());
         }
-        BigInteger staked_balance = callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
+        BigInteger staked_balance = callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", sender);
+        Context.println("staked balance: " + staked_balance);
         if (staked_balance.compareTo(MINIMUM_TAP_TO_SUBMIT_PROPOSAL) < 0) {
             Context.revert(TAG + "Must stake atleast " + MINIMUM_TAP_TO_SUBMIT_PROPOSAL + " to submit proposal.");
         }
 
         addProposals(_proposals);
         this.pending.add(_proposals.ipfsHash);
-        this.proposers.add(Context.getCaller());
-        ProposalSubmitted(Context.getCaller(), "Proposal for " + _proposals.projectTitle + " is submitted successfully.");
+        this.proposers.add(sender);
+        this.proposersProject.at(sender).add(_proposals.ipfsHash);
+        ProposalSubmitted(sender, "Proposal for " + _proposals.projectTitle + " is submitted successfully.");
     }
 
 
@@ -230,10 +234,9 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public Map<String, ?> getProposalDetails(String _status, Address _wallet_address, @Optional  int _start_index, @Optional  int _end_index) {
-        if (_end_index == 0){
-            _end_index = 20;
-        }
+    public Map<String, ?> getProposalDetails(String _status, Address _wallet_address, @Optional int _start_index) {
+        int _end_index = _start_index + 5;
+
         List<Map<String, ?>> proposals_list = new ArrayList<>();
         List<String> proposals_keys = _getProposalsKeysByStatus(_status);
         if ((_end_index - _start_index) > 50) {
@@ -265,42 +268,46 @@ public class ProposalsSubmission {
     @External(readonly = true)
     public List<Map<String, ?>> getActiveProposals(Address _wallet_address) {
         List<Map<String, ?>> proposalTitles = new ArrayList<>();
-        for (int i = 0; i < this.proposalsKeyList.size(); i++) {
-            String proposalKey = this.proposalsKeyList.get(i);
+        List<String> activeProposals = getProposalsKeysByStatus(ACTIVE);
+        List<String> pausedProposals = getProposalsKeysByStatus(PAUSED);
+        activeProposals.addAll(pausedProposals);
+        for (int i = 0; i < activeProposals.size(); i++) {
+            String proposalKey = activeProposals.get(i);
             String proposalPrefix = proposalPrefix(proposalKey);
-            Map<String, ?> proposalDetails = _getProposalDetails(proposalKey);
-            if (proposalDetails.get(STATUS).equals(ACTIVE) || proposalDetails.get(STATUS).equals(PAUSED)) {
-                if (proposalDetails.get(PROPOSER_ADDRESS).equals(_wallet_address)) {
-                    ProposalData proposalData = new ProposalData();
-                    int projectDuration = (int) proposalDetails.get(PROJECT_DURATION);
-                    int approvedReportsCount = (int) proposalDetails.get(APPROVED_REPORTS);
-                    Boolean lastProgressReport = Boolean.FALSE;
+            ProposalData proposalData = new ProposalData();
+            if (proposalData.getProposerAddress(proposalPrefix).equals(_wallet_address)) {
+                int projectDuration = proposalData.getProjectDuration(proposalPrefix);
+                int approvedReportsCount = proposalData.getApprovedReports(proposalPrefix);
+                Boolean lastProgressReport = Boolean.FALSE;
 
-                    if (projectDuration - approvedReportsCount == 1) {
-                        lastProgressReport = Boolean.TRUE;
-                    }
-                    Map<String, ?> proposalsDetails = Map.of(
-                            PROJECT_TITLE, proposalDetails.get(PROJECT_TITLE),
-                            IPFS_HASH, proposalKey,
-                            NEW_PROGRESS_REPORT, proposalData.getSubmitProgressReport(proposalPrefix),
-                            LAST_PROGRESS_REPORT, lastProgressReport
-                    );
-                    proposalTitles.add(proposalsDetails);
+                if (projectDuration - approvedReportsCount == 1) {
+                    lastProgressReport = Boolean.TRUE;
                 }
+                Map<String, ?> proposalsDetails = Map.of(
+                        PROJECT_TITLE, proposalData.getProjectTitle(proposalPrefix),
+                        IPFS_HASH, proposalKey,
+                        NEW_PROGRESS_REPORT, proposalData.getSubmitProgressReport(proposalPrefix),
+                        LAST_PROGRESS_REPORT, lastProgressReport
+                );
+                proposalTitles.add(proposalsDetails);
             }
         }
+
         return proposalTitles;
     }
 
     @External(readonly = true)
-    public List<Map<String, ?>> getProposalDetailByWallet(Address _wallet_address) {
+    public List<Map<String, ?>> getProposalDetailByWallet(Address _wallet_address, @Optional int start_index) {
         List<Map<String, ?>> proposalTitles = new ArrayList<>();
-        for (int i = 0; i < this.proposalsKeyList.size(); i++) {
-            String proposalHash = this.proposalsKeyList.get(i);
-            Map<String, ?> proposalDetails = _getProposalDetails(proposalHash);
-            if (proposalDetails.get(PROPOSER_ADDRESS).equals(_wallet_address)) {
-                proposalTitles.add(proposalDetails);
-            }
+        int end_index = start_index + 5;
+        int proposalSize = this.proposersProject.at(_wallet_address).size();
+        if (end_index > proposalSize){
+            end_index = proposalSize;
+        }
+
+        for (int i = start_index; i < end_index; i++) {
+            String proposalHash = this.proposersProject.at(_wallet_address).get(i);
+            proposalTitles.add(_getProposalDetails(proposalHash));
         }
         return proposalTitles;
     }
@@ -354,11 +361,11 @@ public class ProposalsSubmission {
                     break;
             }
         }
-        return Map.of(PENDING, Map.of(AMOUNT, _pending_amount, "_count", _getProposalsKeysByStatus(PENDING).size()),
-                ACTIVE, Map.of(AMOUNT, _active_amount, "_count", _getProposalsKeysByStatus(ACTIVE).size()),
-                PAUSED, Map.of(AMOUNT, _paused_amount, "_count", _getProposalsKeysByStatus(PAUSED).size()),
-                COMPLETED, Map.of(AMOUNT, _completed_amount, "_count", _getProposalsKeysByStatus(COMPLETED).size()),
-                DISQUALIFIED, Map.of(AMOUNT, _disqualified_amount, "_count", _getProposalsKeysByStatus(DISQUALIFIED).size()));
+        return Map.of(PENDING, Map.of(AMOUNT, _pending_amount, "_count", proposalsStatus.get(PENDING).size()),
+                ACTIVE, Map.of(AMOUNT, _active_amount, "_count", proposalsStatus.get(ACTIVE).size()),
+                PAUSED, Map.of(AMOUNT, _paused_amount, "_count", proposalsStatus.get(PAUSED).size()),
+                COMPLETED, Map.of(AMOUNT, _completed_amount, "_count", proposalsStatus.get(COMPLETED).size()),
+                DISQUALIFIED, Map.of(AMOUNT, _disqualified_amount, "_count", proposalsStatus.get(DISQUALIFIED).size()));
     }
 
     @External(readonly = true)
@@ -372,7 +379,7 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public List<String> getProposalsKeys(){
+    public List<String> getProposalsKeys() {
         List<String> keys = new ArrayList<>();
 
         for (int i = 0; i < this.proposalsKeyList.size(); i++) {
@@ -387,7 +394,7 @@ public class ProposalsSubmission {
         Context.require(this.periodName.get().equals(VOTING_PERIOD), TAG + " Proposals can be voted on Voting period only.");
         BigInteger staked_balances = callScore(BigInteger.class, this.tapTokenScore.get(), "staked_balanceOf", Context.getCaller());
         Context.require(staked_balances.compareTo(MINIMUM_TAP_TO_VOTE) >= 0, "Must stake at least " + MINIMUM_TAP_TO_VOTE + " tap to vote.");
-        Context.require(List.of(APPROVE,REJECT).contains(_vote), TAG + " Vote should be on _approve, _reject");
+        Context.require(List.of(APPROVE, REJECT).contains(_vote), TAG + " Vote should be on _approve, _reject");
 
         Context.require(!isInProposalVotersList(Context.getCaller(), _ipfs_key), TAG + " Already voted on this proposal");
         String proposalPrefix = proposalPrefix(_ipfs_key);
@@ -411,11 +418,13 @@ public class ProposalsSubmission {
                 proposalData.setRejectVoters(proposalPrefix, Context.getCaller());
                 proposalData.setRejectedVotes(proposalPrefix, _rejected_votes.add(_voter_stake));
             }
+            VotedSuccessfully(Context.getCaller(), proposalData.getProjectType(proposalPrefix)
+                    + " Proposal vote for "
+                    + proposalData.getProjectTitle(proposalPrefix)
+                    + " is successful.");
+        } else {
+            Context.revert(TAG + ": Invalid proposal hash.");
         }
-        VotedSuccessfully(Context.getCaller(), proposalData.getProjectType(proposalPrefix)
-                + " Proposal vote for "
-                + proposalData.getProjectTitle(proposalPrefix)
-                + " is successful.");
     }
 
     @External
@@ -490,7 +499,7 @@ public class ProposalsSubmission {
     public Map<String, ?> getProgressReportDetails(String _status, int _start_index, int _end_index) {
         List<Map<String, ?>> progressList = new ArrayList<>();
         List<String> progressKeys = getProgressReportKeysByStatus(_status);
-        if ((_end_index - _start_index) > 50) {
+        if ((_end_index - _start_index) > 10) {
             Context.revert("Page Length cannot be greater than 50");
         }
         int count = this.progressReportStatus.get(_status).size();
@@ -621,9 +630,9 @@ public class ProposalsSubmission {
 
     private void updateApplicationResult() {
         if (_getProposalsKeysByStatus(PENDING).size() == 0 && this.progressReportStatus.get(WAITING).size() == 0) {
-            if (this.active.size() + this.paused.size() > 0){
-                for( int i = 0; i < this.active.size(); i++){
-                    if (isInActiveProposals(this.active.get(i))){
+            if (this.active.size() + this.paused.size() > 0) {
+                for (int i = 0; i < this.active.size(); i++) {
+                    if (isInActiveProposals(this.active.get(i))) {
                         this.activeProposals.add(this.active.get(i));
                     }
                 }
@@ -669,13 +678,13 @@ public class ProposalsSubmission {
 
             if (total_votes.equals(BigInteger.ZERO)) {
                 updateProposalStatus(pendingProposal, REJECTED);
-                removeProposer(proposer_address);
+                removeProposer(proposer_address, pendingProposal);
             } else if (approved_votes.divide(total_votes).doubleValue() > MAJORITY) {
                 updateProposalStatus(pendingProposal, ACTIVE);
                 callScore(this.daoFundScore.get(), "transfer_proposal_fund_to_proposals_fund", pendingProposal, period_count, proposer_address, total_budget);
             } else {
                 updateProposalStatus(pendingProposal, REJECTED);
-                removeProposer(proposer_address);
+                removeProposer(proposer_address, pendingProposal);
             }
         }
     }
@@ -704,7 +713,7 @@ public class ProposalsSubmission {
                 } else if (proposalStatus.equals(PAUSED)) {
                     updateProposalStatus(ipfs_hash, DISQUALIFIED);
                     callScore(this.proposalsFundScore.get(), "disqualify_project", ipfs_hash);
-                    removeProposer(proposerAddress);
+                    removeProposer(proposerAddress, ipfs_hash);
                 }
             }
         }
@@ -756,7 +765,7 @@ public class ProposalsSubmission {
                 } else if (proposalStatus.equals(PAUSED)) {
                     updateProposalStatus(ipfs_hash, DISQUALIFIED);
                     Context.call(this.proposalsFundScore.get(), "disqualify_project", ipfs_hash);
-                    removeProposer(proposerAddress);
+                    removeProposer(proposerAddress, ipfs_hash);
                 }
             }
         }
@@ -814,7 +823,7 @@ public class ProposalsSubmission {
     @External(readonly = true)
     public Map<String, ?> getPeriodStatus() {
         BigInteger remainingTime = (this.nextBlock.get().subtract(BigInteger.valueOf(Context.getBlockHeight()))).multiply(BigInteger.TWO);
-        if (remainingTime.compareTo(BigInteger.ZERO) < 0){
+        if (remainingTime.compareTo(BigInteger.ZERO) < 0) {
             remainingTime = BigInteger.ZERO;
         }
         return Map.of(
@@ -901,7 +910,7 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public boolean alreadyVotedOnProposal(Address address, String ipfs_hash){
+    public boolean alreadyVotedOnProposal(Address address, String ipfs_hash) {
         return isInProposalVotersList(address, ipfs_hash);
     }
 
@@ -952,7 +961,7 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public Address getProposer(String ipfsHash){
+    public Address getProposer(String ipfsHash) {
         ProposalData proposalData = new ProposalData();
         String proposalPrefix = proposalPrefix(ipfsHash);
         return proposalData.getProposerAddress(proposalPrefix);
@@ -962,12 +971,12 @@ public class ProposalsSubmission {
     for testing only removing in production
      */
     @External(readonly = true)
-    public BigInteger getCurrnetBlock(){
+    public BigInteger getCurrnetBlock() {
         return BigInteger.valueOf(Context.getBlockHeight());
     }
 
     @External
-    public void setNextBlock(BigInteger nextBlock){
+    public void setNextBlock(BigInteger nextBlock) {
         validateOwner();
         this.nextBlock.set(BigInteger.valueOf(Context.getBlockHeight()).add(nextBlock));
     }
@@ -983,7 +992,7 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public int periodIndex(){
+    public int periodIndex() {
         return this.updatePeriodIndex.get();
     }
 
