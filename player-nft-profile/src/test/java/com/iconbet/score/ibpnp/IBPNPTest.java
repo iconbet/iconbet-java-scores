@@ -36,7 +36,7 @@ public class IBPNPTest extends TestBase {
     private static final Address tapTokenScore = Address.fromString("cx0000000000000000000000000000000000000003");
 
 
-    private static final String TAG = "IconBet Player NFT Profile";
+    private static final String TAG = "ICONbet Player NFT Profile";
 
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
@@ -52,7 +52,7 @@ public class IBPNPTest extends TestBase {
 
     @BeforeEach
     public void setup() throws Exception {
-        IBPNPScore = sm.deploy(owner, IBPNP.class, TAG, "IBPNP", 0);
+        IBPNPScore = sm.deploy(owner, IBPNP.class, TAG, "IBPNP");
         IBPNP instance = (IBPNP) IBPNPScore.getInstance();
         scoreSpy = spy(instance);
         IBPNPScore.setInstance(scoreSpy);
@@ -151,7 +151,7 @@ public class IBPNPTest extends TestBase {
     @Test
     void transfer() {
         Executable transfer = () -> transferException();
-        expectErrorMessage(transfer, "Reverted(0): " + TAG + ": Transfer is not allowed.");
+        expectErrorMessage(transfer, "Reverted(0): " + TAG + ": NFT is not transferable.");
     }
 
     private void transferException() {
@@ -165,7 +165,7 @@ public class IBPNPTest extends TestBase {
     @Test
     void transferFrom() {
         Executable transfer = () -> transferFromException();
-        expectErrorMessage(transfer, "Reverted(0): " + TAG + ": Transfer is not allowed.");
+        expectErrorMessage(transfer, "Reverted(0): " + TAG + ": NFT is not transferable.");
     }
 
     private void transferFromException() {
@@ -366,14 +366,14 @@ public class IBPNPTest extends TestBase {
         gameData.wallet_address = owner.getAddress();
         gameData.remarks = "wager_payout";
         gameData.game_largest_bet = BigInteger.TEN;
-        gameData.game_amount_won = BigInteger.TEN;
+        gameData.game_amount_won = BigInteger.valueOf(20);
         gameData.game_wager_level = BigInteger.ZERO;
 
         IBPNPScore.invoke(owner,"addGameData", gameData);
         doReturn(BigInteger.valueOf(1000)).when(scoreSpy).callScore(eq(BigInteger.class), any(), eq("get_expected_rewards"), any());
         senderUserData = (Map<String, Object>) IBPNPScore.call("getUserData", owner.getAddress());
         expectedSenderUserData = Map.ofEntries(
-                Map.entry("amount_won", BigInteger.TEN),
+                Map.entry("amount_won", BigInteger.valueOf(20)),
                 Map.entry("username", "testingAccount1"),
                 Map.entry("tokenId", BigInteger.ONE),
                 Map.entry("largest_bet", BigInteger.TEN),
