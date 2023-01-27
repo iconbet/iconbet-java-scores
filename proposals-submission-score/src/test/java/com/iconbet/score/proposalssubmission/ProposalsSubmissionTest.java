@@ -190,11 +190,11 @@ public class ProposalsSubmissionTest extends TestBase{
         assertEquals(proposalDetails.get("project_duration"), proposalAttributes.projectDuration);
         assertEquals(List.of(proposalAttributes.ipfsHash), ProposalsSubmissionScore.call("getProposalsKeysByStatus", "_pending"));
 
-        Map<String, ?> proposalDetailsMap = (Map<String, ?>) ProposalsSubmissionScore.call("getProposalDetails", "_pending", owner.getAddress(), 0, 5);
+        Map<String, ?> proposalDetailsMap = (Map<String, ?>) ProposalsSubmissionScore.call("getProposalDetails", "_pending", owner.getAddress(), 0);
         List<Map<String, ?>> detailList = (List<Map<String, ?>>) proposalDetailsMap.get("DATA");
         assertEquals(proposalDetails, detailList.get(0));
 
-        assertEquals(List.of(proposalDetails), ProposalsSubmissionScore.call("getProposalDetailByWallet", owner.getAddress()));
+        assertEquals(List.of(proposalDetails), ProposalsSubmissionScore.call("getProposalDetailByWallet", owner.getAddress(), 0));
 
         Map<String, Map<String, ?>> projectAmounts = (Map<String, Map<String, ?>>) ProposalsSubmissionScore.call("getProjectAmounts");
 

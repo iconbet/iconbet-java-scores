@@ -206,8 +206,8 @@ public class DividendTest extends TestBase{
     void distributeDividendsReceivedIsOne(){
         setScoresMethod();
         contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
-        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress().toString());
-        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress().toString());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress());
         contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
         contextMock.when(() -> Context.call(eq(tapToken), eq("switch_address_update_db"))).thenAnswer((Answer<Void>) invocation -> null);
         doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
@@ -785,8 +785,8 @@ public class DividendTest extends TestBase{
 
         DividendScore.invoke(owner, "distribute");
 
-        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress().toString());
-        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress().toString());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress());
 
         doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
         DividendScore.invoke(owner, "distribute");
@@ -852,8 +852,8 @@ public class DividendTest extends TestBase{
 
         DividendScore.invoke(owner, "distribute");
 
-        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress().toString());
-        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress().toString());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount.getAddress());
+        DividendScore.invoke(owner, "set_blacklist_address", testingAccount1.getAddress());
 
         doReturn(BigInteger.valueOf(100).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
         DividendScore.invoke(owner, "distribute");
