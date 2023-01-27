@@ -114,14 +114,14 @@ public class RewardDistribution {
 	}
 	/*
     Sets the tap token score address
-    :param _score: Address of the token score
-    :type _score: :class:`iconservice.base.address.Address`
+    :param score: Address of the token score
+    :type score: :class:`iconservice.base.address.Address`
     :return:
 	 */
 	@External
-	public void set_token_score(Address _score) {
-		validateOwnerScore(_score);
-		this._token_score.set(_score);
+	public void setTokenScore(Address score) {
+		validateOwnerScore(score);
+		this._token_score.set(score);
 
 	}
 
@@ -137,14 +137,14 @@ public class RewardDistribution {
 
 	/*
     Sets the dividends distribution score address
-    :param _score: Address of the dividends distribution score
-    :type _score: :class:`iconservice.base.address.Address`
+    :param score: Address of the dividends distribution score
+    :type score: :class:`iconservice.base.address.Address`
     :return:
 	 */
 	@External
-	public void set_dividends_score(Address _score) {
-		validateOwnerScore(_score);
-		this._dividends_score.set(_score);
+	public void setDividendsScore(Address score) {
+		validateOwnerScore(score);
+		this._dividends_score.set(score);
 	}
 
 	/*
@@ -294,7 +294,7 @@ public class RewardDistribution {
 		j = 0;
 		for(int i = 0; i < size; i++){
 			String address = addresses.get(i);
-			BigInteger amount = this._wagers.at(index).get(address);
+			BigInteger amount = this._wagers.at(index).getOrDefault(address, ZERO);
 			JsonObject yesterdayEntry = new JsonObject();
 			yesterdayEntry.add(address, amount.toString());
 			yesterday.add(yesterdayEntry);
@@ -390,6 +390,7 @@ public class RewardDistribution {
 		}
 		Context.println("calling distribute method from rewards");
 		Boolean distribute = callScore(Boolean.class, this._dividends_score.get(), "distribute");
+		Context.println("distribution enabled?: " + this.tapDistributionEnabled.getOrDefault(Boolean.FALSE));
 		if (distribute != null && distribute && this.tapDistributionEnabled.getOrDefault(Boolean.FALSE)) {
 			this._distribute();
 		}
@@ -419,6 +420,7 @@ public class RewardDistribution {
 	 */    
 	public void _distribute() {
 		if (this._rewards_gone.get()) {
+			Context.println("Rewards gone is true");
 			this._dist_complete.set(true);
 			return;
 		}
@@ -477,11 +479,12 @@ public class RewardDistribution {
 	 */
 	private void _set_daily_dist(BigInteger remaining_tokens) {
 		if (remaining_tokens.equals( BigInteger.valueOf(264000000).multiply(TAP) )) {
-			Context.println("daily dist: " + TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
-			this._daily_dist.set(TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
+			Context.println("daily dist: " + (TWO.multiply(DAILY_TOKEN_DISTRIBUTION)).add(remaining_tokens.mod(DAILY_TOKEN_DISTRIBUTION)));
+			this._daily_dist.set(TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remaining_tokens.mod(DAILY_TOKEN_DISTRIBUTION)));
 			this._yesterdays_tap_distribution.set(DAILY_TOKEN_DISTRIBUTION);
 		}else if (remaining_tokens.compareTo(BigInteger.valueOf(251000000).multiply(TAP) ) >= 0 ) {
-			this._daily_dist.set(DAILY_TOKEN_DISTRIBUTION.add(remaining_tokens).mod(DAILY_TOKEN_DISTRIBUTION));
+			Context.println("When 251: daily dist: " + DAILY_TOKEN_DISTRIBUTION.add(remaining_tokens.mod(DAILY_TOKEN_DISTRIBUTION)));
+			this._daily_dist.set(DAILY_TOKEN_DISTRIBUTION.add(remaining_tokens.mod(DAILY_TOKEN_DISTRIBUTION)));
 			this._yesterdays_tap_distribution.set(DAILY_TOKEN_DISTRIBUTION);
 		}else {
 			BigInteger dailyDist = BigInteger.valueOf(200_000).multiply(TAP)
@@ -491,6 +494,7 @@ public class RewardDistribution {
 							.divide(BigInteger.valueOf(1000))
 							);
 			dailyDist = dailyDist.min(remaining_tokens);
+			Context.println("Daily dist in else: " + dailyDist);
 			this._yesterdays_tap_distribution.set(dailyDist);
 			this._daily_dist.set(dailyDist);
 		}

@@ -85,7 +85,7 @@ class RewardDistributionTest extends TestBase{
 
 	@BeforeEach
 	public void setup() throws Exception {
-		rewardDistribution = sm.deploy(owner, RewardDistribution.class, false);
+		rewardDistribution = sm.deploy(owner, RewardDistribution.class);
 		RewardDistribution instance = (RewardDistribution) rewardDistribution.getInstance();
 		scoreSpy = spy(instance);
 		rewardDistribution.setInstance(scoreSpy);
@@ -97,9 +97,9 @@ class RewardDistributionTest extends TestBase{
 	void setScores(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 
-		rewardDistribution.invoke(owner, "set_token_score", tapToken);
-		rewardDistribution.invoke(owner, "set_dividends_score", dividendScore);
-		rewardDistribution.invoke(owner, "set_game_score", gameScore);
+		rewardDistribution.invoke(owner, "setTokenScore", tapToken);
+		rewardDistribution.invoke(owner, "setDividendsScore", dividendScore);
+		rewardDistribution.invoke(owner, "setTreasuryScore", gameScore);
 
 		assertEquals(tapToken, rewardDistribution.call("get_token_score"));
 		assertEquals(dividendScore, rewardDistribution.call("get_dividends_score"));
@@ -110,22 +110,22 @@ class RewardDistributionTest extends TestBase{
 	void setScoresMethod(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 
-		rewardDistribution.invoke(owner, "set_token_score", tapToken);
-		rewardDistribution.invoke(owner, "set_dividends_score", dividendScore);
-		rewardDistribution.invoke(owner, "set_game_score", gameScore);
+		rewardDistribution.invoke(owner, "setTokenScore", tapToken);
+		rewardDistribution.invoke(owner, "setDividendsScore", dividendScore);
+		rewardDistribution.invoke(owner, "setTreasuryScore", gameScore);
 	}
 
 	@Test
 	void setScoresNotOwner(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
 
-		Executable setScoresNotOwner = () -> rewardDistribution.invoke(testingAccount, "set_token_score", tapToken);
+		Executable setScoresNotOwner = () -> rewardDistribution.invoke(testingAccount, "setTokenScore", tapToken);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this score");
 
-		setScoresNotOwner = () -> rewardDistribution.invoke(testingAccount, "set_dividends_score", dividendScore);
+		setScoresNotOwner = () -> rewardDistribution.invoke(testingAccount, "setDividendsScore", dividendScore);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this score");
 
-		setScoresNotOwner = () -> rewardDistribution.invoke(testingAccount, "set_game_score", gameScore);
+		setScoresNotOwner = () -> rewardDistribution.invoke(testingAccount, "setTreasuryScore", gameScore);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this score");
 	}
 
@@ -133,13 +133,13 @@ class RewardDistributionTest extends TestBase{
 	void setScoresNotContractAddresses(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 
-		Executable setScoresNotOwner = () -> rewardDistribution.invoke(owner, "set_token_score", testingAccount.getAddress());
+		Executable setScoresNotOwner = () -> rewardDistribution.invoke(owner, "setTokenScore", testingAccount.getAddress());
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": The address is not a contract address");
 
-		setScoresNotOwner = () -> rewardDistribution.invoke(owner, "set_dividends_score", testingAccount.getAddress());
+		setScoresNotOwner = () -> rewardDistribution.invoke(owner, "setDividendsScore", testingAccount.getAddress());
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": The address is not a contract address");
 
-		setScoresNotOwner = () -> rewardDistribution.invoke(owner, "set_game_score", testingAccount.getAddress());
+		setScoresNotOwner = () -> rewardDistribution.invoke(owner, "setTreasuryScore", testingAccount.getAddress());
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": The address is not a contract address");
 	}
 
@@ -178,6 +178,35 @@ class RewardDistributionTest extends TestBase{
 		setScoresMethod();
 		contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
 		doReturn(BigInteger.valueOf(0).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
+		doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
+		doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(dividendScore), eq("distribute"));
+		/*
+		Accumulating wagers of different users
+		 */
+		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ONE);
+		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount1.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ONE);
+		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount2.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ONE);
+
+		assertEquals(BigInteger.valueOf(100).multiply(decimal), rewardDistribution.call("get_daily_wagers", testingAccount.getAddress().toString()));
+		assertEquals(BigInteger.valueOf(100).multiply(decimal), rewardDistribution.call("get_daily_wagers", testingAccount1.getAddress().toString()));
+		assertEquals(BigInteger.valueOf(100).multiply(decimal), rewardDistribution.call("get_daily_wagers", testingAccount2.getAddress().toString()));
+		String jsonString = (String) rewardDistribution.call("get_daily_wager_totals");
+		JsonValue jsonValue = Json.parse(jsonString);
+		System.out.println(jsonValue.asObject().get("today").asString().charAt(0));
+		List<String> todayEntries = splitString(jsonValue.asObject().get("today").asString());
+		JsonValue individualEntry0 = Json.parse(todayEntries.get(0));
+		JsonValue individualEntry1 = Json.parse(todayEntries.get(1));
+		JsonValue individualEntry2 = Json.parse(todayEntries.get(2));
+		assertEquals(BigInteger.valueOf(100).multiply(decimal).toString(), individualEntry0.asObject().get(testingAccount.getAddress().toString()).asString());
+		assertEquals(BigInteger.valueOf(100).multiply(decimal).toString(), individualEntry1.asObject().get(testingAccount1.getAddress().toString()).asString());
+		assertEquals(BigInteger.valueOf(100).multiply(decimal).toString(), individualEntry2.asObject().get(testingAccount2.getAddress().toString()).asString());
+	}
+
+	@Test
+	void accumulateWagersRemainingAmountToDistibuteis_251000000(){
+		setScoresMethod();
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameScore);
+		doReturn(BigInteger.valueOf(251000000).multiply(decimal)).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("balanceOf"), any());
 		doReturn(BigInteger.valueOf(10)).when(scoreSpy).callScore(eq(BigInteger.class), eq(gameScore), eq("get_batch_size"), any());
 		doReturn(Boolean.FALSE).when(scoreSpy).callScore(eq(Boolean.class), eq(dividendScore), eq("distribute"));
 		/*
@@ -388,9 +417,11 @@ class RewardDistributionTest extends TestBase{
 		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ONE);
 		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount1.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ONE);
 		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount2.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ONE);
+
 		rewardDistribution.invoke(owner, "accumulate_wagers", testingAccount2.getAddress().toString(), BigInteger.valueOf(100).multiply(decimal), BigInteger.ZERO);
 
 		assertEquals(Boolean.TRUE, rewardDistribution.call("rewards_dist_complete"));
+
 	}
 
 	@Test
