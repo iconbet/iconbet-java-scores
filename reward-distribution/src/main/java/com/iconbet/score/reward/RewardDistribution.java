@@ -19,17 +19,13 @@ import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
-import score.annotation.Optional;
 import score.annotation.Payable;
-
-import javax.xml.namespace.QName;
 
 public class RewardDistribution {
 	protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
 
 	public static final String TAG = "REWARDS";
 	public static final BigInteger DAILY_TOKEN_DISTRIBUTION = new BigInteger("1000000000000000000000000");
-	public static final boolean DEBUG = false;
 	public static final BigInteger TAP = new BigInteger("1000000000000000000");
 
 	private static final String _WAGERS = "wagers";
@@ -50,12 +46,9 @@ public class RewardDistribution {
 	private static final String _DIVIDENDS_SCORE = "dividends_score";
 	private static final String _BATCH_SIZE = "batch_size";
 
-	private static String _REWARDS_GONE = "rewards_gone";
-	private static String _YESTERDAYS_TAP_DISTRIBUTION = "yesterdays_tap_distribution";
+	private static final String _REWARDS_GONE = "rewards_gone";
+	private static final String _YESTERDAYS_TAP_DISTRIBUTION = "yesterdays_tap_distribution";
 	private static final String LINEARITY_COMPLEXITY_MIGRATION = "linearity_complexity_migration";
-
-	@EventLog(indexed=2)
-	public void FundTransfer(String sweep_to, BigInteger amount, String note) {}
 
 	@EventLog(indexed=2)
 	public void TokenTransfer(Address recipient, BigInteger amount) {}
@@ -97,26 +90,18 @@ public class RewardDistribution {
 	private final VarDB<Boolean> linearityComplexityMigrationComplete = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_complete", Boolean.class);
 	private final VarDB<Integer> linearityComplexityMigrationIndex = Context.newVarDB(LINEARITY_COMPLEXITY_MIGRATION + "_index", Integer.class);
 
-	public RewardDistribution(@Optional boolean _on_update_var) {
-		if(_on_update_var) {
-			Context.println("updating contract only");
-			onUpdate();
-			return;
+	public RewardDistribution() {
+		if (_day_index.get() == null) {
+			Context.println("In __init__. " + TAG);
+			Context.println("owner is " + Context.getOwner() + ". " + TAG);
+			this._day_index.set(ZERO);
+			this._dist_index.set(ZERO);
+			this._dist_complete.set(true);
+
+			this._even_day_total.set(ZERO);
+			this._odd_day_total.set(ZERO);
+			this._rewards_gone.set(false);
 		}
-		Context.println("In __init__. "+ TAG);
-		Context.println("owner is " +Context.getOwner() +". "+ TAG);
-		this._day_index.set(ZERO);
-		this._dist_index.set(ZERO);
-		this._dist_complete.set(true);
-
-		this._even_day_total.set(ZERO);
-		this._odd_day_total.set(ZERO);
-		this._rewards_gone.set(false);
-
-	}
-
-	public void onUpdate() {
-		Context.println("calling on update. "+TAG);
 	}
 
 	private boolean validateOwner(){
@@ -147,7 +132,7 @@ public class RewardDistribution {
 	 */
 	@External(readonly=true)
 	public Address get_token_score() {
-		return this._token_score.getOrDefault(ZERO_ADDRESS);
+		return this._token_score.getOrDefault(null);
 	}
 
 	/*
@@ -169,29 +154,29 @@ public class RewardDistribution {
 	 */
 	@External(readonly=true)
 	public Address get_dividends_score() {
-		return this._dividends_score.getOrDefault(ZERO_ADDRESS);
+		return this._dividends_score.getOrDefault(null);
 	}
 
 	/*
     Sets the roulette score address
-    :param _score: Address of the roulette score
+    :param _score: Address of the treasury score
     :type _score: :class:`iconservice.base.address.Address`
     :return:
 	 */
 	@External
-	public void set_game_score(Address _score) {
+	public void setTreasuryScore(Address _score) {
 		validateOwnerScore(_score);
 		this._game_score.set(_score);
 	}
 
 	/*
     Returns the roulette score address
-    :return: Address of the roulette score
+    :return: Address of the treasury score
     :rtype: :class:`iconservice.base.address.Address`
 	 */
 	@External(readonly=true)
 	public Address get_game_score() {
-		return this._game_score.getOrDefault(ZERO_ADDRESS);
+		return this._game_score.getOrDefault(null);
 	}
 
 	@External
@@ -251,8 +236,7 @@ public class RewardDistribution {
 		if (total.equals(ZERO)) {
 			return ZERO;
 		}
-		BigInteger expectedRewards = this.get_todays_tap_distribution().multiply(this.get_daily_wagers(_player)).divide(total);
-		return expectedRewards;
+		return this.get_todays_tap_distribution().multiply(this.get_daily_wagers(_player)).divide(total);
 	}
 
 	/*
@@ -278,19 +262,6 @@ public class RewardDistribution {
 	}
 
 	/*
-    A function to redefine the value of self.owner once it is possible.
-    To be included through an update if it is added to IconService.
-
-    Sets the value of self.owner to the score holding the game treasury.
-	 */
-	@External
-	public void untether() {
-		if (! Context.getOrigin().equals(Context.getOwner())) {
-			Context.revert(TAG + ": Only the owner can call the untether method.");
-		}
-	}
-
-	/*
     Returns all the addresses which have played games today and yesterday with their wagered amount in the entire
     platform
     :return: JSON data of yesterday's and today's players and their wagers
@@ -305,8 +276,10 @@ public class RewardDistribution {
 		List<JsonObject> today = new ArrayList<>();
 		int j = 0;
 
-		for(int i =0 ; i < this._addresses[index.intValue()].size(); i++){
-			String address = this._addresses[index.intValue()].get(i);
+		ArrayDB<String> addresses = this._addresses[index.intValue()];
+		int size = addresses.size();
+		for(int i = 0; i < size; i++){
+			String address = addresses.get(i);
 			BigInteger amount = this._wagers.at(index).get(address);
 			JsonObject todayEntry = new JsonObject();
 			todayEntry.add(address, amount.toString());
@@ -319,8 +292,8 @@ public class RewardDistribution {
 
 		List<JsonObject> yesterday = new ArrayList<>();
 		j = 0;
-		for(int i =0 ; i < this._addresses[index.intValue()].size(); i++){
-			String address = this._addresses[index.intValue()].get(i);
+		for(int i = 0; i < size; i++){
+			String address = addresses.get(i);
 			BigInteger amount = this._wagers.at(index).get(address);
 			JsonObject yesterdayEntry = new JsonObject();
 			yesterdayEntry.add(address, amount.toString());

@@ -160,15 +160,15 @@ public class Authorization {
 
     /***
      Sets the address of rewards/game score
-     :param _scoreAddress: Address of rewards
-     :type _scoreAddress: :class:`iconservice.base.address.Address`
+     :param scoreAddress: Address of rewards
+     :type scoreAddress: :class:`iconservice.base.address.Address`
      :return:
      ***/
     @External
-    public void set_rewards_score(Address _scoreAddress) {
-        validateOwnerScore(_scoreAddress);
+    public void setRewardsScore(Address scoreAddress) {
+        validateOwnerScore(scoreAddress);
         SettersGetters settersGetters = new SettersGetters();
-        settersGetters.rewardsScore.set(_scoreAddress);
+        settersGetters.rewardsScore.set(scoreAddress);
     }
 
     /***

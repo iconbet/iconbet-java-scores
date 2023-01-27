@@ -179,6 +179,7 @@ public class IBPNP extends IRC3Basic {
         BigInteger tokenId = this.totalSupply.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE);
         this.totalSupply.set(tokenId);
         Address owner = Context.getCaller();
+        Context.require(!owner.isContract(), TAG + ": Contract cannot have profile.");
         if (checkIfWalletPresent(owner)) {
             Context.revert("This user already has an " + TAG);
         }

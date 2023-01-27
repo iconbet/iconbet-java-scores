@@ -92,13 +92,11 @@ class AuthorizationTest extends TestBase {
 	@Test
 	void setScores(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-		authorization.invoke(owner, "set_roulette_score", gameScore);
-		authorization.invoke(owner, "set_tap_token_score", tapToken);
-		authorization.invoke(owner, "set_dividend_distribution_score", dividends);
-		authorization.invoke(owner, "set_rewards_score", rewards);
-		authorization.invoke(owner, "set_utap_token_score", utap);
+		authorization.invoke(owner, "setTreasuryScore", gameScore);
+		authorization.invoke(owner, "setTapTokenScore", tapToken);
+		authorization.invoke(owner, "setDividendDistributionScore", dividends);
+		authorization.invoke(owner, "setRewardsScore", rewards);
 
-		assertEquals(authorization.call("get_utap_token_score"), utap);
 		assertEquals(authorization.call("get_rewards_score"), rewards);
 		assertEquals(authorization.call("get_dividend_distribution"), dividends);
 		assertEquals(authorization.call("get_tap_token_score"), tapToken);
@@ -107,25 +105,22 @@ class AuthorizationTest extends TestBase {
 
 	private void setScoresMethod(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-		authorization.invoke(owner, "set_roulette_score", gameScore);
-		authorization.invoke(owner, "set_tap_token_score", tapToken);
-		authorization.invoke(owner, "set_dividend_distribution_score", dividends);
-		authorization.invoke(owner, "set_rewards_score", rewards);
-		authorization.invoke(owner, "set_utap_token_score", utap);
+		authorization.invoke(owner, "setTreasuryScore", gameScore);
+		authorization.invoke(owner, "setTapTokenScore", tapToken);
+		authorization.invoke(owner, "setDividendDistributionScore", dividends);
+		authorization.invoke(owner, "setRewardsScore", rewards);
 	}
 
 	@Test
 	void setScoresNotOwner(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
-		Executable setScoresNotOwner = () -> authorization.invoke(testingAccount, "set_roulette_score", gameScore);
+		Executable setScoresNotOwner = () -> authorization.invoke(testingAccount, "setTreasuryScore", gameScore);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
-		setScoresNotOwner = () -> authorization.invoke(testingAccount, "set_tap_token_score", tapToken);
+		setScoresNotOwner = () -> authorization.invoke(testingAccount, "setTapTokenScore", tapToken);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
-		setScoresNotOwner = () -> authorization.invoke(testingAccount, "set_dividend_distribution_score", dividends);
+		setScoresNotOwner = () -> authorization.invoke(testingAccount, "setDividendDistributionScore", dividends);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
-		setScoresNotOwner = () -> authorization.invoke(testingAccount, "set_rewards_score", rewards);
-		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
-		setScoresNotOwner = () -> authorization.invoke(testingAccount, "set_utap_token_score", utap);
+		setScoresNotOwner = () -> authorization.invoke(testingAccount, "setRewardsScore", rewards);
 		expectErrorMessage(setScoresNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method");
 	}
 
@@ -186,7 +181,7 @@ class AuthorizationTest extends TestBase {
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		List<Address> approvedGames = List.of(dice, roulette, blackjack);
 		doReturn(approvedGames).when(scoreSpy).get_approved_games();
-		authorization.invoke(owner, "set_new_div_changing_time", BigInteger.ONE);
+		authorization.invoke(owner, "setNewDivChangingTime", BigInteger.ONE);
 		assertEquals(authorization.call("get_new_div_changing_time"), BigInteger.ONE);
 		Map<String, String> todaysExcess = Map.of(dice.toString(), "0",
 				roulette.toString(), "0",
@@ -197,7 +192,7 @@ class AuthorizationTest extends TestBase {
 	@Test
 	void setGameDevelopersShare(){
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-		authorization.invoke(owner, "set_game_developers_share", BigInteger.TEN);
+		authorization.invoke(owner, "setGameDevelopersShare", BigInteger.TEN);
 		assertEquals(authorization.call("get_game_developers_share"), BigInteger.TEN);
 	}
 
@@ -228,7 +223,7 @@ class AuthorizationTest extends TestBase {
 		doReturn(BigInteger.TEN).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("getTimeOffset"));
 
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), 1, 1, 1);
+		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), BigInteger.ONE, 1, 1);
 		doReturn(BigInteger.valueOf(10)).when(scoreSpy).getDay();
 		BigInteger day = (BigInteger) authorization.call("getDay");
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
@@ -271,8 +266,8 @@ class AuthorizationTest extends TestBase {
 		castGameConceptVoteApproveMethod();
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "set_maximum_loss", MULTIPLIER);
-		authorization.invoke(owner, "toggle_apply_watch_dog_method");
+		authorization.invoke(owner, "setMaximumLoss", MULTIPLIER);
+		authorization.invoke(owner, "toggleApplyWatchDogMethod");
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
 		JsonObject gameSubmitData = new JsonObject();
 		gameSubmitData.add("name", "dice");
@@ -291,11 +286,11 @@ class AuthorizationTest extends TestBase {
 		System.out.println("hello: " + gameSubmitData.toString());
 
 		doReturn(testingAccount.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(dice), eq("get_score_owner"));
-		authorization.invoke(testingAccount, "submit_game_proposal", gameSubmitData.toString());
+		authorization.invoke(testingAccount, "submitGameProposal", gameSubmitData.toString());
 
 		assertEquals(authorization.call("get_game_status", dice), "waiting");
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-		authorization.invoke(owner, "approveGameProposal", "dice");
+		authorization.invoke(owner, "updateGameStatus", "dice", "proposalApproved");
 		assertEquals(authorization.call("get_game_status", dice), "proposalApproved");
 	}
 
@@ -303,8 +298,8 @@ class AuthorizationTest extends TestBase {
 		castGameConceptVoteApproveMethod();
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "set_maximum_loss", MULTIPLIER);
-		authorization.invoke(owner, "toggle_apply_watch_dog_method");
+		authorization.invoke(owner, "setMaximumLoss", MULTIPLIER);
+		authorization.invoke(owner, "toggleApplyWatchDogMethod");
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
 		JsonObject gameSubmitData = new JsonObject();
 		gameSubmitData.add("name", "dice");
@@ -321,9 +316,9 @@ class AuthorizationTest extends TestBase {
 		gameSubmitData.add("maxPayout", BigInteger.valueOf(100).multiply(MULTIPLIER).toString());
 
 		doReturn(testingAccount.getAddress()).when(scoreSpy).callScore(eq(Address.class), eq(dice), eq("get_score_owner"));
-		authorization.invoke(testingAccount, "submit_game_proposal", gameSubmitData.toString());
+		authorization.invoke(testingAccount, "submitGameProposal", gameSubmitData.toString());
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-		authorization.invoke(owner, "approveGameProposal", "dice");
+		authorization.invoke(owner, "updateGameStatus", "dice", "proposalApproved");
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
 	}
 
@@ -341,7 +336,7 @@ class AuthorizationTest extends TestBase {
 		doReturn(BigInteger.TEN).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("get_time_offset"));
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), 1, 1, 1);
+		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), BigInteger.ONE, 1, 1);
 //		doReturn(BigInteger.valueOf(Context.getBlockTimestamp()).subtract(BigInteger.ONE).divide(new BigInteger("86400000000")).add(BigInteger.valueOf(500))).when(scoreSpy).getDay();
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
 		BigInteger day = (BigInteger) authorization.call("getDay");
@@ -366,7 +361,7 @@ class AuthorizationTest extends TestBase {
 		doReturn(BigInteger.TEN).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("get_time_offset"));
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), 1, 1, 1);
+		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), BigInteger.ONE, 1, 1);
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
 		doReturn(MULTIPLIER).when(scoreSpy).getDay();
 		BigInteger day = (BigInteger) authorization.call("getDay");
@@ -428,7 +423,7 @@ class AuthorizationTest extends TestBase {
 		doReturn(BigInteger.TEN).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("getTimeOffset"));
 
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), 1, 1, 1);
+		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), BigInteger.ONE, 1, 1);
 		doReturn(BigInteger.valueOf(10)).when(scoreSpy).getDay();
 		BigInteger day = (BigInteger) authorization.call("getDay");
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
@@ -462,7 +457,7 @@ class AuthorizationTest extends TestBase {
 		doReturn(BigInteger.TEN).when(scoreSpy).callScore(eq(BigInteger.class), eq(tapToken), eq("getTimeOffset"));
 
 		authorization.invoke(owner, "set_super_admin", owner.getAddress());
-		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), 1, 1, 1);
+		authorization.invoke(owner, "startGovernance", BigInteger.valueOf(10000), BigInteger.ONE, 1, 1);
 		doReturn(BigInteger.valueOf(10)).when(scoreSpy).getDay();
 		BigInteger day = (BigInteger) authorization.call("getDay");
 		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());

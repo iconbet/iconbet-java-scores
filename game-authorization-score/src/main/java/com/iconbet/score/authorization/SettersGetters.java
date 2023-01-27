@@ -192,7 +192,7 @@ public class SettersGetters {
 
     public void validateSuperAdmin() {
         Context.require(Context.getCaller().equals(superAdmin.get()),
-                TAG + "Only super admin can call this method.");
+                TAG + ": Only super admin can call this method.");
     }
 
     public void validateAdmin() {
