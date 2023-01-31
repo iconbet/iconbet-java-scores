@@ -1032,6 +1032,22 @@ public class Dividend extends Utils {
         }
     }
 
+    @External(readonly = true)
+    public BigInteger dividendsReceived(){
+        return _dividends_received.getOrDefault(ZERO);
+    }
+
+    @External(readonly = true)
+    public BigInteger batchSize(){
+        return _batch_size.getOrDefault(ZERO);
+    }
+
+    @External
+    public void set_divs_dist_complete(boolean status){
+        validateOwner();
+        _divs_dist_complete.set(status);
+    }
+
     public <T> T callScore(Class<T> t, Address address, String method, Object... params) {
         return Context.call(t, address, method, params);
     }

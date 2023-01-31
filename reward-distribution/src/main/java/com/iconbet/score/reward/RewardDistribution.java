@@ -247,7 +247,7 @@ public class RewardDistribution {
      */
     @External(readonly = true)
     public BigInteger get_todays_tap_distribution() {
-        BigInteger remainingTokens = Context.call(BigInteger.class, this._token_score.get(), "balanceOf", Context.getAddress());
+        BigInteger remainingTokens = callScore(BigInteger.class, this._token_score.get(), "balanceOf", Context.getAddress());
         if (remainingTokens.equals(BigInteger.valueOf(264000000).multiply(TAP))) {
             return TWO.multiply(DAILY_TOKEN_DISTRIBUTION).add(remainingTokens).mod(DAILY_TOKEN_DISTRIBUTION);
         } else if (remainingTokens.compareTo(BigInteger.valueOf(251000000).multiply(TAP)) >= 0) {

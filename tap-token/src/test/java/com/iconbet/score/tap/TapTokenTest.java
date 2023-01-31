@@ -73,7 +73,7 @@ class TapTokenTest extends TestBase {
 
 	@BeforeEach
 	public void setup() throws Exception {
-		tapToken = sm.deploy(owner, TapToken.class, initialSupply, decimals, false);
+		tapToken = sm.deploy(owner, TapToken.class, initialSupply, decimals);
 		TapToken instance = (TapToken) tapToken.getInstance();
 		scoreSpy = spy(instance);
 		tapToken.setInstance(scoreSpy);

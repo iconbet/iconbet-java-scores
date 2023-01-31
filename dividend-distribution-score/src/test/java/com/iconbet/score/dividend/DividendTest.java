@@ -68,6 +68,7 @@ public class DividendTest extends TestBase{
         DividendScore.setInstance(scoreSpy);
         long currentTime = System.currentTimeMillis() / 1000L;
         sm.getBlock().increase(currentTime / 2);
+        contextMock.reset();
     }
 
     @BeforeAll
@@ -79,20 +80,20 @@ public class DividendTest extends TestBase{
     void setDividendPercentage(){
         setScoresMethod();
         contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
-        DividendScore.invoke(owner, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
+        DividendScore.invoke(owner, "setDividendPercentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
         assertEquals(Map.of("_tap", BigInteger.TEN, "_platform", BigInteger.valueOf(30), "_promo", BigInteger.valueOf(40), "_gamedev", BigInteger.valueOf(20)), DividendScore.call("get_dividend_percentage"));
     }
 
     private void setDividendPercentageMethod(){
         setScoresMethod();
         contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
-        DividendScore.invoke(owner, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
+        DividendScore.invoke(owner, "setDividendPercentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
     }
 
     @Test
     void setDividendPercentageNotGovernance(){
         contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
-        Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(testingAccount, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
+        Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(testingAccount, "setDividendPercentage", BigInteger.TEN, BigInteger.valueOf(20), BigInteger.valueOf(40), BigInteger.valueOf(30));
         expectErrorMessage(setDividendPercentageNotOwner, "Reverted(0): " + TAG + ": Only Governance score can call this method.");
     }
 
@@ -100,15 +101,15 @@ public class DividendTest extends TestBase{
     void setDividendPercentageInvalidPercentage(){
         setScoresMethod();
         contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
-        Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(owner, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(120), BigInteger.valueOf(40), BigInteger.valueOf(30));
-        expectErrorMessage(setDividendPercentageNotOwner, "Reverted(0): " + TAG + ": The parameters must be between 0 to 100");
+        Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(owner, "setDividendPercentage", BigInteger.TEN, BigInteger.valueOf(120), BigInteger.valueOf(40), BigInteger.valueOf(30));
+        expectErrorMessage(setDividendPercentageNotOwner, "Reverted(0): ICONbet Dividends: The parameters must be between 0 to 100");
     }
 
     @Test
     void setDividendPercentagePercentageSumNotEqualTo100(){
         setScoresMethod();
         contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
-        Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(owner, "set_dividend_percentage", BigInteger.TEN, BigInteger.valueOf(30), BigInteger.valueOf(40), BigInteger.valueOf(30));
+        Executable setDividendPercentageNotOwner = () -> DividendScore.invoke(owner, "setDividendPercentage", BigInteger.TEN, BigInteger.valueOf(30), BigInteger.valueOf(40), BigInteger.valueOf(30));
         expectErrorMessage(setDividendPercentageNotOwner, "Reverted(0): " + TAG + ": Sum of all percentage is not equal to 100");
     }
 
@@ -120,7 +121,7 @@ public class DividendTest extends TestBase{
         DividendScore.invoke(owner, "set_game_auth_score", gameAuth);
         DividendScore.invoke(owner, "set_daofund_score", daoFund);
         DividendScore.invoke(owner, "set_promo_score", promo);
-        DividendScore.invoke(owner, "set_game_score", gameScore);
+        DividendScore.invoke(owner, "setTreasuryScore", gameScore);
 
         assertEquals(DividendScore.call("get_token_score"), tapToken);
         assertEquals(DividendScore.call("get_game_score"), gameScore);
@@ -137,7 +138,7 @@ public class DividendTest extends TestBase{
         DividendScore.invoke(owner, "set_game_auth_score", gameAuth);
         DividendScore.invoke(owner, "set_daofund_score", daoFund);
         DividendScore.invoke(owner, "set_promo_score", promo);
-        DividendScore.invoke(owner, "set_game_score", gameScore);
+        DividendScore.invoke(owner, "setTreasuryScore", gameScore);
     }
 
     @Test
@@ -145,22 +146,22 @@ public class DividendTest extends TestBase{
         Address _score = testingAccount.getAddress();
 
         Executable setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "set_token_score", _score);
-        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
+        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): ICONbet Dividends: hx0000000000000000000000000000000000000002 is not a valid contract address");
 
         setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "setIBPNPScore", _score);
-        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
+        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): ICONbet Dividends: hx0000000000000000000000000000000000000002 is not a valid contract address");
 
         setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "set_game_auth_score", _score);
-        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
+        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): ICONbet Dividends: hx0000000000000000000000000000000000000002 is not a valid contract address");
 
         setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "set_daofund_score", _score);
-        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
+        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): ICONbet Dividends: hx0000000000000000000000000000000000000002 is not a valid contract address");
 
         setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "set_promo_score", _score);
-        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
+        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): ICONbet Dividends: hx0000000000000000000000000000000000000002 is not a valid contract address");
 
-        setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "set_game_score", _score);
-        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": " + _score + " is not a valid contract address");
+        setScoresNotContractAddresses = () -> DividendScore.invoke(owner, "setTreasuryScore", _score);
+        expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): ICONbet Dividends: hx0000000000000000000000000000000000000002 is not a valid contract address");
     }
 
     @Test
@@ -182,7 +183,7 @@ public class DividendTest extends TestBase{
         setScoresNotContractAddresses = () -> DividendScore.invoke(testingAccount, "set_promo_score", _score);
         expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": Only owner can call this method.");
 
-        setScoresNotContractAddresses = () -> DividendScore.invoke(testingAccount, "set_game_score", _score);
+        setScoresNotContractAddresses = () -> DividendScore.invoke(testingAccount, "setTreasuryScore", _score);
         expectErrorMessage(setScoresNotContractAddresses, "Reverted(0): " + TAG + ": Only owner can call this method.");
     }
 
@@ -199,7 +200,7 @@ public class DividendTest extends TestBase{
     void toggleSwitchDividendsToStakedTapEnabledNotOwner(){
         contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
         Executable toggleSwitchDividendsToStakedTapEnabledNotOwner = () -> DividendScore.invoke(testingAccount, "toggle_switch_dividends_to_staked_tap_enabled");
-        expectErrorMessage(toggleSwitchDividendsToStakedTapEnabledNotOwner, "Reverted(0): " + TAG + ": Only owner can enable or disable switch dividends to staked tap holders.");
+        expectErrorMessage(toggleSwitchDividendsToStakedTapEnabledNotOwner, "Reverted(0): " + TAG + ": Only owner can call this method.");
     }
 
     @Test
@@ -248,7 +249,6 @@ public class DividendTest extends TestBase{
         DividendScore.invoke(owner, "distribute");
 
         DividendScore.invoke(owner, "distribute");
-        System.out.println(DividendScore.call("getEligibleStakedTapToken"));
     }
 
     @Test
@@ -659,11 +659,9 @@ public class DividendTest extends TestBase{
         DividendScore.invoke(owner, "setNonTaxPeriod", 10);
 
         contextMock.when(() -> Context.transfer(any(), any())).thenAnswer((Answer<Void>) invocation -> null);
-        System.out.println(DividendScore.call("get_daofund_divs"));
 
         DividendScore.invoke(owner, "distribute");
         System.out.println(DividendScore.call("divs_share"));
-        System.out.println(DividendScore.call("get_daofund_divs"));
     }
 
     @Test
@@ -724,7 +722,6 @@ public class DividendTest extends TestBase{
 
         DividendScore.invoke(owner, "distribute");
         System.out.println(DividendScore.call("divs_share"));
-        System.out.println(DividendScore.call("get_daofund_divs"));
     }
 
     @Test
