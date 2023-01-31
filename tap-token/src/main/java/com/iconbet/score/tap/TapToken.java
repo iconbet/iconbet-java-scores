@@ -99,30 +99,27 @@ public class TapToken implements IRC2 {
     private final ArrayDB<Address> pauseWhitelist = Context.newArrayDB(PAUSE_WHITELIST, Address.class);
     private final ArrayDB<Address> locklist = Context.newArrayDB(LOCKLIST, Address.class);
 
-    public TapToken(BigInteger _initialSupply, BigInteger _decimals, @Optional boolean _on_update_var) {
+    public TapToken(BigInteger _initialSupply, BigInteger _decimals) {
         //we mimic on_update py feature, updating java score will call <init> (constructor) method
-        if (_on_update_var) {
-            Context.println("updating contract only");
-            onUpdate();
-            return;
+
+
+        if (this.totalSupply.get() == null) {
+            if (_initialSupply == null || _initialSupply.compareTo(ZERO) < 0) {
+                Context.revert("Initial supply cannot be less than zero");
+            }
+
+            if (_decimals == null || _decimals.compareTo(ZERO) < 0) {
+                Context.revert("Decimals cannot be less than zero");
+            }
+
+            BigInteger totalSupply = _initialSupply.multiply( pow( TEN , _decimals.intValue()) );
+            Context.println(TAG+" : total_supply "+ totalSupply );
+
+            this.totalSupply.set(totalSupply);
+            this.decimals.set(_decimals);
+            this.balances.set(Context.getOwner(), totalSupply);
+            this.addresses.add(Context.getOwner());
         }
-
-        if (_initialSupply == null || _initialSupply.compareTo(ZERO) < 0) {
-            Context.revert("Initial supply cannot be less than zero");
-        }
-
-        if (_decimals == null || _decimals.compareTo(ZERO) < 0) {
-            Context.revert("Decimals cannot be less than zero");
-        }
-
-		BigInteger totalSupply = _initialSupply.multiply( pow( TEN , _decimals.intValue()) );
-		Context.println(TAG+" : total_supply "+ totalSupply );
-
-		this.totalSupply.set(totalSupply);
-		this.decimals.set(_decimals);
-		this.balances.set(Context.getOwner(), totalSupply);
-		this.addresses.add(Context.getOwner());
-
     }
 
     @Override
@@ -144,25 +141,6 @@ public class TapToken implements IRC2 {
 
     @EventLog(indexed = 2)
     public void TapStaked(Address address, BigInteger _value, String note) {
-    }
-
-    public void onUpdate() {
-        Context.println("calling on update. " + TAG);
-    }
-
-    @External
-    public void untether() {
-		/*
-        A function to redefine the value of self.owner once it is possible.
-        To be included through an update if it is added to IconService.
-
-        Sets the value of self.owner to the score holding the game treasury.
-		 */
-        //Context.getOrigin() - > txn.origin  - always wallet
-        //Context.getCaller() - > sender
-        //Context.getOrigin() - > owner
-        if (Context.getOrigin().equals(Context.getOwner()))
-            Context.revert("Only the owner can call the untether method.");
     }
 
     @Override
@@ -505,6 +483,11 @@ public class TapToken implements IRC2 {
         Context.require(Context.getCaller().equals(this.governanceScore.get()), TAG + ": Only Governance Score can call this method.");
     }
 
+    private void ownerOrGovernanceOnly(){
+        Address caller = Context.getCaller();
+        Context.require(caller.equals(Context.getOwner()) || caller.equals(get_authorization_score()), TAG + ": Only owner or Governance Score can call this method");
+    }
+
     private void dividendsOnly() {
         if (!Context.getCaller().equals(this.dividendsScore.getOrDefault(ZERO_ADDRESS))) {
             Context.revert("This method can only be called by the dividends distribution contract");
@@ -561,10 +544,10 @@ public class TapToken implements IRC2 {
      */
     @External
     public void set_max_loop(@Optional int _loops) {
+        governanceOnly();
         if (_loops == 0) {
             _loops = 100;
         }
-        governanceOnly();
         this.maxLoop.set(_loops);
     }
 
@@ -625,42 +608,6 @@ public class TapToken implements IRC2 {
     @External(readonly = true)
     public Address get_authorization_score() {
         return this.governanceScore.get();
-    }
-
-    /*
-    Returns the updated addresses and their balances for today. Returns empty dictionary if the updates has
-    completed
-    :return: Dictionary contains the addresses and their updated balances. Maximum number of addresses
-    and balances returned is defined by the max_loop
-     */
-    @External
-    public Map<String, BigInteger> get_balance_updates() {
-        this.dividendsOnly();
-        ArrayDB<Address> balanceChanges = this.changes.get(this.balanceUpdateDb.getOrDefault(ZERO).intValue());
-
-        int lengthList = balanceChanges.size();
-
-        int start = this.indexUpdateBalance.getOrDefault(ZERO).intValue();
-        if (start == lengthList) {
-            if (this.balanceUpdateDb.getOrDefault(ZERO).intValue() != this.addressUpdateDb.getOrDefault(0)) {
-                this.balanceUpdateDb.set(BigInteger.valueOf(this.addressUpdateDb.get()));
-                this.indexUpdateBalance.set(this.indexAddressChanges.getOrDefault(ZERO));
-            }
-            return Map.of();
-        }
-
-        int end = Math.min(start + this.maxLoop.getOrDefault(0), lengthList);
-
-        @SuppressWarnings("unchecked")
-        Map.Entry<String, BigInteger>[] entries = new Map.Entry[end - start];
-        //TODO: validate this logic
-        int j = 0;
-        for (int i = start; i < end; i++) {
-            entries[j] = Map.entry(balanceChanges.get(i).toString(), this.balances.get(balanceChanges.get(i)));
-            j++;
-        }
-        this.indexUpdateBalance.set(BigInteger.valueOf(end));
-        return Map.ofEntries(entries);
     }
 
     /*
@@ -746,8 +693,8 @@ public class TapToken implements IRC2 {
      */
     @External
     public void set_blacklist_address(Address _address) {
+        ownerOrGovernanceOnly();
         LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
-        governanceOnly();
         this.BlacklistAddress(_address, "Added to Blacklist");
         if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
             if (linearComplexityMigration._blacklist_address_index.getOrDefault(_address, 0) == 0) {
@@ -805,7 +752,8 @@ public class TapToken implements IRC2 {
         //TODO: validate this logic
         int j = 0;
         for (int i = start; i < end; i++) {
-            entries[j] = Map.entry(stakeChanges.get(i).toString(), this.staked_balanceOf(stakeChanges.get(i)));
+            Address stakeChangesAtIndex = stakeChanges.get(i);
+            entries[j] = Map.entry(stakeChangesAtIndex.toString(), this.staked_balanceOf(stakeChangesAtIndex));
             j++;
         }
         this.indexUpdateStake.set(BigInteger.valueOf(end));
@@ -901,7 +849,7 @@ public class TapToken implements IRC2 {
      */
     @External
     public void set_locklist_address(Address _address) {
-        governanceOnly();
+        ownerOrGovernanceOnly();
         this.stakingEnabledOnly();
         LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 
@@ -991,7 +939,7 @@ public class TapToken implements IRC2 {
      */
     @External
     public void set_whitelist_address(Address _address) {
-        governanceOnly();
+        ownerOrGovernanceOnly();
         this.WhitelistAddress(_address, "Added to Pause Whitelist");
         LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
         if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)) {
@@ -1198,8 +1146,7 @@ public class TapToken implements IRC2 {
         if (snapshot._time_offset.get().equals(ZERO)) {
             setTimeOffset();
         }
-        for (int i = 0; i < _data.length; i++) {
-            StakedTAPTokenSnapshots stake = _data[i];
+        for (StakedTAPTokenSnapshots stake : _data) {
             BigInteger current_id = stake.day;
             if (current_id.compareTo(this.getDay()) < 0) {
                 Address _account = stake.address;
@@ -1218,8 +1165,7 @@ public class TapToken implements IRC2 {
         if (snapshot._time_offset.get().equals(ZERO)) {
             setTimeOffset();
         }
-        for (int i = 0; i < _data.length; i++) {
-            TotalStakedTAPTokenSnapshots _id = _data[i];
+        for (TotalStakedTAPTokenSnapshots _id : _data) {
             BigInteger current_id = _id.day;
             if (current_id.compareTo(this.getDay()) < 0) {
                 BigInteger amount = _id.amount;

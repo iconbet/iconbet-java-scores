@@ -457,13 +457,13 @@ public class Daolette {
         }
         Address authScore = this._game_auth_score.get();
         Context.println("Game address: " + _game_address + " Auth score: " + authScore);
-        String gameStatus = Context.call(String.class, authScore, "get_game_status", _game_address);
+        String gameStatus = callScore(String.class, authScore, "get_game_status", _game_address);
         Context.println("gameStatus: " + gameStatus);
         if (!gameStatus.equals("gameApproved")) {
             Context.revert("Bet only accepted through approved games.");
         }
         Address userSender = Context.getOrigin();
-        boolean hasIBPNPProfile = (boolean) Context.call(ibpnpScore.get(), "hasIBPNPProfile", userSender);
+        boolean hasIBPNPProfile = callScore(Boolean.class, ibpnpScore.get(), "hasIBPNPProfile", userSender);
         Context.require(hasIBPNPProfile, TAG + ": The sender " + userSender + " doesnot have an IBPNP profile.");
 
         if (this.dayAdvanced()) {
@@ -472,11 +472,11 @@ public class Daolette {
         }
 
         this._daily_bet_count.set(this._daily_bet_count.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE));
-        Context.call(authScore, "accumulate_daily_wagers", _game_address, _amount);
+        callScore(authScore, "accumulate_daily_wagers", _game_address, _amount);
         Context.println("Sending wager data to rewards score." + TAG);
 
         BigInteger days = this._day.get().subtract(this._skipped_days.getOrDefault(BigInteger.ZERO)).mod(BigInteger.TWO);
-        Context.call(this._rewards_score.get(), "accumulate_wagers", userSender.toString(), _amount, days);
+        callScore(this._rewards_score.get(), "accumulate_wagers", userSender.toString(), _amount, days);
 
         this._treasury_balance.set(Context.getBalance(Context.getAddress()));
         GameData gameData = new GameData();
@@ -495,7 +495,7 @@ public class Daolette {
     }
 
     private void addGameDataToIBPNP(GameData gameData) {
-        Context.call(ibpnpScore.get(), "addGameData", gameData);
+        callScore(ibpnpScore.get(), "addGameData", gameData);
     }
 
     /*
@@ -515,7 +515,7 @@ public class Daolette {
 
         // dry run of wager_payout i.e. make payout without sending ICX
         Address authScore = this._game_auth_score.get();
-        String gameStatus = Context.call(String.class, authScore, "get_game_status", caller);
+        String gameStatus = callScore(String.class, authScore, "get_game_status", caller);
 
         if (!gameStatus.equals("gameApproved")) {
             Context.revert("Payouts can only be invoked by approved games.");
@@ -550,17 +550,19 @@ public class Daolette {
             Context.revert("Invalid payout amount requested " + _payout);
         }
 
-        String gameStatus = Context.call(String.class, this._game_auth_score.get(), "get_game_status", _game_address);
+        String gameStatus = callScore(String.class, this._game_auth_score.get(), "get_game_status", _game_address);
 
         if (!gameStatus.equals("gameApproved")) {
             Context.revert("Payouts can only be invoked by approved games.");
         }
 
-        boolean accumulated = Context.call(Boolean.class, this._game_auth_score.get(), "accumulate_daily_payouts", _game_address, _payout);
+        boolean accumulated = callScore(Boolean.class, this._game_auth_score.get(), "accumulate_daily_payouts", _game_address, _payout);
 
         if (accumulated) {
             Address caller = Context.getOrigin();
             Context.println("Trying to send to (" + caller + "): " + _payout + " . " + TAG);
+            boolean hasIBPNPProfile = callScore(Boolean.class, ibpnpScore.get(), "hasIBPNPProfile", caller);
+            Context.require(hasIBPNPProfile, TAG + ": The sender " + caller + " does not have an IBPNP profile.");
             Context.transfer(caller, _payout);
             this.FundTransfer(caller, _payout, "Player Winnings from " + _game_address + ".");
             Context.println("Sent winner (" + caller + ") " + _payout + "." + TAG);
@@ -703,9 +705,9 @@ public class Daolette {
         if (advance.compareTo(BigInteger.ONE) < 0) {
             return false;
         } else {
-
-            Boolean rewardsComplete = Context.call(Boolean.class, this._rewards_score.get(), "rewards_dist_complete");
-            Boolean dividendsComplete = Context.call(Boolean.class, this._dividends_score.get(), "dividends_dist_complete");
+            Context.println("reached in else in dayAdvanced");
+            Boolean rewardsComplete = callScore(Boolean.class, this._rewards_score.get(), "rewards_dist_complete");
+            Boolean dividendsComplete = callScore(Boolean.class, this._dividends_score.get(), "dividends_dist_complete");
             BigInteger skippedDays = this._skipped_days.getOrDefault(BigInteger.ZERO);
             if (!rewardsComplete || !dividendsComplete) {
                 String rew = "";
@@ -726,17 +728,28 @@ public class Daolette {
             BigInteger excessToMinTreasury = this._treasury_balance.getOrDefault(BigInteger.ZERO).subtract(this._treasury_min.get());
 
             Address authScore = this._game_auth_score.get();
-            BigInteger developersExcess = Context.call(BigInteger.class, authScore, "record_excess");
+            BigInteger developersExcess = callScore(BigInteger.class, authScore, "record_excess");
+//            10
+//            etd = 10 + max(0, -,-)
+//            etd = 10
             this._excess_to_distribute.set(developersExcess.add(BigInteger.ZERO.max(excessToMinTreasury.subtract(developersExcess))));
 
             if (this._excess_smoothing_live.get()) {
+                Context.println("excess smoothing live is true");
                 BigInteger thirdPartyGamesExcess = BigInteger.ZERO;
-                Map<String, String> gamesExcess = Context.call(Map.class, authScore, "get_yesterdays_games_excess");
+                Map<String, String> gamesExcess = callScore(Map.class, authScore, "get_yesterdays_games_excess");
+//                tpga = 100
                 for (Map.Entry<String, String> game : gamesExcess.entrySet()) {
                     thirdPartyGamesExcess = thirdPartyGamesExcess.add(
                             BigInteger.ZERO.max(new BigInteger(game.getValue()))
                     );
                 }
+//                tpd = 20
+//                rp = 0
+//                df = 0
+//                etd = 20
+//                ye = -
+//                dftd = 0
                 BigInteger thirdPartyDeveloper = thirdPartyGamesExcess.multiply(BigInteger.valueOf(20)).divide(BigInteger.valueOf(100));
                 BigInteger rewardPool = BigInteger.ZERO.max(
                         excessToMinTreasury.subtract(thirdPartyDeveloper).multiply(BigInteger.valueOf(90))).divide(BigInteger.valueOf(100));
@@ -853,6 +866,18 @@ public class Daolette {
             result = result.multiply(base);
         }
         return result;
+    }
+
+    public <T> T callScore(Class<T> t, Address address, String method, Object... params) {
+        return Context.call(t, address, method, params);
+    }
+
+    public void callScore(Address address, String method, Object... params) {
+        Context.call(address, method, params);
+    }
+
+    public void callScore(BigInteger amount, Address address, String method, Object... params) {
+        Context.call(amount, address, method, params);
     }
 
 //    todo remove non production code
