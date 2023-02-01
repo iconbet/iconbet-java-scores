@@ -369,10 +369,7 @@ public class TapToken implements IRC2 {
         TapStaked(Context.getCaller(), _value, _value + " TAP token is staked by " + Context.getCaller());
     }
 
-    @Override
-    @External
-    public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
-        //TODO: review all the loops that are use for searching
+    private void checkIsTransferAllowed(){
         LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
         if (this.paused.getOrDefault(Boolean.FALSE)) {
             if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)) {
@@ -380,7 +377,7 @@ public class TapToken implements IRC2 {
                     Context.revert("TAP token transfers are paused");
                 }
             } else {
-                if (containsInArrayDb(Context.getCaller(), this.pauseWhitelist)) {
+                if (!containsInArrayDb(Context.getCaller(), this.pauseWhitelist)) {
                     Context.revert("TAP token transfers are paused");
                 }
             }
@@ -394,15 +391,30 @@ public class TapToken implements IRC2 {
                 Context.revert("Transfer of TAP has been locked for this address.");
             }
         }
+        if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
+            if (linearComplexityMigration._blacklist_address_index.getOrDefault(Context.getCaller(), 0) > 0) {
+                Context.revert("Transfer of TAP has been locked for this address.");
+            }
+        } else {
+            if (containsInArrayDb(Context.getCaller(), this.blacklistAddress)) {
+                Context.revert("Transfer of TAP has been locked for this address.");
+            }
+        }
+    }
 
+    @Override
+    @External
+    public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
+        //TODO: review all the loops that are use for searching
+        checkIsTransferAllowed();
         if (_data == null) {
-            _data = "None".getBytes();
+            _data = new byte[0];
         }
         _transfer(Context.getCaller(), _to, _value, _data);
     }
 
     private void _transfer(Address from, Address to, BigInteger value, byte[] data) {
-
+        Context.println("value is: " + value);
         // Checks the sending value and balance.
         if (value == null || value.compareTo(ZERO) < 0) {
             Context.revert("Transferring value cannot be less than zero");

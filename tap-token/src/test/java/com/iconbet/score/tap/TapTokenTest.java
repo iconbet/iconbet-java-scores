@@ -1,6 +1,7 @@
 package com.iconbet.score.tap;
 
 import static java.math.BigInteger.TEN;
+import static java.math.BigInteger.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -21,6 +22,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 
+import org.junit.jupiter.api.function.Executable;
 import score.Address;
 import static com.iconbet.score.tap.TapToken.StakedTAPTokenSnapshots;
 import static com.iconbet.score.tap.TapToken.TotalStakedTAPTokenSnapshots;
@@ -302,6 +304,8 @@ class TapTokenTest extends TestBase {
 		tapToken.invoke(owner, "toggle_staking_enabled");
 		tapToken.invoke(owner, "toggleEnableSnapshot");
 		System.out.println(tapToken.call("balanceOf", owner.getAddress()));
+
+		assertEquals(tapToken.call("balanceOf", owner.getAddress()), tapToken.call("available_balance_of", owner.getAddress()));
 		tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
 		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("staked_balanceOf", owner.getAddress()));
 		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("total_staked_balance"));
@@ -309,6 +313,8 @@ class TapTokenTest extends TestBase {
 		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("totalStakedBalanceOFAt", BigInteger.ZERO));
 
 		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
+
+		assertEquals(((BigInteger)tapToken.call("balanceOf", owner.getAddress())).subtract(BigInteger.valueOf(100000).multiply(MULTIPLIER)), tapToken.call("available_balance_of", owner.getAddress()));
 
 		@SuppressWarnings("unchecked")
 		Map<String, BigInteger> detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
@@ -319,6 +325,9 @@ class TapTokenTest extends TestBase {
 		assertEquals(new BigInteger("0"), detailsBalanceOf.get("Unstaking balance"));
 
 		tapToken.invoke(owner, "stake", BigInteger.valueOf(90000).multiply(MULTIPLIER));
+		assertEquals(BigInteger.valueOf(90000).multiply(MULTIPLIER), tapToken.call("stakedBalanceOfAt", owner.getAddress(), BigInteger.ZERO));
+		assertEquals(BigInteger.valueOf(90000).multiply(MULTIPLIER), tapToken.call("totalStakedBalanceOFAt", BigInteger.ZERO));
+
 
 		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
 
@@ -336,6 +345,7 @@ class TapTokenTest extends TestBase {
 
 		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
 
+		assertEquals(((BigInteger)tapToken.call("balanceOf", owner.getAddress())).subtract(BigInteger.valueOf(90000).multiply(MULTIPLIER)), tapToken.call("available_balance_of", owner.getAddress()));
 		//noinspection unchecked
 		detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
 
@@ -382,5 +392,93 @@ class TapTokenTest extends TestBase {
 		tapToken.invoke(owner, "get_stake_updates");
 
 		tapToken.invoke(owner, "clear_yesterdays_stake_changes");
+	}
+
+	@Test
+	void transfer(){
+		stake();
+		tapToken.invoke(owner, "transfer", testingAccount.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+
+		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
+
+		@SuppressWarnings("unchecked")
+		Map<String, BigInteger> detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
+
+		assertEquals(new BigInteger("624900000000000000000000000"), detailsBalanceOf.get("Available balance"));
+		assertEquals(BigInteger.valueOf(90000).multiply(MULTIPLIER), detailsBalanceOf.get("Staked balance"));
+		assertEquals(new BigInteger("625000000000000000000000000").subtract(BigInteger.valueOf(10000).multiply(MULTIPLIER)), detailsBalanceOf.get("Total balance"));
+		assertEquals(BigInteger.valueOf(0), detailsBalanceOf.get("Unstaking balance"));
+
+		System.out.println(tapToken.call("details_balanceOf", testingAccount.getAddress()));
+
+		//noinspection unchecked
+		detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", testingAccount.getAddress());
+		assertEquals(BigInteger.valueOf(10000).multiply(MULTIPLIER), detailsBalanceOf.get("Available balance"));
+		assertEquals(ZERO, detailsBalanceOf.get("Staked balance"));
+		assertEquals(BigInteger.valueOf(10000).multiply(MULTIPLIER), detailsBalanceOf.get("Total balance"));
+		assertEquals(BigInteger.valueOf(0), detailsBalanceOf.get("Unstaking balance"));
+	}
+
+	@Test
+	void transferFromLockedAccount(){
+		transfer();
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+
+		tapToken.invoke(owner, "set_locklist_address", testingAccount.getAddress());
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+
+		Executable transferfromLockedAccount = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+		expectErrorMessage(transferfromLockedAccount, "Reverted(0): Transfer of TAP has been locked for this address.");
+	}
+
+	@Test
+	void transferFromBlacklistedAccount(){
+		transfer();
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+
+		tapToken.invoke(owner, "set_blacklist_address", testingAccount.getAddress());
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+
+		Executable transferfromLockedAccount = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+		expectErrorMessage(transferfromLockedAccount, "Reverted(0): Transfer of TAP has been locked for this address.");
+	}
+
+	@Test
+	void transferfromPausedWhitelistAccountWhilePaused(){
+		transfer();
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+		tapToken.invoke(owner, "togglePaused");
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+
+		tapToken.invoke(owner, "set_whitelist_address", testingAccount.getAddress());
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+
+		tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+	}
+
+	@Test
+	void transferfromNotWhitelistAccountWhileNotPaused(){
+		transfer();
+		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+		tapToken.invoke(owner, "togglePaused");
+
+		contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+
+		Executable transferWhenPausedFromNonWhitelistAddress = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+		expectErrorMessage(transferWhenPausedFromNonWhitelistAddress, "Reverted(0): TAP token transfers are paused");
+	}
+
+
+
+
+	public void expectErrorMessage(Executable contractCall, String errorMessage) {
+		AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
+		assertEquals(errorMessage, e.getMessage());
 	}
 }
