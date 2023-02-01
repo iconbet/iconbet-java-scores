@@ -79,6 +79,7 @@ class TapTokenTest extends TestBase {
 		tapToken.setInstance(scoreSpy);
 		long currentTime = System.currentTimeMillis() / 1000L;
 		sm.getBlock().increase(currentTime / 2);
+		contextMock.reset();
 	}
 
 	@Test
@@ -293,6 +294,10 @@ class TapTokenTest extends TestBase {
 
 	@Test
 	void stake(){
+		setScores();
+		contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+		tapToken.invoke(owner, "set_unstaking_period", BigInteger.TEN);
+
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
 		tapToken.invoke(owner, "toggle_staking_enabled");
 		tapToken.invoke(owner, "toggleEnableSnapshot");
@@ -302,6 +307,42 @@ class TapTokenTest extends TestBase {
 		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("total_staked_balance"));
 		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("stakedBalanceOfAt", owner.getAddress(), BigInteger.ZERO));
 		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("totalStakedBalanceOFAt", BigInteger.ZERO));
+
+		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
+
+		@SuppressWarnings("unchecked")
+		Map<String, BigInteger> detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
+
+		assertEquals(new BigInteger("624900000000000000000000000"), detailsBalanceOf.get("Available balance"));
+		assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), detailsBalanceOf.get("Staked balance"));
+		assertEquals(new BigInteger("625000000000000000000000000"), detailsBalanceOf.get("Total balance"));
+		assertEquals(new BigInteger("0"), detailsBalanceOf.get("Unstaking balance"));
+
+		tapToken.invoke(owner, "stake", BigInteger.valueOf(90000).multiply(MULTIPLIER));
+
+		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
+
+		//noinspection unchecked
+		detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
+
+		assertEquals(new BigInteger("624900000000000000000000000"), detailsBalanceOf.get("Available balance"));
+		assertEquals(BigInteger.valueOf(90000).multiply(MULTIPLIER), detailsBalanceOf.get("Staked balance"));
+		assertEquals(new BigInteger("625000000000000000000000000"), detailsBalanceOf.get("Total balance"));
+		assertEquals(BigInteger.valueOf(10000).multiply(MULTIPLIER), detailsBalanceOf.get("Unstaking balance"));
+
+
+		long currentTime = System.currentTimeMillis() / 1000L;
+		sm.getBlock().increase(11 *currentTime / 2);
+
+		System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
+
+		//noinspection unchecked
+		detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
+
+		assertEquals(new BigInteger("624910000000000000000000000"), detailsBalanceOf.get("Available balance"));
+		assertEquals(BigInteger.valueOf(90000).multiply(MULTIPLIER), detailsBalanceOf.get("Staked balance"));
+		assertEquals(new BigInteger("625000000000000000000000000"), detailsBalanceOf.get("Total balance"));
+		assertEquals(BigInteger.valueOf(0), detailsBalanceOf.get("Unstaking balance"));
 	}
 
 	@Test
@@ -315,10 +356,11 @@ class TapTokenTest extends TestBase {
 		tapToken.invoke(owner, "set_max_loop", 10);
 
 		contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-		System.out.println(tapToken.call("balanceOf", owner.getAddress()));
+		assertEquals(new BigInteger("625000000000000000000000000"), tapToken.call("balanceOf", owner.getAddress()));
 		tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
 		contextMock.when(() -> Context.getCaller()).thenReturn(dividends);
 
+		tapToken.invoke(owner, "get_stake_updates");
 		tapToken.invoke(owner, "get_stake_updates");
 	}
 

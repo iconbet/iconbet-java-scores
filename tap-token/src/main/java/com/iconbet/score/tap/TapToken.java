@@ -757,6 +757,7 @@ public class TapToken implements IRC2 {
             j++;
         }
         this.indexUpdateStake.set(BigInteger.valueOf(end));
+        Context.println("Stake updates: " + Map.ofEntries(entries));
         return Map.ofEntries(entries);
     }
 
