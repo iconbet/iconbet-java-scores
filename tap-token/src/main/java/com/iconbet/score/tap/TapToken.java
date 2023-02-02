@@ -1056,9 +1056,10 @@ public class TapToken implements IRC2 {
         BigInteger current_id = getDay();
         int totalSnapshotsTaken = snapshot._total_snapshots.getOrDefault(_account, 0);
         Context.println("totalSnapshotsTaken: " + totalSnapshotsTaken);
-        if (totalSnapshotsTaken > 0 && snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO).equals(ZERO)) {
+        if (totalSnapshotsTaken > 0 && snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).getOrDefault(IDS, ZERO).equals(current_id)) {
             snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken - 1).set(AMOUNT, _amount);
         } else {
+            Context.println("should reach here updateSnapshot for address");
             snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(IDS, current_id);
             snapshot._stake_snapshots.at(_account).at(totalSnapshotsTaken).set(AMOUNT, _amount);
             snapshot._total_snapshots.set(_account, totalSnapshotsTaken + 1);
@@ -1085,11 +1086,13 @@ public class TapToken implements IRC2 {
     @External(readonly = true)
     public BigInteger stakedBalanceOfAt(Address _account, BigInteger _day) {
         BigInteger current_day = this.getDay();
+        Context.println("current day is: " + current_day);
         if (_day.compareTo(current_day) > 0) {
             Context.revert(TAG + ": Asked _day is greater than the current day.");
         }
         Snapshot snapshot = new Snapshot();
         int totalSnapshotsTaken = snapshot._total_snapshots.getOrDefault(_account, 0);
+        Context.println("totalSnapshotsTaken in stakedBalanceOfAt: " + totalSnapshotsTaken);
         if (totalSnapshotsTaken == 0) {
             return ZERO;
         }
