@@ -371,32 +371,33 @@ public class TapToken implements IRC2 {
 
     private void checkIsTransferAllowed(){
         LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+        Address caller = Context.getCaller();
         if (this.paused.getOrDefault(Boolean.FALSE)) {
             if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, Boolean.FALSE)) {
-                if (linearComplexityMigration._pause_whitelist_index.getOrDefault(Context.getCaller(), 0) == 0) {
+                if (linearComplexityMigration._pause_whitelist_index.getOrDefault(caller, 0) == 0) {
                     Context.revert("TAP token transfers are paused");
                 }
             } else {
-                if (!containsInArrayDb(Context.getCaller(), this.pauseWhitelist)) {
+                if (!containsInArrayDb(caller, this.pauseWhitelist)) {
                     Context.revert("TAP token transfers are paused");
                 }
             }
         }
         if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, Boolean.FALSE)) {
-            if (linearComplexityMigration._locklist_index.getOrDefault(Context.getCaller(), 0) > 0) {
+            if (linearComplexityMigration._locklist_index.getOrDefault(caller, 0) > 0) {
                 Context.revert("Transfer of TAP has been locked for this address.");
             }
         } else {
-            if (containsInArrayDb(Context.getCaller(), this.locklist)) {
+            if (containsInArrayDb(caller, this.locklist)) {
                 Context.revert("Transfer of TAP has been locked for this address.");
             }
         }
         if (linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, Boolean.FALSE)) {
-            if (linearComplexityMigration._blacklist_address_index.getOrDefault(Context.getCaller(), 0) > 0) {
+            if (linearComplexityMigration._blacklist_address_index.getOrDefault(caller, 0) > 0) {
                 Context.revert("Transfer of TAP has been locked for this address.");
             }
         } else {
-            if (containsInArrayDb(Context.getCaller(), this.blacklistAddress)) {
+            if (containsInArrayDb(caller, this.blacklistAddress)) {
                 Context.revert("Transfer of TAP has been locked for this address.");
             }
         }
@@ -889,7 +890,7 @@ public class TapToken implements IRC2 {
             sb.set(Status.UNSTAKING, sb.get(Status.UNSTAKING).add(stakedBalance));
             sb.set(Status.UNSTAKING_PERIOD, this.unstakingPeriod.get().add(BigInteger.valueOf(Context.getBlockTimestamp())));
             this.totalStakedBalance.set(this.totalStakedBalance.getOrDefault(ZERO).subtract(stakedBalance));
-            ArrayDB<Address> stakeAddressChanges = this.stakeChanges.get(this.stakeAddressUpdateDb.get());
+            ArrayDB<Address> stakeAddressChanges = this.stakeChanges.get(this.stakeAddressUpdateDb.getOrDefault(0));
             stakeAddressChanges.add(_address);
         }
     }
@@ -979,7 +980,7 @@ public class TapToken implements IRC2 {
         int length = fromArray.size();
         LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
 
-        int start = linearComplexityMigration.linear_complexity_migration_index.get(arrayName);
+        int start = linearComplexityMigration.linear_complexity_migration_index.getOrDefault(arrayName, 0);
         int remainingAddresses = length - start;
         if (count > remainingAddresses) {
             count = remainingAddresses;
@@ -1234,5 +1235,24 @@ public class TapToken implements IRC2 {
             addressList[i] = arraydb.get(i);
         }
         return List.of(addressList);
+    }
+
+//    ***********************************************
+//    To be removed in production
+//    ***********************************************
+
+    @External
+    public void checkMigrationOwnerCall(){
+        ownerOnly();
+        checkMigration();
+    }
+
+    @External
+    public Map<String, Boolean> migrationStatus(){
+        LinearComplexityMigration linearComplexityMigration = new LinearComplexityMigration();
+        return Map.of("locklist", linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.LOCKLIST, false),
+                "blacklist", linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.BLACKLIST, false),
+                "whitelist", linearComplexityMigration.linear_complexity_migration_complete.getOrDefault(ArrayDbToMigrate.WHITELIST, false)
+                );
     }
 }

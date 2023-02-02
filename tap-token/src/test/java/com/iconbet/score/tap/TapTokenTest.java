@@ -12,10 +12,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
@@ -27,15 +24,14 @@ import score.Address;
 
 import static com.iconbet.score.tap.TapToken.StakedTAPTokenSnapshots;
 import static com.iconbet.score.tap.TapToken.TotalStakedTAPTokenSnapshots;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 
 
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
+import score.ArrayDB;
 import score.Context;
 
 class TapTokenTest extends TestBase {
@@ -52,6 +48,14 @@ class TapTokenTest extends TestBase {
     private static final Account testingAccount1 = sm.createAccount();
     private static final Account testingAccount2 = sm.createAccount();
     private static final Account testingAccount3 = sm.createAccount();
+    private static final Account testingAccount4 = sm.createAccount();
+    private static final Account testingAccount5 = sm.createAccount();
+    private static final Account testingAccount6 = sm.createAccount();
+    private static final Account testingAccount7 = sm.createAccount();
+    private static final Account testingAccount8 = sm.createAccount();
+    private static final Account testingAccount9 = sm.createAccount();
+    private static final Account testingAccount10 = sm.createAccount();
+
     private static final Address daoFund = Address.fromString("cx0000000000000000000000000000000000000001");
     private static final Address gameScore = Address.fromString("cx0000000000000000000000000000000000000002");
     private static final Address gameAuth = Address.fromString("cx0000000000000000000000000000000000000004");
@@ -113,7 +117,7 @@ class TapTokenTest extends TestBase {
 
     @Test
     void setScores() {
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "set_dividends_score", dividends);
         tapToken.invoke(owner, "set_authorization_score", gameAuth);
 
@@ -122,7 +126,7 @@ class TapTokenTest extends TestBase {
     }
 
     private void setScoresMethod() {
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "set_dividends_score", dividends);
         tapToken.invoke(owner, "set_authorization_score", gameAuth);
     }
@@ -131,7 +135,7 @@ class TapTokenTest extends TestBase {
     @Test
     void togglePaused() {
         Boolean paused = (Boolean) tapToken.call("getPaused");
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "togglePaused");
         Boolean pausedAfter = (Boolean) tapToken.call("getPaused");
         assertEquals(pausedAfter, !paused);
@@ -141,7 +145,7 @@ class TapTokenTest extends TestBase {
     @Test
     void testWhitelist() {
         setScoresMethod();
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
         Account alice = sm.createAccount();
         tapToken.invoke(owner, "set_whitelist_address", alice.getAddress());
 
@@ -155,7 +159,7 @@ class TapTokenTest extends TestBase {
 
     @Test
     void testToggleStakingToEnable() {
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "toggle_staking_enabled");
         Boolean enabled = (Boolean) tapToken.call("staking_enabled");
         assertTrue(enabled);
@@ -164,10 +168,10 @@ class TapTokenTest extends TestBase {
     @Test
     void testLockList() {
         setScoresMethod();
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         Account alice = sm.createAccount();
         tapToken.invoke(owner, "toggle_staking_enabled");
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
         tapToken.invoke(owner, "set_locklist_address", alice.getAddress());
 
         @SuppressWarnings("unchecked")
@@ -267,7 +271,7 @@ class TapTokenTest extends TestBase {
         stakedTAPTokenSnapshotsArray[0] = stakedTAPTokenSnapshots1;
         stakedTAPTokenSnapshotsArray[1] = stakedTAPTokenSnapshots2;
         stakedTAPTokenSnapshotsArray[2] = stakedTAPTokenSnapshots3;
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "toggleEnableSnapshot");
         doReturn(BigInteger.ONE).when(scoreSpy).getDay();
         tapToken.invoke(owner, "loadTAPStakeSnapshot", (Object) stakedTAPTokenSnapshotsArray);
@@ -287,7 +291,7 @@ class TapTokenTest extends TestBase {
         totalStakedTAPTokenSnapshots1.day = BigInteger.ZERO;
 
         totalStakedTAPTokenSnapshots[0] = totalStakedTAPTokenSnapshots1;
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "toggleEnableSnapshot");
         doReturn(BigInteger.ONE).when(scoreSpy).getDay();
         tapToken.invoke(owner, "loadTotalStakeSnapshot", (Object) totalStakedTAPTokenSnapshots);
@@ -298,10 +302,10 @@ class TapTokenTest extends TestBase {
     @Test
     void stake() {
         setScores();
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
         tapToken.invoke(owner, "set_unstaking_period", BigInteger.TEN);
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "toggle_staking_enabled");
         tapToken.invoke(owner, "toggleEnableSnapshot");
         System.out.println(tapToken.call("balanceOf", owner.getAddress()));
@@ -316,7 +320,7 @@ class TapTokenTest extends TestBase {
         System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
 
         assertEquals(((BigInteger) tapToken.call("balanceOf", owner.getAddress())).
-                subtract(BigInteger.valueOf(100000).multiply(MULTIPLIER)),
+                        subtract(BigInteger.valueOf(100000).multiply(MULTIPLIER)),
                 tapToken.call("available_balance_of", owner.getAddress()));
 
         @SuppressWarnings("unchecked")
@@ -352,7 +356,7 @@ class TapTokenTest extends TestBase {
         System.out.println(tapToken.call("details_balanceOf", owner.getAddress()));
 
         assertEquals(((BigInteger) tapToken.call("balanceOf", owner.getAddress())).
-                subtract(BigInteger.valueOf(90000).multiply(MULTIPLIER)),
+                        subtract(BigInteger.valueOf(90000).multiply(MULTIPLIER)),
                 tapToken.call("available_balance_of", owner.getAddress()));
         //noinspection unchecked
         detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
@@ -364,12 +368,12 @@ class TapTokenTest extends TestBase {
     }
 
     @Test
-    void stakeNotInTheSameDay(){
+    void stakeNotInTheSameDay() {
         setScores();
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
         tapToken.invoke(owner, "set_unstaking_period", BigInteger.TEN);
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "toggle_staking_enabled");
         tapToken.invoke(owner, "toggleEnableSnapshot");
         System.out.println(tapToken.call("balanceOf", owner.getAddress()));
@@ -387,9 +391,8 @@ class TapTokenTest extends TestBase {
         //noinspection unchecked
         Map<String, BigInteger> detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", owner.getAddress());
 
-        System.out.println(tapToken.call("stakedBalanceOfAt", owner.getAddress(), BigInteger.valueOf(1000)));
-        System.out.println(tapToken.call("totalStakedBalanceOFAt", BigInteger.valueOf(1000)));
-
+        assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("stakedBalanceOfAt", owner.getAddress(), BigInteger.valueOf(1000)));
+        assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), tapToken.call("totalStakedBalanceOFAt", BigInteger.valueOf(1000)));
     }
 
     @Test
@@ -399,13 +402,13 @@ class TapTokenTest extends TestBase {
         tapToken.invoke(owner, "toggleEnableSnapshot");
         tapToken.invoke(owner, "toggle_switch_divs_to_staked_tap_enabled");
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
         tapToken.invoke(owner, "set_max_loop", 10);
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         assertEquals(new BigInteger("625000000000000000000000000"), tapToken.call("balanceOf", owner.getAddress()));
         tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
-        contextMock.when(() -> Context.getCaller()).thenReturn(dividends);
+        contextMock.when(ownerCall()).thenReturn(dividends);
 
         tapToken.invoke(owner, "get_stake_updates");
         tapToken.invoke(owner, "get_stake_updates");
@@ -418,13 +421,13 @@ class TapTokenTest extends TestBase {
         tapToken.invoke(owner, "toggleEnableSnapshot");
         tapToken.invoke(owner, "toggle_switch_divs_to_staked_tap_enabled");
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
         tapToken.invoke(owner, "set_max_loop", 10);
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         System.out.println(tapToken.call("balanceOf", owner.getAddress()));
         tapToken.invoke(owner, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
-        contextMock.when(() -> Context.getCaller()).thenReturn(dividends);
+        contextMock.when(ownerCall()).thenReturn(dividends);
 
         tapToken.invoke(owner, "get_stake_updates");
 
@@ -460,52 +463,118 @@ class TapTokenTest extends TestBase {
     void transferFromLockedAccount() {
         transfer();
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
 
         tapToken.invoke(owner, "set_locklist_address", testingAccount.getAddress());
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
 
         Executable transferfromLockedAccount = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
         expectErrorMessage(transferfromLockedAccount, "Reverted(0): Transfer of TAP has been locked for this address.");
+    }
+
+    @DisplayName("transfer from locked account after removing it from locked account list")
+    @Test
+    void transferFromLockedAccount_2() {
+        transferFromLockedAccount();
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        tapToken.invoke(owner, "remove_from_locklist", testingAccount.getAddress());
+
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
+        tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+
+        assertEquals(ZERO, tapToken.call("balanceOf", testingAccount.getAddress()));
+        assertEquals(BigInteger.valueOf(10000).multiply(MULTIPLIER), tapToken.call("balanceOf", testingAccount1.getAddress()));
     }
 
     @Test
     void transferFromBlacklistedAccount() {
         transfer();
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
 
         tapToken.invoke(owner, "set_blacklist_address", testingAccount.getAddress());
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
 
         Executable transferfromLockedAccount = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
         expectErrorMessage(transferfromLockedAccount, "Reverted(0): Transfer of TAP has been locked for this address.");
     }
 
+    @DisplayName("transfer from blacklist address after it is removed from blacklist address list")
     @Test
-    void transferfromPausedWhitelistAccountWhilePaused() {
-        transfer();
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
-        tapToken.invoke(owner, "togglePaused");
+    void transferFromBlacklistedAccount_2() {
+        transferFromBlacklistedAccount();
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(gameAuth);
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
 
-        tapToken.invoke(owner, "set_whitelist_address", testingAccount.getAddress());
+        tapToken.invoke(owner, "remove_from_blacklist", testingAccount.getAddress());
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
-
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
         tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+
+        assertEquals(ZERO, tapToken.call("balanceOf", testingAccount.getAddress()));
+        assertEquals(BigInteger.valueOf(10000).multiply(MULTIPLIER), tapToken.call("balanceOf", testingAccount1.getAddress()));
+
+
     }
 
     @Test
-    void transferfromNotWhitelistAccountWhileNotPaused() {
+    void transferfromPausedWhitelistAccountWhilePaused() {
         transfer();
-        contextMock.when(() -> Context.getCaller()).thenReturn(owner.getAddress());
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
         tapToken.invoke(owner, "togglePaused");
 
-        contextMock.when(() -> Context.getCaller()).thenReturn(testingAccount.getAddress());
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        tapToken.invoke(owner, "set_whitelist_address", testingAccount.getAddress());
+
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
+
+        tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+
+        assertEquals(ZERO, tapToken.call("balanceOf", testingAccount.getAddress()));
+        assertEquals(BigInteger.valueOf(10000).multiply(MULTIPLIER), tapToken.call("balanceOf", testingAccount1.getAddress()));
+    }
+
+    @DisplayName("Transfer from whitelist address after it is removed from whitelist")
+    @Test
+    void transfer_2() {
+        transfer();
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
+        tapToken.invoke(owner, "togglePaused");
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        tapToken.invoke(owner, "set_whitelist_address", testingAccount.getAddress());
+
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
+
+        tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(5000).multiply(MULTIPLIER), new byte[0]);
+
+        assertEquals(BigInteger.valueOf(5000).multiply(MULTIPLIER), tapToken.call("balanceOf", testingAccount.getAddress()));
+        assertEquals(BigInteger.valueOf(5000).multiply(MULTIPLIER), tapToken.call("balanceOf", testingAccount1.getAddress()));
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        tapToken.invoke(owner, "remove_from_whitelist", testingAccount.getAddress());
+
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
+
+        Executable transfer = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(5000).multiply(MULTIPLIER), new byte[0]);
+        expectErrorMessage(transfer, "Reverted(0): TAP token transfers are paused");
+
+    }
+
+    @Test
+    void transferfromNotWhitelistAccountWhilePaused() {
+        transfer();
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
+        tapToken.invoke(owner, "togglePaused");
+
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
 
         Executable transferWhenPausedFromNonWhitelistAddress = () -> tapToken.invoke(testingAccount, "transfer", testingAccount1.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
         expectErrorMessage(transferWhenPausedFromNonWhitelistAddress, "Reverted(0): TAP token transfers are paused");
@@ -515,5 +584,204 @@ class TapTokenTest extends TestBase {
     public void expectErrorMessage(Executable contractCall, String errorMessage) {
         AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
         assertEquals(errorMessage, e.getMessage());
+    }
+
+    /***
+     * Both owner and governance contract can set the locklist addresses
+     ***/
+    @Test
+    void setLocklistAddress() {
+        setScores();
+        tapToken.invoke(owner, "toggle_staking_enabled");
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+        setInListedAddresses("set_locklist_address");
+        verifyAddressInListedAddresses("get_locklist_addresses");
+
+    }
+
+    /***
+     * Both owner and governance contract can set the blacklist addresses
+     ***/
+    @Test
+    void setBlacklistAddress(){
+        setScores();
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+        setInListedAddresses("set_blacklist_address");
+        verifyAddressInListedAddresses("get_blacklist_addresses");
+    }
+
+    /***
+     * Both owner and governance contract can set the blacklist addresses
+     ***/
+    @Test
+    void setWhiteListAddress(){
+        setScores();
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+        setInListedAddresses("set_whitelist_address");
+        verifyAddressInListedAddresses("get_whitelist_addresses");
+    }
+
+    private void setInListedAddresses(String listedAddressType){
+        tapToken.invoke(owner, listedAddressType, testingAccount.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount1.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount2.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount3.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount4.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount5.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount6.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount7.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount8.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount9.getAddress());
+        tapToken.invoke(owner, listedAddressType, testingAccount10.getAddress());
+    }
+
+    private void verifyAddressInListedAddresses(String listedAddressType){
+        assertEquals(List.of(testingAccount.getAddress(),
+                        testingAccount1.getAddress(),
+                        testingAccount2.getAddress(),
+                        testingAccount3.getAddress(),
+                        testingAccount4.getAddress(),
+                        testingAccount5.getAddress(),
+                        testingAccount6.getAddress(),
+                        testingAccount7.getAddress(),
+                        testingAccount8.getAddress(),
+                        testingAccount9.getAddress(),
+                        testingAccount10.getAddress()),
+                tapToken.call(listedAddressType));
+    }
+
+    @Test
+    void removeFromBlackListAddresses(){
+        setBlacklistAddress();
+
+        tapToken.invoke(owner, "remove_from_blacklist", testingAccount.getAddress());
+
+        assertFalse(containsInList(testingAccount.getAddress(), (List<Address>) tapToken.call("get_blacklist_addresses")));
+
+    }
+
+    @Test
+    void removeFromWitelistAddresses(){
+        setWhiteListAddress();
+
+        tapToken.invoke(owner, "remove_from_whitelist", testingAccount.getAddress());
+
+        assertFalse(containsInList(testingAccount.getAddress(), (List<Address>) tapToken.call("get_whitelist_addresses")));
+    }
+
+    @Test
+    void removeFromLocklistAddresses(){
+        setLocklistAddress();
+        tapToken.invoke(owner, "remove_from_locklist", testingAccount.getAddress());
+
+        assertFalse(containsInList(testingAccount.getAddress(), (List<Address>) tapToken.call("get_locklist_addresses")));
+    }
+
+    @Test
+    void removeFromWhiteListNotPresentInList(){
+        setScores();
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        Executable remove = () -> tapToken.invoke(owner, "remove_from_whitelist", testingAccount.getAddress());
+        expectErrorMessage(remove, "Reverted(0): hx0000000000000000000000000000000000000002 not in whitelist address");
+    }
+
+    @Test
+    void removeFromLocklistListNotPresentInList(){
+        setScores();
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        Executable remove = () -> tapToken.invoke(owner, "remove_from_locklist", testingAccount.getAddress());
+        expectErrorMessage(remove, "Reverted(0): hx0000000000000000000000000000000000000002 not in locklist address");
+    }
+
+    @Test
+    void removeFromBlacklistListNotPresentInList(){
+        setScores();
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        Executable remove = () -> tapToken.invoke(owner, "remove_from_blacklist", testingAccount.getAddress());
+        expectErrorMessage(remove, "Reverted(0): hx0000000000000000000000000000000000000002 not in blacklist address");
+    }
+
+    /***
+     * Adding an address to locklist address which has staked.. the staked amount should be unstaked
+     */
+    @Test
+    void addToLockListAddress(){
+        setScores();
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+        tapToken.invoke(owner, "set_unstaking_period", BigInteger.TEN);
+
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
+        tapToken.invoke(owner, "toggle_staking_enabled");
+        tapToken.invoke(owner, "toggleEnableSnapshot");
+        System.out.println(tapToken.call("balanceOf", owner.getAddress()));
+
+        tapToken.invoke(owner, "transfer", testingAccount.getAddress(), BigInteger.valueOf(100000).multiply(MULTIPLIER), new byte[0]);
+
+        contextMock.when(ownerCall()).thenReturn(testingAccount.getAddress());
+        tapToken.invoke(testingAccount, "stake", BigInteger.valueOf(100000).multiply(MULTIPLIER));
+
+        //noinspection unchecked
+        Map<String, BigInteger> detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", testingAccount.getAddress());
+        assertEquals(ZERO, detailsBalanceOf.get("Unstaking balance"));
+
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+
+        tapToken.invoke(owner, "set_locklist_address", testingAccount.getAddress());
+
+        //noinspection unchecked
+        detailsBalanceOf = (Map<String, BigInteger>) tapToken.call("details_balanceOf", testingAccount.getAddress());
+        assertEquals(BigInteger.valueOf(100000).multiply(MULTIPLIER), detailsBalanceOf.get("Unstaking balance"));
+    }
+
+    @Test
+    void checkMigration(){
+        setScores();
+        tapToken.invoke(owner, "toggle_staking_enabled");
+        contextMock.when(ownerCall()).thenReturn(gameAuth);
+        setInListedAddresses("set_locklist_address");
+        setInListedAddresses("set_whitelist_address");
+        setInListedAddresses("set_blacklist_address");
+
+        tapToken.invoke(owner, "set_max_loop", 4);
+
+        contextMock.when(ownerCall()).thenReturn(owner.getAddress());
+        tapToken.invoke(owner, "startLinearComplexityMigration");
+        tapToken.invoke(owner, "checkMigrationOwnerCall");
+
+        System.out.println(tapToken.call("migrationStatus"));
+
+        tapToken.invoke(owner, "checkMigrationOwnerCall");
+
+        System.out.println(tapToken.call("migrationStatus"));
+
+        tapToken.invoke(owner, "checkMigrationOwnerCall");
+
+        System.out.println(tapToken.call("migrationStatus"));
+    }
+
+    private static MockedStatic.Verification ownerCall() {
+        return () -> Context.getCaller();
+    }
+
+    private <T> boolean containsInList(T value, List<T> arraydb) {
+        boolean found = false;
+        if (arraydb == null || value == null) {
+            return found;
+        }
+
+        for (int i = 0; i < arraydb.size(); i++) {
+            if (arraydb.get(i) != null
+                    && arraydb.get(i).equals(value)) {
+                found = true;
+                break;
+            }
+        }
+        return found;
     }
 }
