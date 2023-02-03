@@ -319,7 +319,6 @@ public class Daolette {
      */
     @External(readonly = true)
     public BigInteger get_excess() {
-        //TODO: this could be negative looks like, is it ok?
         BigInteger excessToMinTreasury = this._treasury_balance.getOrDefault(BigInteger.ZERO).subtract(this._treasury_min.get());
 
         Address authScore = this._game_auth_score.get();
