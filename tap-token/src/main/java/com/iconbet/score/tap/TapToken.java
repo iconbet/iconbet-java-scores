@@ -68,7 +68,6 @@ public class TapToken implements IRC2 {
     private final VarDB<Address> governanceScore = Context.newVarDB(GOVERNANCE_SCORE, Address.class);
     private final ArrayDB<Address> blacklistAddress = Context.newArrayDB(BLACKLIST_ADDRESS, Address.class);
 
-    //TODO : Example 2) Two-depth dict (test_dict2[‘key1’][‘key2’]):
     //lets dig into how it is used self._STAKED_BALANCES, db, value_type=int, depth=2
     //verify if BranchDB can support multiples Dicdb keys like thousands, else we will need to go back to old impl or even a tricky data structure impl
     //let's check also if this is a valid convertion from Two-depth dict py to branch db java class when updating from py to java
@@ -235,7 +234,6 @@ public class TapToken implements IRC2 {
             availableBalance = sb.getOrDefault(Status.AVAILABLE, ZERO);
         }
 
-        //TODO: possible negative value scenario in py?
         BigInteger unstakingAmount = sb.getOrDefault(Status.UNSTAKING, ZERO);
         if (unstakingAmount.compareTo(ZERO) > 0) {
             unstakingAmount = unstakingAmount.subtract(currUnstaked);
@@ -406,7 +404,6 @@ public class TapToken implements IRC2 {
     @Override
     @External
     public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
-        //TODO: review all the loops that are use for searching
         checkIsTransferAllowed();
         if (_data == null) {
             _data = new byte[0];
@@ -673,7 +670,6 @@ public class TapToken implements IRC2 {
             }
         } else {
             if (!containsInArrayDb(_address, this.blacklistAddress)) {
-                //TODO: check if toString produces a s;tring representation or a java object string
                 Context.revert(_address + " not in blacklist address");
             }
         }
@@ -762,7 +758,7 @@ public class TapToken implements IRC2 {
 
         @SuppressWarnings("unchecked")
         Map.Entry<String, BigInteger>[] entries = new Map.Entry[end - start];
-        //TODO: validate this logic
+
         int j = 0;
         for (int i = start; i < end; i++) {
             Address stakeChangesAtIndex = stakeChanges.get(i);
@@ -832,7 +828,6 @@ public class TapToken implements IRC2 {
             }
         } else {
             if (!containsInArrayDb(_address, this.locklist)) {
-                //TODO: check if toString produces a s;tring representation or a java object string
                 Context.revert(_address + " not in locklist address");
             }
         }
