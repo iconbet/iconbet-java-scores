@@ -149,7 +149,6 @@ public class Promotion {
         }
 
         int i = 0;
-        //TODO: test this logic in depth
         BigInteger totalPrizes = this._total_prizes.get();
         for (Map<String, Object> es : topWagers) {
             Context.println("reached in for ..............");
