@@ -30,7 +30,6 @@ public class SettersGetters {
      **/
     @External
     public void setTreasuryScore(Address scoreAddress) {
-        //TODO: should we call address isContract()?? contract means score?
         validateOwnerScore(scoreAddress);
         this.treasuryScore.set(scoreAddress);
     }
@@ -98,7 +97,6 @@ public class SettersGetters {
      ***/
     @External
     public void setRewardsScore(Address scoreAddress) {
-
         validateOwnerScore(scoreAddress);
         this.rewardsScore.set(scoreAddress);
     }
@@ -122,6 +120,7 @@ public class SettersGetters {
     @External
     public void setSuperAdmin(Address superAdmin) {
         validateOwner();
+        Context.require(!superAdmin.isContract(), TAG + ": Contract cannot be set as super admin");
         this.superAdmin.set(superAdmin);
         this.adminList.add(superAdmin);
     }
@@ -133,9 +132,6 @@ public class SettersGetters {
      **/
     @External(readonly = true)
     public Address get_super_admin() {
-        if (DEBUG) {
-            Context.println(Context.getOrigin().toString() + " is getting super admin address." + TAG);
-        }
         return this.superAdmin.get();
     }
 
@@ -148,6 +144,7 @@ public class SettersGetters {
     @External
     public void setAdmin(Address admin) {
         validateSuperAdmin();
+        Context.require(!admin.isContract(), TAG + ": Contract cannot be an admin");
         Context.require(!containsInArrayDb(admin, adminList), TAG + ": Already in admin list");
         this.adminList.add(admin);
     }
@@ -159,9 +156,6 @@ public class SettersGetters {
      ***/
     @External(readonly = true)
     public List<Address> get_admin() {
-        if (DEBUG) {
-            Context.println(Context.getOrigin().toString() + " is getting admin addresses." + TAG);
-        }
         Address[] admin_list = new Address[this.adminList.size()];
         for (int i = 0; i < this.adminList.size(); i++) {
             admin_list[i] = this.adminList.get(i);
