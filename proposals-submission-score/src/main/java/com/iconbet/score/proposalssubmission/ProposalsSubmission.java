@@ -238,11 +238,9 @@ public class ProposalsSubmission {
         int _end_index = _start_index + 5;
 
         List<Map<String, ?>> proposals_list = new ArrayList<>();
-        List<String> proposals_keys = _getProposalsKeysByStatus(_status);
-        if ((_end_index - _start_index) > 50) {
-            Context.revert("Page Length cannot be greater than 50");
-        }
-        int count = this.proposalsStatus.get(_status).size();
+        ArrayDB<String> proposals_keys = this.proposersProject.at(_wallet_address);
+
+        int count = proposals_keys.size();
 
         Context.require(_start_index < count, TAG + ": Start index is greater than number of proposals. Total Proposals: " + count);
         if (_start_index < 0) {
@@ -252,11 +250,12 @@ public class ProposalsSubmission {
         if (_end_index > count) {
             _end_index = count;
         }
-
+        ProposalData proposalData = new ProposalData();
         for (int i = _start_index; i < _end_index; i++) {
-            Map<String, ?> proposal_details = _getProposalDetails(proposals_keys.get(i));
-            if (proposal_details.get(STATUS).equals(_status)) {
-                proposals_list.add(proposal_details);
+            String ipfsHash = proposals_keys.get(i);
+            String proposalPrefix = proposalPrefix(ipfsHash);
+            if (proposalData.getStatus(proposalPrefix).equals(_status)) {
+                proposals_list.add(_getProposalDetails(ipfsHash));
             }
         }
         return Map.of(
@@ -268,18 +267,16 @@ public class ProposalsSubmission {
     @External(readonly = true)
     public List<Map<String, ?>> getActiveProposals(Address _wallet_address) {
         List<Map<String, ?>> proposalTitles = new ArrayList<>();
-        List<String> activeProposals = getProposalsKeysByStatus(ACTIVE);
-        List<String> pausedProposals = getProposalsKeysByStatus(PAUSED);
-        activeProposals.addAll(pausedProposals);
-        for (int i = 0; i < activeProposals.size(); i++) {
-            String proposalKey = activeProposals.get(i);
+        ArrayDB<String> proposersProjects = proposersProject.at(_wallet_address);
+        int size = proposersProjects.size();
+        for (int i = 0; i < size; i++) {
+            String proposalKey = proposersProjects.get(i);
             String proposalPrefix = proposalPrefix(proposalKey);
             ProposalData proposalData = new ProposalData();
-            if (proposalData.getProposerAddress(proposalPrefix).equals(_wallet_address)) {
+            if (List.of(ACTIVE, PAUSED).contains(proposalData.getStatus(proposalPrefix))) {
                 int projectDuration = proposalData.getProjectDuration(proposalPrefix);
                 int approvedReportsCount = proposalData.getApprovedReports(proposalPrefix);
-                Boolean lastProgressReport = Boolean.FALSE;
-
+                boolean lastProgressReport = Boolean.FALSE;
                 if (projectDuration - approvedReportsCount == 1) {
                     lastProgressReport = Boolean.TRUE;
                 }
@@ -292,7 +289,6 @@ public class ProposalsSubmission {
                 proposalTitles.add(proposalsDetails);
             }
         }
-
         return proposalTitles;
     }
 
@@ -301,7 +297,7 @@ public class ProposalsSubmission {
         List<Map<String, ?>> proposalTitles = new ArrayList<>();
         int end_index = start_index + 5;
         int proposalSize = this.proposersProject.at(_wallet_address).size();
-        if (end_index > proposalSize){
+        if (end_index > proposalSize) {
             end_index = proposalSize;
         }
 
@@ -337,10 +333,12 @@ public class ProposalsSubmission {
         BigInteger _completed_amount = BigInteger.ZERO;
         BigInteger _disqualified_amount = BigInteger.ZERO;
 
+        ProposalData proposalData = new ProposalData();
         for (String status : status_list) {
             BigInteger _amount = BigInteger.ZERO;
             for (String keys : _getProposalsKeysByStatus(status)) {
-                _amount = _amount.add((BigInteger) _getProposalDetails(keys).get(TOTAL_BUDGET));
+                String proposalPrefix = proposalPrefix(keys);
+                _amount = _amount.add(proposalData.getTotalBudget(proposalPrefix));
             }
 
             switch (status) {
@@ -496,12 +494,11 @@ public class ProposalsSubmission {
     }
 
     @External(readonly = true)
-    public Map<String, ?> getProgressReportDetails(String _status, int _start_index, int _end_index) {
+    public Map<String, ?> getProgressReportDetails(String _status, int _start_index) {
         List<Map<String, ?>> progressList = new ArrayList<>();
-        List<String> progressKeys = getProgressReportKeysByStatus(_status);
-        if ((_end_index - _start_index) > 10) {
-            Context.revert("Page Length cannot be greater than 50");
-        }
+        ArrayDB<String> progressKeys = this.progressReportStatus.get(_status);
+        int _end_index = _start_index + 5;
+
         int count = this.progressReportStatus.get(_status).size();
 
         if (_start_index < 0 || _start_index > count) {
@@ -512,11 +509,11 @@ public class ProposalsSubmission {
             _end_index = count;
         }
 
+        ProgressReportData progressReportData = new ProgressReportData();
+
         for (int i = _start_index; i < _end_index; i++) {
             Map<String, ?> proposal_details = _getProgressReportDetails(progressKeys.get(i));
-            if (proposal_details.get(STATUS).equals(_status)) {
-                progressList.add(proposal_details);
-            }
+            progressList.add(proposal_details);
         }
         return Map.of(
                 "DATA", progressList,
@@ -965,6 +962,44 @@ public class ProposalsSubmission {
         ProposalData proposalData = new ProposalData();
         String proposalPrefix = proposalPrefix(ipfsHash);
         return proposalData.getProposerAddress(proposalPrefix);
+    }
+
+    @External
+    public Map<String, Object> getVoteResult(String ipfsKey){
+        String prefix = proposalPrefix(ipfsKey);
+
+        ArrayDB<Address> votersList = ProposalData.votersList.at(prefix);
+        ArrayDB<Address> approveVoters = ProposalData.approveVoters.at(prefix);
+        ArrayDB<Address> rejectVoters = ProposalData.rejectVoters.at(prefix);
+        List<Map<String, Object>> voteStatus = new ArrayList<>();
+        String vote;
+        String reason;
+        int size = votersList.size();
+        for (int i = 0; i < size; i++) {
+            Address voter = votersList.get(i);
+
+            if (ArrayDBUtils.containsInArrayDb(voter, approveVoters)) {
+                vote = APPROVE;
+            }
+            else {
+                vote = REJECT;
+            }
+
+            reason = ProposalData.votersReasons.at(prefix).get(i);
+
+            Map<String, Object> voteResult= Map.of(
+                    ADDRESS, voter,
+                    VOTE_REASON, reason,
+                    VOTE, vote
+            );
+            voteStatus.add(voteResult);
+        }
+        return Map.of(
+                DATA, voteStatus,
+                APPROVE_VOTERS, approveVoters.size(),
+                REJECT_VOTERS, rejectVoters.size(),
+                TOTAL_VOTERS, votersList.size()
+        );
     }
 
     /*
