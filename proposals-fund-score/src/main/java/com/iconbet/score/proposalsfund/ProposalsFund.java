@@ -115,12 +115,12 @@ public class ProposalsFund extends ProposalData {
 
     @External(readonly = true)
     public Map<String, ?> get_proposer_projected_fund(Address _wallet_address) {
+//        todo optimize
         BigInteger totalAmountToBePaidICX = BigInteger.ZERO;
         List<Map<String, ?>> projectDetails = new ArrayList<>();
         for (int i = 0; i < proposalsKeys.size(); i++) {
             String _ipfs_key = proposalsKeys.get(i);
             String proposalPrefix = proposalPrefix(_ipfs_key);
-            // todo: getting entire proposal details or getting individual values?
             Map<String, ?> proposal_details = getDataFromProposalDB(proposalPrefix);
             if (!proposal_details.get(STATUS).equals(_DISQUALIFIED)) {
                 if (proposal_details.get(PROPOSER_ADDRESS).equals(_wallet_address)) {
