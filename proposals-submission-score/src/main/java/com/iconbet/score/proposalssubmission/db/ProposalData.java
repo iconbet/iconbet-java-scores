@@ -19,31 +19,31 @@ public class ProposalData{
         public BigInteger totalBudget;
         public String ipfsLink;
     }
-    private final BranchDB<String, VarDB<String>> ipfsHash = Context.newBranchDB("ipfs_hash", String.class);
-    private final BranchDB<String, VarDB<String>> projectType = Context.newBranchDB("projectType", String.class);
-    private final BranchDB<String, VarDB<String>> projectTitle = Context.newBranchDB("projectTitle", String.class);
-    private final BranchDB<String, VarDB<BigInteger>> timestamp = Context.newBranchDB("timestamp", BigInteger.class);
-    private final BranchDB<String, VarDB<BigInteger>> totalBudget = Context.newBranchDB("totalBudget", BigInteger.class);
-    private final BranchDB<String, VarDB<Integer>> projectDuration = Context.newBranchDB("projectDuration", Integer.class);
-    private final BranchDB<String, VarDB<Integer>> approvedReports = Context.newBranchDB("approvedReports", Integer.class);
-    private final BranchDB<String, VarDB<Address>> proposerAddress = Context.newBranchDB("proposerAddress", Address.class);
-    private final BranchDB<String, VarDB<String>> status = Context.newBranchDB("status", String.class);
-    private final BranchDB<String, VarDB<String>> txHash = Context.newBranchDB("txHash", String.class);
-    private final BranchDB<String, VarDB<Integer>> percentageCompleted = Context.newBranchDB("percentageCompleted", Integer.class);
+    private static final BranchDB<String, VarDB<String>> ipfsHash = Context.newBranchDB("ipfs_hash", String.class);
+    private static final BranchDB<String, VarDB<String>> projectType = Context.newBranchDB("projectType", String.class);
+    private static final BranchDB<String, VarDB<String>> projectTitle = Context.newBranchDB("projectTitle", String.class);
+    private static final BranchDB<String, VarDB<BigInteger>> timestamp = Context.newBranchDB("timestamp", BigInteger.class);
+    private static final BranchDB<String, VarDB<BigInteger>> totalBudget = Context.newBranchDB("totalBudget", BigInteger.class);
+    private static final BranchDB<String, VarDB<Integer>> projectDuration = Context.newBranchDB("projectDuration", Integer.class);
+    private static final BranchDB<String, VarDB<Integer>> approvedReports = Context.newBranchDB("approvedReports", Integer.class);
+    private static final BranchDB<String, VarDB<Address>> proposerAddress = Context.newBranchDB("proposerAddress", Address.class);
+    private static final BranchDB<String, VarDB<String>> status = Context.newBranchDB("status", String.class);
+    private static final BranchDB<String, VarDB<String>> txHash = Context.newBranchDB("txHash", String.class);
+    private static final BranchDB<String, VarDB<Integer>> percentageCompleted = Context.newBranchDB("percentageCompleted", Integer.class);
 
-    private final BranchDB<String, ArrayDB<String>> votersReasons = Context.newBranchDB("votersReasons", String.class);
-    private final BranchDB<String, VarDB<BigInteger>> totalVotes = Context.newBranchDB("totalVotes", BigInteger.class);
-    private final BranchDB<String, VarDB<Integer>> totalVoters = Context.newBranchDB("totalVoters", Integer.class);
-    private final BranchDB<String, VarDB<BigInteger>> approvedVotes = Context.newBranchDB("approvedVotes", BigInteger.class);
-    private final BranchDB<String, VarDB<BigInteger>> rejectedVotes = Context.newBranchDB("rejectedVotes", BigInteger.class);
+    public static final BranchDB<String, ArrayDB<String>> votersReasons = Context.newBranchDB("votersReasons", String.class);
+    private static final BranchDB<String, VarDB<BigInteger>> totalVotes = Context.newBranchDB("totalVotes", BigInteger.class);
+    private static final BranchDB<String, VarDB<Integer>> totalVoters = Context.newBranchDB("totalVoters", Integer.class);
+    private static final BranchDB<String, VarDB<BigInteger>> approvedVotes = Context.newBranchDB("approvedVotes", BigInteger.class);
+    private static final BranchDB<String, VarDB<BigInteger>> rejectedVotes = Context.newBranchDB("rejectedVotes", BigInteger.class);
 
-    private final BranchDB<String, ArrayDB<Address>> votersList = Context.newBranchDB("votersList", Address.class);
-    private final BranchDB<String, ArrayDB<Address>> approveVoters = Context.newBranchDB("approveVoters", Address.class);
-    private final BranchDB<String, ArrayDB<Address>> rejectVoters = Context.newBranchDB("rejectVoters", Address.class);
+    public static final BranchDB<String, ArrayDB<Address>> votersList = Context.newBranchDB("votersList", Address.class);
+    public static final BranchDB<String, ArrayDB<Address>> approveVoters = Context.newBranchDB("approveVoters", Address.class);
+    public static final BranchDB<String, ArrayDB<Address>> rejectVoters = Context.newBranchDB("rejectVoters", Address.class);
 
-    private final BranchDB<String, ArrayDB<String>> progressReports = Context.newBranchDB("progressReports", String.class);
-    private final BranchDB<String, VarDB<Boolean>> budgetAdjustment = Context.newBranchDB("budgetAdjustment", Boolean.class);
-    private final BranchDB<String, VarDB<Boolean>> submitProgressReport = Context.newBranchDB("submitProgressReport", Boolean.class);
+    private static final BranchDB<String, ArrayDB<String>> progressReports = Context.newBranchDB("progressReports", String.class);
+    private static final BranchDB<String, VarDB<Boolean>> budgetAdjustment = Context.newBranchDB("budgetAdjustment", Boolean.class);
+    private static final BranchDB<String, VarDB<Boolean>> submitProgressReport = Context.newBranchDB("submitProgressReport", Boolean.class);
 
 
     public static String proposalPrefix(String proposalKey) {
@@ -93,11 +93,11 @@ public class ProposalData{
     }
 
     public String getProjectType(String proposalPrefix){
-        return this.projectType.at(proposalPrefix).get();
+        return projectType.at(proposalPrefix).get();
     }
 
     public String getProjectTitle(String proposalPrefix){
-        return this.projectTitle.at(proposalPrefix).get();
+        return projectTitle.at(proposalPrefix).get();
     }
 
     public BigInteger getTotalBudget(String proposalPrefix){
@@ -105,11 +105,11 @@ public class ProposalData{
     }
 
     public void setTotalBudget(String proposalPrefix, BigInteger totalBudget){
-        this.totalBudget.at(proposalPrefix).set(totalBudget);
+        ProposalData.totalBudget.at(proposalPrefix).set(totalBudget);
     }
 
     public void setTimestamp(String proposalPrefix, BigInteger timestamp){
-        this.timestamp.at(proposalPrefix).set(timestamp);
+        ProposalData.timestamp.at(proposalPrefix).set(timestamp);
     }
 
 
@@ -118,7 +118,7 @@ public class ProposalData{
     }
 
     public void setProjectDuration(String proposalPrefix, int projectDuration){
-        this.projectDuration.at(proposalPrefix).set(projectDuration);
+        ProposalData.projectDuration.at(proposalPrefix).set(projectDuration);
     }
 
     public int getApprovedReports(String proposalPrefix){
@@ -126,7 +126,7 @@ public class ProposalData{
     }
 
     public void setApprovedReports(String proposalPrefix, int approvedReports){
-        this.approvedReports.at(proposalPrefix).set(approvedReports);
+        ProposalData.approvedReports.at(proposalPrefix).set(approvedReports);
     }
 
     public Address getProposerAddress(String proposalPrefix){
@@ -134,7 +134,7 @@ public class ProposalData{
     }
 
     public void setProposerAddress(String proposalPrefix, Address proposerAddress){
-        this.proposerAddress.at(proposalPrefix).set(proposerAddress);
+        ProposalData.proposerAddress.at(proposalPrefix).set(proposerAddress);
     }
 
     public String getStatus(String proposalPrefix){
@@ -142,7 +142,7 @@ public class ProposalData{
     }
 
     public void setStatus(String proposalPrefix, String status){
-        this.status.at(proposalPrefix).set(status);
+        ProposalData.status.at(proposalPrefix).set(status);
     }
 
     public String getTxHash(String proposalPrefix){
@@ -150,7 +150,7 @@ public class ProposalData{
     }
 
     public void setTxHash(String proposalPrefix, String txHash){
-        this.txHash.at(proposalPrefix).set(txHash);
+        ProposalData.txHash.at(proposalPrefix).set(txHash);
     }
 
     public int getPercentageCompleted(String proposalPrefix){
@@ -158,11 +158,11 @@ public class ProposalData{
     }
 
     public void setPercentageCompleted(String proposalPrefix, int percentageCompleted){
-        this.percentageCompleted.at(proposalPrefix).set(percentageCompleted);
+        ProposalData.percentageCompleted.at(proposalPrefix).set(percentageCompleted);
     }
 
     public void setVotersReasons(String proposalPrefix, String votersReasons){
-        this.votersReasons.at(proposalPrefix).add(votersReasons);
+        ProposalData.votersReasons.at(proposalPrefix).add(votersReasons);
     }
 
     public BigInteger getTotalVotes(String proposalPrefix){
@@ -170,7 +170,7 @@ public class ProposalData{
     }
 
     public void setTotalVotes(String proposalPrefix, BigInteger votes){
-        this.totalVotes.at(proposalPrefix).set(votes);
+        ProposalData.totalVotes.at(proposalPrefix).set(votes);
     }
 
     public int getTotalVoters(String proposalPrefix){
@@ -178,7 +178,7 @@ public class ProposalData{
     }
 
     public void setTotalVoters(String proposalPrefix, int voters){
-        this.totalVoters.at(proposalPrefix).set(voters);
+        ProposalData.totalVoters.at(proposalPrefix).set(voters);
     }
 
     public BigInteger getApprovedVotes(String proposalPrefix){
@@ -186,7 +186,7 @@ public class ProposalData{
     }
 
     public void setApprovedVotes(String proposalPrefix, BigInteger approvedVotes){
-        this.approvedVotes.at(proposalPrefix).set(approvedVotes);
+        ProposalData.approvedVotes.at(proposalPrefix).set(approvedVotes);
     }
 
     public BigInteger getRejectedVotes(String proposalPrefix){
@@ -194,55 +194,55 @@ public class ProposalData{
     }
 
     public void setRejectedVotes(String proposalPrefix, BigInteger rejectedVotes){
-        this.rejectedVotes.at(proposalPrefix).set(rejectedVotes);
+        ProposalData.rejectedVotes.at(proposalPrefix).set(rejectedVotes);
     }
 
     public List<Address> getVotersList(String proposalPrefix){
         List<Address> votersList = new ArrayList<>();
-        for(int i = 0; i < this.votersList.at(proposalPrefix).size(); i++){
-            votersList.add(this.votersList.at(proposalPrefix).get(i));
+        for(int i = 0; i < ProposalData.votersList.at(proposalPrefix).size(); i++){
+            votersList.add(ProposalData.votersList.at(proposalPrefix).get(i));
         }
         return votersList;
     }
 
     public void setVotersList(String proposalPrefix, Address voters){
-        this.votersList.at(proposalPrefix).add(voters);
+        ProposalData.votersList.at(proposalPrefix).add(voters);
     }
 
     public List<Address> getApproveVotersList(String proposalPrefix){
         List<Address> votersList = new ArrayList<>();
-        for(int i = 0; i < this.approveVoters.at(proposalPrefix).size(); i++){
-            votersList.add(this.approveVoters.at(proposalPrefix).get(i));
+        for(int i = 0; i < ProposalData.approveVoters.at(proposalPrefix).size(); i++){
+            votersList.add(ProposalData.approveVoters.at(proposalPrefix).get(i));
         }
         return votersList;
     }
 
     public void setApproveVoters(String proposalPrefix, Address voters){
-        this.approveVoters.at(proposalPrefix).add(voters);
+        ProposalData.approveVoters.at(proposalPrefix).add(voters);
     }
 
     public List<Address> getRejectVotersList(String proposalPrefix){
         List<Address> votersList = new ArrayList<>();
-        for(int i = 0; i < this.rejectVoters.at(proposalPrefix).size(); i++){
-            votersList.add(this.rejectVoters.at(proposalPrefix).get(i));
+        for(int i = 0; i < ProposalData.rejectVoters.at(proposalPrefix).size(); i++){
+            votersList.add(ProposalData.rejectVoters.at(proposalPrefix).get(i));
         }
         return votersList;
     }
 
     public void setRejectVoters(String proposalPrefix, Address voters){
-        this.rejectVoters.at(proposalPrefix).add(voters);
+        ProposalData.rejectVoters.at(proposalPrefix).add(voters);
     }
 
     public List<String> getProgressReportsList(String proposalPrefix){
         List<String> progressReports = new ArrayList<>();
-        for(int i = 0; i < this.progressReports.at(proposalPrefix).size(); i++){
-            progressReports.add(this.progressReports.at(proposalPrefix).get(i));
+        for(int i = 0; i < ProposalData.progressReports.at(proposalPrefix).size(); i++){
+            progressReports.add(ProposalData.progressReports.at(proposalPrefix).get(i));
         }
         return progressReports;
     }
 
     public void setProgressReports(String proposalPrefix, String reportHash){
-        this.progressReports.at(proposalPrefix).add(reportHash);
+        ProposalData.progressReports.at(proposalPrefix).add(reportHash);
     }
 
     public Boolean getBudgetAdjustment(String proposalPrefix){
@@ -250,15 +250,19 @@ public class ProposalData{
     }
 
     public void setBudgetAdjustment(String proposalPrefix){
-        this.budgetAdjustment.at(proposalPrefix).set(Boolean.TRUE);
+        ProposalData.budgetAdjustment.at(proposalPrefix).set(Boolean.TRUE);
     }
 
     public Boolean getSubmitProgressReport(String proposalPrefix){
-        return this.submitProgressReport.at(proposalPrefix).get();
+        return ProposalData.submitProgressReport.at(proposalPrefix).get();
     }
 
     public void setSubmitProgressReport(String proposalPrefix, Boolean status){
-        this.submitProgressReport.at(proposalPrefix).set(status);
+        ProposalData.submitProgressReport.at(proposalPrefix).set(status);
+    }
+
+    public String getIpfsHash(String proposalDBPrefix){
+        return ProposalData.ipfsHash.at(proposalDBPrefix).getOrDefault("");
     }
 
 }
