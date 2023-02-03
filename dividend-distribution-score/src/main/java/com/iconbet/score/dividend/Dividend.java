@@ -26,12 +26,7 @@ public class Dividend extends Utils {
     private final VarDB<Boolean> _divs_dist_complete = Context.newVarDB(_DIVS_DIST_COMPLETE, Boolean.class);
 
     // Variables related to batch of tap distribution
-    //TODO:not used, commented out
     private final VarDB<BigInteger> _batch_size = Context.newVarDB(_BATCH_SIZE, BigInteger.class);
-
-    // Tap holders and their balances of TAP tokens
-    private final DictDB<String, BigInteger> _tap_balances = Context.newDictDB(_TAP_BALANCES, BigInteger.class);
-    private final VarDB<BigInteger> _total_eligible_tap_tokens = Context.newVarDB(_TOTAL_ELIGIBLE_TAP_TOKENS, BigInteger.class);
 
     // Games which have made excess and their excess amount
     private final ArrayDB<Address> _games_list = Context.newArrayDB(_GAMES_LIST, Address.class);
@@ -68,9 +63,6 @@ public class Dividend extends Utils {
     private final VarDB<Boolean> _switch_dividends_to_staked_tap = Context.newVarDB(_SWITCH_DIVIDENDS_TO_STAKED_TAP, Boolean.class);
 
     private final ArrayDB<String> _exception_address = Context.newArrayDB(_EXCEPTION_ADDRESS, String.class);
-
-    private final VarDB<BigInteger> globalDividend = Context.newVarDB("global_dividend", BigInteger.class);
-    private final BranchDB<Address, VarDB<BigInteger>> userDividend = Context.newBranchDB("user_dividend", BigInteger.class);
 
     public Dividend(@Optional boolean _on_update_var) {
         if (_on_update_var) {
