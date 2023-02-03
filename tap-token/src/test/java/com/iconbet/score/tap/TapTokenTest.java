@@ -669,6 +669,7 @@ class TapTokenTest extends TestBase {
 
         tapToken.invoke(owner, "remove_from_whitelist", testingAccount.getAddress());
 
+        //noinspection unchecked
         assertFalse(containsInList(testingAccount.getAddress(), (List<Address>) tapToken.call("get_whitelist_addresses")));
     }
 
@@ -677,6 +678,7 @@ class TapTokenTest extends TestBase {
         setLocklistAddress();
         tapToken.invoke(owner, "remove_from_locklist", testingAccount.getAddress());
 
+        //noinspection unchecked
         assertFalse(containsInList(testingAccount.getAddress(), (List<Address>) tapToken.call("get_locklist_addresses")));
     }
 
