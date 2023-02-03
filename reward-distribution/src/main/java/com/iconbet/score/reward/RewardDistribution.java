@@ -54,7 +54,6 @@ public class RewardDistribution {
     public void TokenTransfer(Address recipient, BigInteger amount) {
     }
 
-    //TODO: review this py dept = 2 data structure and possible null pointer ex.
     private final BranchDB<BigInteger, DictDB<String, BigInteger>> _wagers = Context.newBranchDB(_WAGERS, BigInteger.class);
     private final VarDB<BigInteger> _day_index = Context.newVarDB(_DAY, BigInteger.class);
     private final ArrayDB<String> _even_day_addresses = Context.newArrayDB(_EVEN_DAY, String.class);
@@ -341,7 +340,6 @@ public class RewardDistribution {
 
                 String _address = this._addresses[dayIndexInt].pop();
 
-                //TODO: review removal logic
                 this._wagers.at(day_index).set(_address, null);
 
                 if (linearityComplexityMigrationComplete.getOrDefault(Boolean.FALSE)) {
