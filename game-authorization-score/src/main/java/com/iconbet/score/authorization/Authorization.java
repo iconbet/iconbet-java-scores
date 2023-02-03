@@ -74,19 +74,6 @@ public class Authorization {
     public Authorization() {
     }
 
-
-    @EventLog(indexed = 2)
-    public void FundTransfer(Address recipient, BigInteger amount, String note) {
-    }
-
-    @EventLog(indexed = 2)
-    public void ProposalSubmitted(Address sender, Address scoreAddress) {
-    }
-
-    @EventLog(indexed = 1)
-    public void GameSuspended(Address scoreAddress, String note) {
-    }
-
     @External(readonly = true)
     public Address getOwner() {
         return Context.getOwner();
@@ -520,8 +507,6 @@ public class Authorization {
             }
         }
 
-        //TODO: use getString(name, default value) to prevent null pointer exceptions
-        // Check if name is empty
         String nameStr = metadata.getString("name", "");
         if (nameStr.isEmpty()) {
             Context.revert("Game name cant be empty");
@@ -939,7 +924,6 @@ public class Authorization {
      :return: Dictionary of games' address and excess of the games
      :rtype: dict
      ***/
-    //TODO: we can chage this from String, String to String, BigInteger
     @SuppressWarnings("unchecked")
     @External(readonly = true)
     public Map<String, String> get_games_excess(@Optional BigInteger day) {
@@ -1452,8 +1436,7 @@ public class Authorization {
         return proposalData.dbProposalKeys.get(dbName).size();
     }
 
-//    todo batchSize
-    private List<Map<String, Object>> getProposals(String dbName, @Optional int batchSize, @Optional int offset) {
+    private List<Map<String, Object>> getProposals(String dbName, @Optional int offset) {
         Context.require(containsInList(dbName, Consts.dbName), TAG + ": Invalid DB name");
         ProposalData proposalData = new ProposalData();
         List<Map<String, Object>> proposal_list = new ArrayList<>();
@@ -1462,6 +1445,9 @@ public class Authorization {
         if (count > 1) {
             start = Math.max(0, offset);
         }
+
+        int batchSize = 5;
+
         int end = Math.min(start + batchSize, this.getProposalCount(dbName));
         ArrayDB<String> proposalKeys = proposalData.dbProposalKeys.get(dbName);
         for (int i = start; i < end; i++) {
@@ -1471,15 +1457,6 @@ public class Authorization {
         }
         proposal_list.add(Map.of("count", proposalKeys.size()));
         return proposal_list;
-    }
-
-    //todo eventlogs at the same place
-    @EventLog(indexed = 2)
-    public void VoteCast(String vote_name, boolean vote, Address voter, BigInteger stake, BigInteger total_for, BigInteger total_against) {
-    }
-
-    @EventLog(indexed = 1)
-    public void VoteDefined(String vote_name, Address proposer) {
     }
 
     /***
@@ -1642,7 +1619,6 @@ public class Authorization {
         return checkVote(GAME_APPROVAL, name);
     }
 
-    //    TODO: proposal Index not needed as we have name as an identifier?
     @External(readonly = true)
     public int getGovernanceProposalCount() {
         return getProposalCount(GOVERNANCE);
@@ -1664,25 +1640,17 @@ public class Authorization {
             batch_size = 5;
         }
 
-        return getProposals(GOVERNANCE, batch_size, offset);
+        return getProposals(GOVERNANCE, offset);
     }
 
     @External(readonly = true)
     public List<Map<String, Object>> getGameConceptProposals(@Optional int batch_size, @Optional int offset) {
-        if (batch_size == 0 || batch_size > 5) {
-            batch_size = 5;
-        }
-
-        return getProposals(NEW_GAME, batch_size, offset);
+        return getProposals(NEW_GAME, offset);
     }
 
     @External(readonly = true)
     public List<Map<String, Object>> getGameApprovalProposals(@Optional int batch_size, @Optional int offset) {
-        if (batch_size == 0 || batch_size > 5) {
-            batch_size = 5;
-        }
-
-        return getProposals(GAME_APPROVAL, batch_size, offset);
+        return getProposals(GAME_APPROVAL, offset);
     }
 
     @External(readonly = true)
@@ -1716,7 +1684,7 @@ public class Authorization {
         String actions = proposalData.getActions(proposalPrefix);
         BigInteger majority = proposalData.getMajority(proposalPrefix);
 
-        Context.require(getDay().compareTo(end_snap) >= 0,"Governance: Voting period has not ended.");
+        Context.require(getDay().compareTo(end_snap) >= 0, "Governance: Voting period has not ended.");
         Context.require(proposalData.getActive(proposalPrefix), "This proposal is not active.");
 
         Map<String, Object> result = checkGovernanceVote(name);
@@ -1843,6 +1811,26 @@ public class Authorization {
 
     public void callScore(BigInteger amount, Address address, String method, Object... params) {
         Context.call(amount, address, method, params);
+    }
+
+    @EventLog(indexed = 2)
+    public void VoteCast(String vote_name, boolean vote, Address voter, BigInteger stake, BigInteger total_for, BigInteger total_against) {
+    }
+
+    @EventLog(indexed = 1)
+    public void VoteDefined(String vote_name, Address proposer) {
+    }
+
+    @EventLog(indexed = 2)
+    public void FundTransfer(Address recipient, BigInteger amount, String note) {
+    }
+
+    @EventLog(indexed = 2)
+    public void ProposalSubmitted(Address sender, Address scoreAddress) {
+    }
+
+    @EventLog(indexed = 1)
+    public void GameSuspended(Address scoreAddress, String note) {
     }
 
     /*
