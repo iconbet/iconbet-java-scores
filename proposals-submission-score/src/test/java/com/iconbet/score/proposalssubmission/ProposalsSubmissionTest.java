@@ -288,7 +288,7 @@ public class ProposalsSubmissionTest extends TestBase{
         assertEquals(progressReportsDetails.get("additional_month"), progressReportAttributes.additionalMonth);
         assertEquals(progressReportsDetails.get("additional_budget"), progressReportAttributes.additionalBudget);
 
-        Map<String, ?> reportDetailsMap = (Map<String, ?>) ProposalsSubmissionScore.call("getProgressReportDetails", "_waiting", 0, 5);
+        Map<String, ?> reportDetailsMap = (Map<String, ?>) ProposalsSubmissionScore.call("getProgressReportDetails", "_waiting", 0);
         List<Map<String, ?>> reportDetailsList = (List<Map<String, ?>>) reportDetailsMap.get("DATA");
         assertEquals(progressReportsDetails, reportDetailsList.get(0));
         assertEquals(reportDetailsMap.get("COUNT"), 1);
