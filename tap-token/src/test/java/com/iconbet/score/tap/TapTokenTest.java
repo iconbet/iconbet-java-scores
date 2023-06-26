@@ -460,6 +460,14 @@ class TapTokenTest extends TestBase {
     }
 
     @Test
+    void selfTransfer(){
+        Map<String, Object> beforeDetailBalance = (Map<String, Object>) tapToken.call("details_balanceOf", owner.getAddress());
+        tapToken.invoke(owner, "transfer", owner.getAddress(), BigInteger.valueOf(10000).multiply(MULTIPLIER), new byte[0]);
+        Map<String, Object> afterDetailBalance = (Map<String, Object>) tapToken.call("details_balanceOf", owner.getAddress());
+        assertEquals(beforeDetailBalance.get("Total balance"), afterDetailBalance.get("Total balance"));
+    }
+
+    @Test
     void transferFromLockedAccount() {
         transfer();
 
