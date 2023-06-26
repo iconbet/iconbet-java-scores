@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
 import score.Context;
+import score.UserRevertedException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -122,7 +123,7 @@ public class ProposalsSubmissionTest extends TestBase{
     }
 
     public void expectErrorMessage(Executable contractCall, String errorMessage) {
-        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
+        UserRevertedException e = Assertions.assertThrows(UserRevertedException.class, contractCall);
         assertEquals(errorMessage, e.getMessage());
     }
 
